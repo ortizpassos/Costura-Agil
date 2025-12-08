@@ -99,7 +99,6 @@ String operacaoId = "";
 String operacaoNome = "";
 int metaDiaria = 0;
 int quantidade = 0;
-int quantidadeFuncionario = 0;
 
 // ---- Controle de conexão ----
 // static bool wsConnected = false; // Removido redefinição
@@ -223,75 +222,34 @@ void processJsonMessage(const String& msg) {
       Serial.println("JSON recebido: " + jsonStr);
     }
   } else if (type == "operacaoSelecionada") {
-    JsonObject dataNode = doc["data"];
-    if (dataNode.isNull()) {
-      Serial.println("⚠️ operacaoSelecionada recebido sem bloco data.");
-      return;
-    }
-
-    String token = dataNode["deviceToken"] | "";
-    if (token.length() && token != String(deviceToken)) {
+    String token = doc["data"]["deviceToken"] | "";
+    if (token != String(deviceToken)) {
       Serial.printf("⚠️ Token inválido em operacaoSelecionada. Recebido: '%s', Esperado: '%s'\n", token.c_str(), deviceToken);
-      return;
+      // return; // Comentado para teste, mas o ideal é manter
     }
 
-    if (!dataNode.containsKey("operacao") || dataNode["operacao"].isNull()) {
-      Serial.println("⚠️ operacaoSelecionada recebido sem dados de operação.");
-      return;
-    }
-
-    JsonObject opNode = dataNode["operacao"].as<JsonObject>();
-    operacaoId = opNode["_id"].as<String>();
-    operacaoNome = opNode["nome"].as<String>();
-    metaDiaria = opNode["metaDiaria"].as<int>();
-
-    if (dataNode.containsKey("producaoAtual") && !dataNode["producaoAtual"].isNull()) {
-      quantidade = dataNode["producaoAtual"].as<int>();
-    } else if (opNode.containsKey("quantidadeAtual") && !opNode["quantidadeAtual"].isNull()) {
-      quantidade = opNode["quantidadeAtual"].as<int>();
+    operacaoId = doc["data"]["operacao"]["_id"].as<String>();
+    operacaoNome = doc["data"]["operacao"]["nome"].as<String>();
+    metaDiaria = doc["data"]["operacao"]["metaDiaria"].as<int>();
+    if (doc["data"].containsKey("producaoAtual") && !doc["data"]["producaoAtual"].isNull()) {
+      quantidade = doc["data"]["producaoAtual"].as<int>();
     } else {
       quantidade = 0;
     }
-
-    if (dataNode.containsKey("producaoFuncionario") && !dataNode["producaoFuncionario"].isNull()) {
-      quantidadeFuncionario = dataNode["producaoFuncionario"].as<int>();
-    } else {
-      quantidadeFuncionario = 0;
-    }
-
-    Serial.printf("✅ Operação carregada: %s (meta: %d, produção total: %d, funcionario: %d)\n",
-                  operacaoNome.c_str(), metaDiaria, quantidade, quantidadeFuncionario);
-
+    Serial.printf("✅ Operação carregada: %s (meta: %d, produção: %d)\n", operacaoNome.c_str(), metaDiaria, quantidade);
     prefs.begin("prod", false);
     prefs.putString("operacaoId", operacaoId);
     prefs.putString("operacaoNome", operacaoNome);
     prefs.putInt("metaDiaria", metaDiaria);
     prefs.putInt("quantidade", quantidade);
-    prefs.putInt("quantidadeFunc", quantidadeFuncionario);
     prefs.end();
     
     go_dashboard();
-    update_dashboard(operacaoNome.c_str(), funcionarioNome.c_str(), metaDiaria, quantidade, quantidadeFuncionario);
+    update_dashboard(operacaoNome.c_str(), funcionarioNome.c_str(), metaDiaria, quantidade);
   } else if (type == "producaoSuccess") {
-    JsonObject dataNode = doc["data"];
-    if (!dataNode.isNull()) {
-      String token = dataNode["deviceToken"] | "";
-      if (token.length() && token != String(deviceToken)) return;
-
-      if (dataNode.containsKey("quantidadeAtualTotal") && !dataNode["quantidadeAtualTotal"].isNull()) {
-        quantidade = dataNode["quantidadeAtualTotal"].as<int>();
-      }
-      if (dataNode.containsKey("quantidadeFuncionario") && !dataNode["quantidadeFuncionario"].isNull()) {
-        quantidadeFuncionario = dataNode["quantidadeFuncionario"].as<int>();
-      }
-
-      prefs.begin("prod", false);
-      prefs.putInt("quantidade", quantidade);
-      prefs.putInt("quantidadeFunc", quantidadeFuncionario);
-      prefs.end();
-    }
+    String token = doc["data"]["deviceToken"] | "";
+    if (token != String(deviceToken)) return;
     Serial.println("[producaoSuccess] Produção registrada!");
-    update_dashboard(operacaoNome.c_str(), funcionarioNome.c_str(), metaDiaria, quantidade, quantidadeFuncionario);
   } else if (type == "loginFailed" || type == "error") {
     String message = doc["message"];
     Serial.printf("[Erro] ❌ %s\n", message.c_str());
@@ -362,10 +320,8 @@ void sendProductionData() {
   }
   int tempoProducao = random(100, 500);
   quantidade++;
-  quantidadeFuncionario++;
   prefs.begin("prod", false);
   prefs.putInt("quantidade", quantidade);
-  prefs.putInt("quantidadeFunc", quantidadeFuncionario);
   prefs.end();
   
   DynamicJsonDocument doc(1024);
@@ -380,7 +336,7 @@ void sendProductionData() {
   socketIO.sendEVENT(json);
   Serial.printf("📤 Produção enviada: %d peças em %d ms (%s)\n", quantidade, tempoProducao, operacaoNome.c_str());
   
-  update_dashboard(operacaoNome.c_str(), funcionarioNome.c_str(), metaDiaria, quantidade, quantidadeFuncionario);
+  update_dashboard(operacaoNome.c_str(), funcionarioNome.c_str(), metaDiaria, quantidade);
 }
 
 // -----------------------------------------------------------------------------

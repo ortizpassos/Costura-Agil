@@ -198,6 +198,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
             operacaoNome: data.operacao?.nome || '-',
             operacaoMeta: data.operacao?.metaDiaria || 0,
             operacaoSetor: data.operacao?.setor || '-',
+            producaoAtual: data.producaoAtual || 0,
             ultimaAtualizacao: data.ultimaAtualizacao
           };
         } else {
@@ -208,6 +209,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
             operacaoNome: data.operacao?.nome || '-',
             operacaoMeta: data.operacao?.metaDiaria || 0,
             operacaoSetor: data.operacao?.setor || '-',
+            producaoAtual: data.producaoAtual || 0,
             statusClass: this.getStatusClass(data.status),
             statusTexto: this.getStatusTexto(data.status)
           });
