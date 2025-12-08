@@ -16,6 +16,10 @@ const operacaoSchema = new mongoose.Schema({
     required: true,
     default: 0,
   },
+  quantidadeAtual: {
+    type: Number,
+    default: 0,
+  },
   setor: {
     type: String,
     trim: true,

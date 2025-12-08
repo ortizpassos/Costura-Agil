@@ -50,49 +50,85 @@ io.on('connection', (socket) => {
   // data: { deviceToken, operacaoId }
   const Dispositivo = require('./models/Dispositivo');
   const Operacao = require('./models/Operacao');
-  let dispositivo = await Dispositivo.findOne({ deviceToken: data.deviceToken });
-  if (dispositivo && data.operacaoId) {
-    dispositivo.operacao = data.operacaoId;
-    dispositivo.status = 'em_producao'; // Só agora entra em produção
+  const ProducaoDetalhada = require('./models/ProducaoDetalhada');
 
-    // Buscar produção atual do funcionário para esta operação e dispositivo
-    const Producao = require('./models/Producao');
-    const inicioDoDia = new Date();
-    inicioDoDia.setHours(0, 0, 0, 0);
-    const fimDoDia = new Date();
-    fimDoDia.setHours(23, 59, 59, 999);
-    let producaoExistente = await Producao.findOne({
-      funcionario: dispositivo.funcionarioLogado,
-      dispositivo: dispositivo._id,
-      operacao: data.operacaoId,
-      dataHora: { $gte: inicioDoDia, $lte: fimDoDia }
-    });
-    dispositivo.producaoAtual = producaoExistente ? producaoExistente.quantidade : 0;
-    await dispositivo.save();
-    // Popular operação e funcionário para enviar meta, nome e nome do funcionário
-    await dispositivo.populate('operacao');
-    await dispositivo.populate('funcionarioLogado');
-    io.emit('deviceStatusUpdate', dispositivo);
+  let dispositivo = await Dispositivo.findOne({ deviceToken: data.deviceToken });
+  if (!dispositivo) {
     socket.emit('operacaoSelecionada', {
       data: {
         deviceToken: data.deviceToken,
-        operacao: dispositivo.operacao ? {
-          _id: dispositivo.operacao._id,
-          nome: dispositivo.operacao.nome,
-          metaDiaria: dispositivo.operacao.metaDiaria
-        } : null,
-        producaoAtual: dispositivo.producaoAtual
+        operacao: null,
+        error: 'Dispositivo não encontrado'
       }
     });
-  } else {
-    socket.emit('operacaoSelecionada', { 
+    return;
+  }
+
+  if (!data.operacaoId) {
+    socket.emit('operacaoSelecionada', {
       data: {
         deviceToken: data.deviceToken,
-        operacao: null, 
-        error: 'Dispositivo ou operação não encontrada' 
+        operacao: null,
+        error: 'Operação não informada'
       }
     });
+    return;
   }
+
+  const operacao = await Operacao.findById(data.operacaoId);
+  if (!operacao) {
+    socket.emit('operacaoSelecionada', {
+      data: {
+        deviceToken: data.deviceToken,
+        operacao: null,
+        error: 'Operação não encontrada'
+      }
+    });
+    return;
+  }
+
+  dispositivo.operacao = operacao._id;
+  dispositivo.status = 'em_producao';
+  dispositivo.producaoAtual = operacao.quantidadeAtual || 0;
+  dispositivo.ultimaAtualizacao = new Date();
+  await dispositivo.save();
+
+  await dispositivo.populate('operacao');
+  await dispositivo.populate('funcionarioLogado');
+
+  let producaoFuncionario = 0;
+  if (dispositivo.funcionarioLogado) {
+    const resumoFuncionario = await ProducaoDetalhada.aggregate([
+      {
+        $match: {
+          operacao: operacao._id,
+          funcionario: dispositivo.funcionarioLogado._id
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$quantidade' }
+        }
+      }
+    ]);
+    producaoFuncionario = resumoFuncionario.length ? resumoFuncionario[0].total : 0;
+  }
+
+  io.emit('deviceStatusUpdate', dispositivo);
+  socket.emit('operacaoSelecionada', {
+    data: {
+      deviceToken: data.deviceToken,
+      operacao: dispositivo.operacao ? {
+        _id: dispositivo.operacao._id,
+        nome: dispositivo.operacao.nome,
+        metaDiaria: dispositivo.operacao.metaDiaria,
+        quantidadeAtual: dispositivo.operacao.quantidadeAtual || 0
+        } : null,
+      producaoAtual: dispositivo.producaoAtual,
+      producaoFuncionario
+    }
+  });
 });
 
   console.log('Novo dispositivo conectado:', socket.id);
@@ -185,70 +221,81 @@ io.on('connection', (socket) => {
 
   socket.on('producao', async (data) => {
     console.log('Produção recebida:', data);
-    // Update producaoAtual for device
     const Dispositivo = require('./models/Dispositivo');
-    const Producao = require('./models/Producao');
-    let dispositivo = await Dispositivo.findOne({ deviceToken: data.deviceToken });
-    if (dispositivo) {
-      const quantidade = typeof data.quantidade === 'number' ? data.quantidade : 1;
-      const tempoProducao = data.tempoProducao || 0;
-      
-      // Armazenar valor anterior para calcular o incremento
-      const producaoAnterior = dispositivo.producaoAtual || 0;
-      
-      // Atualizar producaoAtual com o valor recebido do ESP32 (valor acumulado)
-      dispositivo.producaoAtual = quantidade;
-      dispositivo.ultimaAtualizacao = new Date();
-      await dispositivo.save();
-      
-      // Calcular incremento real (diferença entre valor atual e anterior)
-      const incremento = quantidade - producaoAnterior;
-      
-      // Só registrar se houve incremento positivo e houver funcionário logado
-      if (incremento > 0 && dispositivo.funcionarioLogado) {
-        // Verificar se já existe um registro de produção para hoje
-        const inicioDoDia = new Date();
-        inicioDoDia.setHours(0, 0, 0, 0);
-        const fimDoDia = new Date();
-        fimDoDia.setHours(23, 59, 59, 999);
-        
-        let producaoExistente = await Producao.findOne({
-          funcionario: dispositivo.funcionarioLogado,
-          dispositivo: dispositivo._id,
-          dataHora: { $gte: inicioDoDia, $lte: fimDoDia }
-        });
-        
-        if (producaoExistente) {
-          // Atualizar com o valor total do dispositivo (não incrementar)
-          producaoExistente.quantidade = quantidade;
-          producaoExistente.tempoProducao = (producaoExistente.tempoProducao || 0) + tempoProducao;
-          producaoExistente.dataHora = new Date(); // Atualizar timestamp
-          await producaoExistente.save();
-          console.log('Registro de produção atualizado:', producaoExistente);
-        } else {
-          // Criar novo registro de produção para o dia
-          const novaProducao = new Producao({
-            funcionario: dispositivo.funcionarioLogado,
-            dispositivo: dispositivo._id,
-            operacao: dispositivo.operacao || null,
-            quantidade: quantidade,
-            tempoProducao: tempoProducao,
-            dataHora: new Date()
-          });
-          await novaProducao.save();
-          console.log('Registro de produção criado:', novaProducao);
+    const Operacao = require('./models/Operacao');
+    const ProducaoDetalhada = require('./models/ProducaoDetalhada');
+
+    const dispositivo = await Dispositivo.findOne({ deviceToken: data.deviceToken });
+    if (!dispositivo) {
+      console.log('Dispositivo não encontrado para produção:', data.deviceToken);
+      socket.emit('producaoFailed', { message: 'Dispositivo não encontrado' });
+      return;
+    }
+
+    if (!dispositivo.funcionarioLogado || !dispositivo.operacao) {
+      socket.emit('producaoFailed', { message: 'Funcionário ou operação não definidos para este dispositivo.' });
+      return;
+    }
+
+    const quantidadeAtual = typeof data.quantidade === 'number' ? data.quantidade : 0;
+    const producaoAnterior = dispositivo.producaoAtual || 0;
+    const incremento = quantidadeAtual - producaoAnterior;
+
+    if (incremento <= 0) {
+      socket.emit('producaoSuccess', { message: 'Produção recebida (sem incremento).' });
+      return;
+    }
+
+    dispositivo.producaoAtual = quantidadeAtual;
+    dispositivo.ultimaAtualizacao = new Date();
+    await dispositivo.save();
+
+    const operacao = await Operacao.findById(dispositivo.operacao);
+    if (operacao) {
+      operacao.quantidadeAtual = (operacao.quantidadeAtual || 0) + incremento;
+      await operacao.save();
+    }
+
+    await ProducaoDetalhada.create({
+      operacao: dispositivo.operacao,
+      funcionario: dispositivo.funcionarioLogado,
+      dispositivo: dispositivo._id,
+      quantidade: incremento,
+      tempoProducao: data.tempoProducao || 0
+    });
+
+    await dispositivo.populate('funcionarioLogado');
+    await dispositivo.populate('operacao');
+
+    if (dispositivo.operacao && operacao) {
+      dispositivo.operacao.quantidadeAtual = operacao.quantidadeAtual;
+    }
+
+    const resumoFuncionario = await ProducaoDetalhada.aggregate([
+      {
+        $match: {
+          operacao: dispositivo.operacao._id || dispositivo.operacao,
+          funcionario: dispositivo.funcionarioLogado._id
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$quantidade' }
         }
       }
-      
-  // Popular funcionarioLogado e operacao antes de emitir para o frontend
-  await dispositivo.populate('funcionarioLogado');
-  await dispositivo.populate('operacao');
-  console.log('Emitindo productionUpdate para frontend:', { dispositivo });
-  io.emit('productionUpdate', { dispositivo });
-    } else {
-      console.log('Dispositivo não encontrado para produção:', data.deviceToken);
-    }
-    socket.emit('producaoSuccess', { message: 'Produção recebida!' });
+    ]);
+    const quantidadeFuncionario = resumoFuncionario.length ? resumoFuncionario[0].total : incremento;
+
+    io.emit('productionUpdate', { dispositivo, quantidadeFuncionario });
+    socket.emit('producaoSuccess', {
+      message: 'Produção registrada com sucesso!',
+      data: {
+        incremento,
+        quantidadeAtualTotal: operacao ? operacao.quantidadeAtual : quantidadeAtual,
+        quantidadeFuncionario
+      }
+    });
   });
 
   socket.on('disconnect', async () => {

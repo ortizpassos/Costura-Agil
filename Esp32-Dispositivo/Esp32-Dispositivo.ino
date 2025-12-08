@@ -31,6 +31,10 @@ bool operacao_selecionada = false;
 unsigned long lastCheckTime = 0;
 const unsigned long checkInterval = 1000;
 
+// Controle de keep-alive
+unsigned long lastKeepAliveTime = 0;
+const unsigned long keepAliveInterval = 30000; // 30 segundos
+
 // ---- Config servidor ----
 const char* host = "monitor-ellas-backend.onrender.com";  // Host do backend
 const uint16_t port = 443;           // Porta HTTPS do backend
@@ -50,6 +54,7 @@ void registerDevice();
 void loginFuncionario(const char* senha);
 void sendProductionData();
 void enviarSelecaoOperacao(const char* id);
+void sendKeepAlive();
 
 // Função callback para ser chamada após conexão WiFi
 void on_wifi_connected() {
@@ -296,6 +301,18 @@ void enviarSelecaoOperacao(const char* id) {
   Serial.printf("➡️ Selecionando operação ID: %s\n", id);
 }
 
+void sendKeepAlive() {
+  DynamicJsonDocument doc(64);
+  JsonArray array = doc.to<JsonArray>();
+  array.add("keep-alive");
+  JsonObject param = array.createNestedObject();
+  param["millis"] = millis();
+  
+  String json; serializeJson(doc, json);
+  socketIO.sendEVENT(json);
+  Serial.println("➡️ Enviando keep-alive");
+}
+
 void sendProductionData() {
   if (operacaoId == "") {
     Serial.println("⚠️ Nenhuma operação selecionada.");
@@ -372,6 +389,14 @@ void loop() {
         registerDevice();
       }
     }
+
+    // Envia um sinal de "keep-alive" para manter a conexão aberta em proxies
+    if (wsConnected) {
+      if (millis() - lastKeepAliveTime > keepAliveInterval) {
+        lastKeepAliveTime = millis();
+        sendKeepAlive();
+      }
+    }
   }
   
   lv_timer_handler();
@@ -385,7 +410,7 @@ void loop() {
     lastDebounceTime = millis();
   }
 
-  if ((millis() - lastDebounceTime) > 150) {
+  if ((millis() - lastDebounceTime) > 70) {
     static int buttonState = HIGH;
     if (reading != buttonState) {
       buttonState = reading;
