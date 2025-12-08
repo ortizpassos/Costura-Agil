@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Dispositivo = require("../models/Dispositivo");
+const ProducaoDetalhada = require("../models/ProducaoDetalhada");
 const { autenticar } = require('./authRoutes');
 
 // Criar novo dispositivo
@@ -25,7 +26,32 @@ router.get("/", autenticar, async (req, res) => {
     const dispositivos = await Dispositivo.find({ usuario: usuarioId })
       .populate('funcionarioLogado')
       .populate('operacao');
-    res.json(dispositivos);
+
+    const dispositivosComTotais = await Promise.all(dispositivos.map(async (dispositivo) => {
+      const dispositivoObj = dispositivo.toObject();
+      if (dispositivoObj.funcionarioLogado && dispositivoObj.operacao) {
+        const resumoFuncionario = await ProducaoDetalhada.aggregate([
+          {
+            $match: {
+              operacao: dispositivoObj.operacao._id,
+              funcionario: dispositivoObj.funcionarioLogado._id
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              total: { $sum: '$quantidade' }
+            }
+          }
+        ]);
+        dispositivoObj.producaoFuncionario = resumoFuncionario.length ? resumoFuncionario[0].total : 0;
+      } else {
+        dispositivoObj.producaoFuncionario = 0;
+      }
+      return dispositivoObj;
+    }));
+
+    res.json(dispositivosComTotais);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -67,6 +67,9 @@
                   {{ dispositivo.producaoAtual || 0 }} / {{ dispositivo.operacaoMeta }} peças &mdash; {{ calcularPorcentagemGeral(dispositivo.operacao?._id) }}%
                 </span>
               </div>
+                <div class="producao-individual">
+                  Individual: <strong>{{ dispositivo.producaoFuncionario || 0 }}</strong> peças
+                </div>
             </div>
           </td>
           <!-- <td class="status-cell">

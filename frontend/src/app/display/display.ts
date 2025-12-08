@@ -100,6 +100,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
           operacaoNome: d.operacao?.nome || '-',
           operacaoMeta: d.operacao?.metaDiaria || 0,
           operacaoSetor: d.operacao?.setor || '-',
+          producaoFuncionario: d.producaoFuncionario || 0,
           statusClass: this.getStatusClass(d.status),
           statusTexto: this.getStatusTexto(d.status)
         }));
@@ -135,6 +136,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
             status: data.dispositivo.status,
             statusClass: this.getStatusClass(data.dispositivo.status),
             statusTexto: this.getStatusTexto(data.dispositivo.status),
+                  producaoFuncionario: data.quantidadeFuncionario ?? data.dispositivo.producaoFuncionario ?? 0,
             ultimaAtualizacao: data.dispositivo.ultimaAtualizacao
           };
         } else {
@@ -145,6 +147,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
             operacaoNome: data.dispositivo.operacao?.nome || '-',
             operacaoMeta: data.dispositivo.operacao?.metaDiaria || 0,
             operacaoSetor: data.dispositivo.operacao?.setor || '-',
+                  producaoFuncionario: data.quantidadeFuncionario ?? data.dispositivo.producaoFuncionario ?? 0,
             statusClass: this.getStatusClass(data.dispositivo.status),
             statusTexto: this.getStatusTexto(data.dispositivo.status)
           });
@@ -199,6 +202,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
             operacaoMeta: data.operacao?.metaDiaria || 0,
             operacaoSetor: data.operacao?.setor || '-',
             producaoAtual: data.producaoAtual || 0,
+            producaoFuncionario: data.producaoFuncionario || 0,
             ultimaAtualizacao: data.ultimaAtualizacao
           };
         } else {
@@ -210,6 +214,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
             operacaoMeta: data.operacao?.metaDiaria || 0,
             operacaoSetor: data.operacao?.setor || '-',
             producaoAtual: data.producaoAtual || 0,
+            producaoFuncionario: data.producaoFuncionario || 0,
             statusClass: this.getStatusClass(data.status),
             statusTexto: this.getStatusTexto(data.status)
           });

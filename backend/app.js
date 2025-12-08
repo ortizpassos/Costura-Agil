@@ -115,7 +115,10 @@ io.on('connection', (socket) => {
     producaoFuncionario = resumoFuncionario.length ? resumoFuncionario[0].total : 0;
   }
 
-  io.emit('deviceStatusUpdate', dispositivo);
+  const dispositivoData = dispositivo.toObject();
+  dispositivoData.producaoFuncionario = producaoFuncionario;
+
+  io.emit('deviceStatusUpdate', dispositivoData);
   socket.emit('operacaoSelecionada', {
     data: {
       deviceToken: data.deviceToken,
@@ -287,7 +290,12 @@ io.on('connection', (socket) => {
     ]);
     const quantidadeFuncionario = resumoFuncionario.length ? resumoFuncionario[0].total : incremento;
 
-    io.emit('productionUpdate', { dispositivo, quantidadeFuncionario });
+    const dispositivoData = dispositivo.toObject();
+    dispositivoData.operacao = dispositivo.operacao;
+    dispositivoData.funcionarioLogado = dispositivo.funcionarioLogado;
+    dispositivoData.producaoFuncionario = quantidadeFuncionario;
+
+    io.emit('productionUpdate', { dispositivo: dispositivoData, quantidadeFuncionario });
     socket.emit('producaoSuccess', {
       message: 'Produção registrada com sucesso!',
       data: {
