@@ -22,7 +22,7 @@ extern lv_obj_t * vertical;
 
 // Função da tela principal
 void go_dashboard();
-void update_dashboard(const char* operacao, const char* funcionario, int meta, int qtd);
+void update_dashboard(const char* operacao, const char* funcionario, int meta, int qtdTotal, int qtdFuncionario);
 void go_touch();
 
 

@@ -291,6 +291,7 @@ io.on('connection', (socket) => {
     socket.emit('producaoSuccess', {
       message: 'Produção registrada com sucesso!',
       data: {
+        deviceToken: data.deviceToken,
         incremento,
         quantidadeAtualTotal: operacao ? operacao.quantidadeAtual : quantidadeAtual,
         quantidadeFuncionario

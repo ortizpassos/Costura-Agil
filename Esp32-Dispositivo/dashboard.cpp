@@ -7,21 +7,26 @@ lv_obj_t * lbl_func = nullptr;
 lv_obj_t * barra = nullptr;
 lv_obj_t * lbl_valor = nullptr;
 lv_obj_t * lbl_percent = nullptr;
+lv_obj_t * lbl_individual = nullptr;
 
-void update_dashboard(const char* operacao, const char* funcionario, int meta, int qtd) {
+void update_dashboard(const char* operacao, const char* funcionario, int meta, int qtdTotal, int qtdFuncionario) {
     if (lbl_titulo) lv_label_set_text_fmt(lbl_titulo, "Operacao: %s", operacao);
     if (lbl_func) lv_label_set_text_fmt(lbl_func, "Funcionario: %s", funcionario);
     
     if (barra) {
         lv_bar_set_range(barra, 0, meta);
-        lv_bar_set_value(barra, qtd, LV_ANIM_ON);
+        lv_bar_set_value(barra, qtdTotal, LV_ANIM_ON);
     }
     
-    if (lbl_valor) lv_label_set_text_fmt(lbl_valor, "%d/%d", qtd, meta);
+    if (lbl_valor) lv_label_set_text_fmt(lbl_valor, "Total: %d/%d", qtdTotal, meta);
     
     if (lbl_percent && meta > 0) {
-        int pct = (qtd * 100) / meta;
+        int pct = (qtdTotal * 100) / meta;
         lv_label_set_text_fmt(lbl_percent, "%d%%", pct);
+    }
+
+    if (lbl_individual) {
+        lv_label_set_text_fmt(lbl_individual, "Você: %d pcs", qtdFuncionario);
     }
 }
 
@@ -81,10 +86,14 @@ void go_dashboard() {
         );
 
         lbl_valor = lv_label_create(linha);
-        lv_label_set_text(lbl_valor, "0/0");
+        lv_label_set_text(lbl_valor, "Total: 0/0");
 
         lbl_percent = lv_label_create(linha);
         lv_label_set_text(lbl_percent, "0%");
+
+        lbl_individual = lv_label_create(card);
+        lv_label_set_text(lbl_individual, "Você: 0 pcs");
+        lv_obj_set_style_text_font(lbl_individual, &lv_font_montserrat_20, 0);
 
         // BOTÃO PAUSAR
         lv_obj_t * btn_pausar = lv_button_create(card);
