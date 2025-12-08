@@ -39,7 +39,10 @@ app.use('/api/operacoes', operacaoRoutes);
 
 // Socket.IO setup
 const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const io = require('socket.io')(http, {
+  pingTimeout: 60000, // Tempo que o servidor espera por um pong antes de desconectar
+  pingInterval: 25000 // Frequência com que o servidor envia pings
+});
 
 io.on('connection', (socket) => {
   // Evento para selecionar operação no dispositivo

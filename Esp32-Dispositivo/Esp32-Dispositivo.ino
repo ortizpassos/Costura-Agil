@@ -32,8 +32,8 @@ unsigned long lastCheckTime = 0;
 const unsigned long checkInterval = 1000;
 
 // ---- Config servidor ----
-const char* host = "monitor-ellas-backend.onrender.com";  // IP do seu computador (Backend)
-const uint16_t port = 443;           // Porta do Spring Boot (API Principal)
+const char* host = "monitor-ellas-backend.onrender.com";  // Host do backend
+const uint16_t port = 443;           // Porta HTTPS do backend
 
 // ---- Dispositivo ----
 const char* deviceToken = "461545616614165";
@@ -60,8 +60,9 @@ void on_wifi_connected() {
 
     wifi_connected = true;
     go_token();
-    // Iniciar conexão Socket.IO
-    socketIO.begin(host, port, "/socket.io/?EIO=4");
+    // Iniciar conexão Socket.IO usando TLS (wss)
+    socketIO.beginSSL(host, port, "/socket.io/?EIO=4");
+    socketIO.setReconnectInterval(5000);
     socketIO.onEvent(socketIOEvent);
   }
 }
@@ -105,8 +106,9 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t * payload, size_t length)
       wsConnected = false;
       break;
     case sIOtype_CONNECT:
-      Serial.printf("[IO] ✅ Connected to http://%s:%u\n", host, port);
-      socketIO.send(sIOtype_CONNECT, "/");
+      Serial.printf("[IO] ✅ Connected to https://%s:%u\n", host, port);
+      // A conexão é estabelecida automaticamente, não é necessário enviar um evento de conexão manual.
+      // socketIO.send(sIOtype_CONNECT, "/"); 
       wsConnected = true;
       registerDevice();
       break;
