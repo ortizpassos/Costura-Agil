@@ -10,6 +10,7 @@ const producaoRoutes = require('./routes/producaoRoutes');
 const relatorioRoutes = require('./routes/relatorioRoutes');
 const operacaoRoutes = require('./routes/operacaoRoutes');
 const dispositivoTesteRoute = require('./routes/dispositivoTesteRoute');
+const ProducaoDetalhada = require('./models/ProducaoDetalhada');
 
 
 const app = express();
@@ -45,6 +46,32 @@ const io = require('socket.io')(http, {
 });
 
 io.on('connection', (socket) => {
+  const buildDeviceStatusPayload = async (dispositivo) => {
+    if (!dispositivo) return null;
+    const payload = dispositivo.toObject ? dispositivo.toObject() : { ...dispositivo };
+    const operacaoId = payload.operacao?._id || payload.operacao || null;
+    const funcionarioId = payload.funcionarioLogado?._id || payload.funcionarioLogado || null;
+    if (operacaoId && funcionarioId) {
+      const resumo = await ProducaoDetalhada.aggregate([
+        {
+          $match: {
+            operacao: operacaoId,
+            funcionario: funcionarioId
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$quantidade' }
+          }
+        }
+      ]);
+      payload.producaoFuncionario = resumo.length ? resumo[0].total : 0;
+    } else {
+      payload.producaoFuncionario = 0;
+    }
+    return payload;
+  };
   // Evento para selecionar operação no dispositivo
  socket.on('selecionarOperacao', async (data) => {
   // data: { deviceToken, operacaoId }
@@ -146,7 +173,8 @@ io.on('connection', (socket) => {
       dispositivo.ultimaAtualizacao = new Date();
       await dispositivo.save();
       // Emit update to all clients
-      io.emit('deviceStatusUpdate', dispositivo);
+      const payload = await buildDeviceStatusPayload(dispositivo);
+      io.emit('deviceStatusUpdate', payload);
 
       socket.emit('deviceRegistered', { 
         success: true, 
@@ -198,7 +226,8 @@ io.on('connection', (socket) => {
     await dispositivo.save();
     // Popular funcionarioLogado antes de emitir para o frontend
     await dispositivo.populate('funcionarioLogado');
-    io.emit('deviceStatusUpdate', dispositivo);
+    const payload = await buildDeviceStatusPayload(dispositivo);
+    io.emit('deviceStatusUpdate', payload);
 
     // Buscar operações ativas do usuário dono do dispositivo
     let operacoes = [];
@@ -316,7 +345,8 @@ io.on('connection', (socket) => {
         dispositivo.status = 'offline';
         dispositivo.ultimaAtualizacao = new Date();
         await dispositivo.save();
-        io.emit('deviceStatusUpdate', dispositivo);
+        const payload = await buildDeviceStatusPayload(dispositivo);
+        io.emit('deviceStatusUpdate', payload);
       }
     } else {
       // Se não houver deviceToken, busca dispositivos 'online' com última atualização antiga (ex: >2 minutos)
@@ -326,7 +356,8 @@ io.on('connection', (socket) => {
         dispositivo.status = 'offline';
         dispositivo.ultimaAtualizacao = new Date();
         await dispositivo.save();
-        io.emit('deviceStatusUpdate', dispositivo);
+        const payload = await buildDeviceStatusPayload(dispositivo);
+        io.emit('deviceStatusUpdate', payload);
       }
     }
   });

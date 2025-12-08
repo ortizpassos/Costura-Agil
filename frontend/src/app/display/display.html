@@ -64,11 +64,11 @@
                   [style.background-color]="getCorBarra(calcularPorcentagemGeral(dispositivo.operacao?._id))">
                 </div>
                 <span class="progress-text">
-                  {{ dispositivo.producaoAtual || 0 }} / {{ dispositivo.operacaoMeta }} peças &mdash; {{ calcularPorcentagemGeral(dispositivo.operacao?._id) }}%
+                  {{ getProducaoTotalOperacao(dispositivo.operacao?._id) }} / {{ dispositivo.operacaoMeta }} peças &mdash; {{ calcularPorcentagemGeral(dispositivo.operacao?._id) }}%
                 </span>
               </div>
                 <div class="producao-individual">
-                  Individual: <strong>{{ dispositivo.producaoFuncionario || 0 }}</strong> peças
+                Individual: <strong>{{ dispositivo.producaoFuncionario || 0 }}</strong> peças
                 </div>
             </div>
           </td>

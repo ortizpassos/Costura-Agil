@@ -14,11 +14,11 @@ import { Subscription } from 'rxjs';
 export class DisplayComponent implements OnInit, OnDestroy {
   splashParabens: { nome: string } | null = null;
   private splashMostradoFuncionarios = new Set<string>();
-  // Retorna a soma da produção de todos os dispositivos na mesma operação
+  // Retorna o total geral da operação vindo do backend
   getProducaoTotalOperacao(operacaoId: string): number {
-    return this.dispositivos
-      .filter(d => d.operacao && d.operacao._id === operacaoId)
-      .reduce((acc, d) => acc + (d.producaoAtual || 0), 0);
+    const dispositivo = this.dispositivos.find(d => d.operacao && d.operacao._id === operacaoId);
+    if (!dispositivo) return 0;
+    return dispositivo.operacao?.quantidadeAtual ?? dispositivo.producaoAtual ?? 0;
   }
 
   // Retorna a meta da operação (assume igual para todos os dispositivos na mesma operação)
@@ -120,7 +120,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
     const prodSub = this.socketService.onProductionUpdate().subscribe(data => {
       console.log('Atualização de produção recebida:', data);
       // Apenas processar se o dispositivo está em produção
-      if (data.dispositivo.status === 'em_producao') {
+      if (data.dispositivo.status === 'em_producao' || data.dispositivo.status === 'online') {
         const index = this.dispositivos.findIndex(d => d._id === data.dispositivo._id);
         if (index !== -1) {
           // Atualizar dispositivo existente
@@ -136,7 +136,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
             status: data.dispositivo.status,
             statusClass: this.getStatusClass(data.dispositivo.status),
             statusTexto: this.getStatusTexto(data.dispositivo.status),
-                  producaoFuncionario: data.quantidadeFuncionario ?? data.dispositivo.producaoFuncionario ?? 0,
+            producaoFuncionario: data.quantidadeFuncionario ?? data.dispositivo.producaoFuncionario ?? 0,
             ultimaAtualizacao: data.dispositivo.ultimaAtualizacao
           };
         } else {
@@ -147,7 +147,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
             operacaoNome: data.dispositivo.operacao?.nome || '-',
             operacaoMeta: data.dispositivo.operacao?.metaDiaria || 0,
             operacaoSetor: data.dispositivo.operacao?.setor || '-',
-                  producaoFuncionario: data.quantidadeFuncionario ?? data.dispositivo.producaoFuncionario ?? 0,
+            producaoFuncionario: data.quantidadeFuncionario ?? data.dispositivo.producaoFuncionario ?? 0,
             statusClass: this.getStatusClass(data.dispositivo.status),
             statusTexto: this.getStatusTexto(data.dispositivo.status)
           });
@@ -171,7 +171,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
             this.splashParabens = null;
           }, 4000); // Splash visível por 4 segundos
         }
-      } else {
+      } else if (data.dispositivo.status === 'offline') {
         // Remover dispositivo que saiu de produção
         const index = this.dispositivos.findIndex(d => d._id === data.dispositivo._id);
         if (index !== -1) {
@@ -185,7 +185,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
     const statusSub = this.socketService.onDeviceStatusUpdate().subscribe(data => {
       console.log('Atualização de status recebida:', data);
       
-      if (data.status === 'em_producao') {
+      if (data.status === 'em_producao' || data.status === 'online') {
         // Dispositivo entrou ou está em produção
         const index = this.dispositivos.findIndex(d => d._id === data._id);
         if (index !== -1) {
@@ -221,7 +221,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
           this.atualizarPaginacao();
         }
         this.atualizarDispositivosPaginados();
-      } else {
+      } else if (data.status === 'offline') {
         // Dispositivo saiu de produção - remover da lista
         const index = this.dispositivos.findIndex(d => d._id === data._id);
         if (index !== -1) {
@@ -277,7 +277,20 @@ export class DisplayComponent implements OnInit, OnDestroy {
   }
 
   getTotalProducao(): number {
-    return this.dispositivos.reduce((acc, d) => acc + (d.producaoAtual || 0), 0);
+    const totals = new Map<string, number>();
+    this.dispositivos.forEach(d => {
+      const operacaoId = d.operacao?._id;
+      if (!operacaoId) {
+        return;
+      }
+      if (!totals.has(operacaoId)) {
+        const total = d.operacao?.quantidadeAtual ?? d.producaoAtual ?? 0;
+        totals.set(operacaoId, total);
+      }
+    });
+    let soma = 0;
+    totals.forEach(valor => soma += valor);
+    return soma;
   }
 
   getDispositivosAtivos(): number {
