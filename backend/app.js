@@ -39,14 +39,7 @@ app.use('/api/operacoes', operacaoRoutes);
 
 // Socket.IO setup
 const http = require('http').createServer(app);
-const io = require('socket.io')(http, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
-  },
-  transports: ['websocket'],
-  allowUpgrades: false
-});
+const io = require('socket.io')(http);
 
 io.on('connection', (socket) => {
   // Evento para selecionar operação no dispositivo

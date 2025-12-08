@@ -15,7 +15,7 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
-#define SCREEN_ORIENTATION USB_LEFT
+#define SCREEN_ORIENTATION USB_RIGHT
 
 // ---- Pino do botão ----
 #define BUTTON_PIN 0 // GPIO0
@@ -32,8 +32,8 @@ unsigned long lastCheckTime = 0;
 const unsigned long checkInterval = 1000;
 
 // ---- Config servidor ----
-const char* host = "monitor-ellas-backend.onrender.com";  // Host do backend Render
-const uint16_t port = 443;           // Porta HTTPS
+const char* host = "monitor-ellas-backend.onrender.com";  // IP do seu computador (Backend)
+const uint16_t port = 443;           // Porta do Spring Boot (API Principal)
 
 // ---- Dispositivo ----
 const char* deviceToken = "461545616614165";
@@ -60,8 +60,8 @@ void on_wifi_connected() {
 
     wifi_connected = true;
     go_token();
-    // Iniciar conexão Socket.IO segura (WSS) alinhada ao Engine.IO v3 (Socket.IO 2.x)
-    socketIO.beginSSL(host, port, "/socket.io/?EIO=3&transport=websocket");
+    // Iniciar conexão Socket.IO
+    socketIO.begin(host, port, "/socket.io/?EIO=4");
     socketIO.onEvent(socketIOEvent);
   }
 }
