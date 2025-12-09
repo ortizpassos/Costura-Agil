@@ -9,6 +9,14 @@ export interface Dispositivo {
   nome: string;
   metaDiaria: number;
   operacao: string;
+  artigo?: {
+    _id?: string;
+    nome?: string;
+    codigo?: string;
+    cliente?: string;
+    quantidade?: number;
+    quantidadeAtual?: number;
+  };
   setor: string;
   status?: string;
   producaoAtual?: number;

@@ -22,6 +22,11 @@ const dispositivoSchema = new mongoose.Schema({
     ref: 'Operacao',
     default: null,
   },
+  artigo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Artigo',
+    default: null,
+  },
   setor: {
     type: String,
     trim: true,

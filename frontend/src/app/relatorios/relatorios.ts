@@ -17,53 +17,69 @@ export class RelatoriosComponent implements OnInit {
   filtroDataInicio: string = '';
   filtroDataFim: string = '';
   filtroFuncionario: string = '';
-  filtroOperacao: string = '';
+  filtroArtigo: string = '';
   relatorios: any[] = [];
-  totalFuncionario: number = 0;
+  totalProducao: number = 0;
+  
+  // Estatísticas
+  estatisticas = {
+    totalProducao: 0,
+    funcionariosAtivos: 0,
+    artigosEmProducao: 0,
+    percentualAtingido: 0
+  };
 
   constructor(private relatoriosService: RelatoriosService) {}
 
   ngOnInit() {
     this.buscarRelatorios();
+    this.buscarEstatisticas();
   }
 
   buscarRelatorios() {
-    console.log('Buscando relatórios com filtros:', {
-      dataInicio: this.filtroDataInicio,
-      dataFim: this.filtroDataFim,
-      funcionario: this.filtroFuncionario,
-      operacao: this.filtroOperacao
-    });
-    
     this.relatoriosService.buscarRelatorios({
       dataInicio: this.filtroDataInicio,
       dataFim: this.filtroDataFim,
       funcionario: this.filtroFuncionario,
-      operacao: this.filtroOperacao
+      artigo: this.filtroArtigo
     }).subscribe({
       next: (dados) => {
-        console.log('Dados recebidos do backend:', dados);
         this.relatorios = dados.map(r => ({
-          data: r.dia, // Data no formato YYYY-MM-DD
+          data: r.dia,
           funcionario: r.funcionario || '-',
-          operacao: r.operacao || '-',
+          artigo: r.artigo || '-',
+          artigoCodigo: r.artigoCodigo || '',
           producao: r.totalProducao || 0,
           tempo: this.formatarTempo(r.totalTempo || 0)
         }));
-        console.log('Relatórios processados:', this.relatorios);
-        // Calcula o total produzido no período
-        if (this.relatorios.length > 0) {
-          this.totalFuncionario = this.relatorios.reduce((acc, r) => acc + (r.producao || 0), 0);
-        } else {
-          this.totalFuncionario = 0;
-        }
+        
+        this.totalProducao = this.relatorios.reduce((acc, r) => acc + (r.producao || 0), 0);
       },
       error: (err) => {
         console.error('Erro ao buscar relatórios:', err);
         this.relatorios = [];
-        this.totalFuncionario = 0;
+        this.totalProducao = 0;
       }
     });
+  }
+  
+  buscarEstatisticas() {
+    this.relatoriosService.buscarEstatisticas({
+      dataInicio: this.filtroDataInicio,
+      dataFim: this.filtroDataFim
+    }).subscribe({
+      next: (dados) => {
+        this.estatisticas = dados;
+      },
+      error: (err) => {
+        console.error('Erro ao buscar estatísticas:', err);
+      }
+    });
+  }
+  
+  aplicarFiltros() {
+    this.buscarRelatorios();
+    this.buscarEstatisticas();
   }
 
   formatarTempo(segundos: number): string {
@@ -101,24 +117,25 @@ export class RelatoriosComponent implements OnInit {
       yPos += 6;
     }
     
-    if (this.filtroOperacao) {
-      doc.text(`Operação: ${this.filtroOperacao}`, 14, yPos);
+    if (this.filtroArtigo) {
+      doc.text(`Artigo: ${this.filtroArtigo}`, 14, yPos);
       yPos += 6;
     }
     
     // Total produzido
     doc.setFontSize(12);
     doc.setTextColor(13, 110, 253);
-    doc.text(`Total Produzido no Período: ${this.totalFuncionario}`, 14, yPos + 6);
+    doc.text(`Total Produzido no Período: ${this.totalProducao}`, 14, yPos + 6);
     
     // Tabela
     autoTable(doc, {
       startY: yPos + 14,
-      head: [['Data', 'Funcionário', 'Operação', 'Produção', 'Tempo']],
+      head: [['Data', 'Funcionário', 'Artigo', 'Código', 'Produção', 'Tempo']],
       body: this.relatorios.map(r => [
         new Date(r.data).toLocaleDateString('pt-BR'),
         r.funcionario,
-        r.operacao,
+        r.artigo,
+        r.artigoCodigo,
         r.producao.toString(),
         r.tempo
       ]),
@@ -132,11 +149,12 @@ export class RelatoriosComponent implements OnInit {
         cellPadding: 3
       },
       columnStyles: {
-        0: { cellWidth: 25 },
-        1: { cellWidth: 40 },
-        2: { cellWidth: 50 },
-        3: { cellWidth: 25, halign: 'center', fontStyle: 'bold', textColor: [13, 110, 253] },
-        4: { cellWidth: 30 }
+        0: { cellWidth: 22 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 45 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 20, halign: 'center', fontStyle: 'bold', textColor: [13, 110, 253] },
+        5: { cellWidth: 25 }
       }
     });
     

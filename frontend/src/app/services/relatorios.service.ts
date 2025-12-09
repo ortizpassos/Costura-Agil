@@ -14,8 +14,7 @@ export class RelatoriosService {
     dataInicio?: string;
     dataFim?: string;
     funcionario?: string;
-    dispositivo?: string;
-    operacao?: string;
+    artigo?: string;
   }): Observable<any[]> {
     const token = localStorage.getItem('token');
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
@@ -23,8 +22,19 @@ export class RelatoriosService {
     if (filtros.dataInicio) params = params.set('dataInicio', filtros.dataInicio);
     if (filtros.dataFim) params = params.set('dataFim', filtros.dataFim);
     if (filtros.funcionario) params = params.set('funcionario', filtros.funcionario);
-    if (filtros.dispositivo) params = params.set('dispositivo', filtros.dispositivo);
-  if (filtros.operacao) params = params.set('operacao', filtros.operacao);
-  return this.http.get<any[]>(this.apiUrl, { headers, params });
+    if (filtros.artigo) params = params.set('artigo', filtros.artigo);
+    return this.http.get<any[]>(this.apiUrl, { headers, params });
+  }
+  
+  buscarEstatisticas(filtros: {
+    dataInicio?: string;
+    dataFim?: string;
+  }): Observable<any> {
+    const token = localStorage.getItem('token');
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    let params = new HttpParams();
+    if (filtros.dataInicio) params = params.set('dataInicio', filtros.dataInicio);
+    if (filtros.dataFim) params = params.set('dataFim', filtros.dataFim);
+    return this.http.get<any>(`${this.apiUrl}/estatisticas`, { headers, params });
   }
 }

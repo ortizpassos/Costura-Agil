@@ -4,7 +4,12 @@ const producaoDetalhadaSchema = new mongoose.Schema({
   operacao: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Operacao',
-    required: true
+    required: false
+  },
+  artigo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Artigo',
+    required: false
   },
   funcionario: {
     type: mongoose.Schema.Types.ObjectId,

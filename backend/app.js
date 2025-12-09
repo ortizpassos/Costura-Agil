@@ -7,10 +7,13 @@ const funcionarioRoutes = require('./routes/funcionarioRoutes');
 const dispositivoRoutes = require('./routes/dispositivoRoutes');
 const { router: authRoutes } = require('./routes/authRoutes');
 const producaoRoutes = require('./routes/producaoRoutes');
+const { router: artigoRoutes, setSocketIO: setArtigoSocketIO } = require('./routes/artigoRoutes');
+const clienteRoutes = require('./routes/clienteRoutes');
 const relatorioRoutes = require('./routes/relatorioRoutes');
 const operacaoRoutes = require('./routes/operacaoRoutes');
 const dispositivoTesteRoute = require('./routes/dispositivoTesteRoute');
 const ProducaoDetalhada = require('./models/ProducaoDetalhada');
+const Artigo = require('./models/Artigo');
 
 
 const app = express();
@@ -35,6 +38,8 @@ app.use('/api/funcionarios', funcionarioRoutes);
 app.use('/api/dispositivos', dispositivoRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/producao', producaoRoutes);
+app.use('/api/artigos', artigoRoutes);
+app.use('/api/clientes', clienteRoutes);
 app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/operacoes', operacaoRoutes);
 
@@ -45,20 +50,34 @@ const io = require('socket.io')(http, {
   pingInterval: 25000 // Frequência com que o servidor envia pings
 });
 
+// Configurar Socket.IO nas rotas de artigos para notificações em tempo real
+setArtigoSocketIO(io);
+
 io.on('connection', (socket) => {
   const buildDeviceStatusPayload = async (dispositivo) => {
     if (!dispositivo) return null;
+    if (typeof dispositivo.populate === 'function') {
+      await dispositivo.populate(['operacao', 'artigo', 'funcionarioLogado']);
+    }
+
     const payload = dispositivo.toObject ? dispositivo.toObject() : { ...dispositivo };
-    const operacaoId = payload.operacao?._id || payload.operacao || null;
     const funcionarioId = payload.funcionarioLogado?._id || payload.funcionarioLogado || null;
-    if (operacaoId && funcionarioId) {
+    const artigoId = payload.artigo?._id || payload.artigo || null;
+    const operacaoId = payload.operacao?._id || payload.operacao || null;
+
+    if (funcionarioId && (artigoId || operacaoId)) {
+      const matchStage = {
+        funcionario: funcionarioId
+      };
+
+      if (artigoId) {
+        matchStage.artigo = artigoId;
+      } else if (operacaoId) {
+        matchStage.operacao = operacaoId;
+      }
+
       const resumo = await ProducaoDetalhada.aggregate([
-        {
-          $match: {
-            operacao: operacaoId,
-            funcionario: funcionarioId
-          }
-        },
+        { $match: matchStage },
         {
           $group: {
             _id: null,
@@ -72,94 +91,95 @@ io.on('connection', (socket) => {
     }
     return payload;
   };
-  // Evento para selecionar operação no dispositivo
- socket.on('selecionarOperacao', async (data) => {
-  // data: { deviceToken, operacaoId }
-  const Dispositivo = require('./models/Dispositivo');
-  const Operacao = require('./models/Operacao');
-  const ProducaoDetalhada = require('./models/ProducaoDetalhada');
+  // Evento para selecionar artigo no dispositivo
+  socket.on('selecionarArtigo', async (data) => {
+    // data: { deviceToken, artigoId }
+    const Dispositivo = require('./models/Dispositivo');
+    const ProducaoDetalhada = require('./models/ProducaoDetalhada');
 
-  let dispositivo = await Dispositivo.findOne({ deviceToken: data.deviceToken });
-  if (!dispositivo) {
-    socket.emit('operacaoSelecionada', {
-      data: {
-        deviceToken: data.deviceToken,
-        operacao: null,
-        error: 'Dispositivo não encontrado'
-      }
-    });
-    return;
-  }
-
-  if (!data.operacaoId) {
-    socket.emit('operacaoSelecionada', {
-      data: {
-        deviceToken: data.deviceToken,
-        operacao: null,
-        error: 'Operação não informada'
-      }
-    });
-    return;
-  }
-
-  const operacao = await Operacao.findById(data.operacaoId);
-  if (!operacao) {
-    socket.emit('operacaoSelecionada', {
-      data: {
-        deviceToken: data.deviceToken,
-        operacao: null,
-        error: 'Operação não encontrada'
-      }
-    });
-    return;
-  }
-
-  dispositivo.operacao = operacao._id;
-  dispositivo.status = 'em_producao';
-  dispositivo.producaoAtual = operacao.quantidadeAtual || 0;
-  dispositivo.ultimaAtualizacao = new Date();
-  await dispositivo.save();
-
-  await dispositivo.populate('operacao');
-  await dispositivo.populate('funcionarioLogado');
-
-  let producaoFuncionario = 0;
-  if (dispositivo.funcionarioLogado) {
-    const resumoFuncionario = await ProducaoDetalhada.aggregate([
-      {
-        $match: {
-          operacao: operacao._id,
-          funcionario: dispositivo.funcionarioLogado._id
+    const dispositivo = await Dispositivo.findOne({ deviceToken: data.deviceToken });
+    if (!dispositivo) {
+      socket.emit('artigoSelecionado', {
+        data: {
+          deviceToken: data.deviceToken,
+          artigo: null,
+          error: 'Dispositivo não encontrado'
         }
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: '$quantidade' }
-        }
-      }
-    ]);
-    producaoFuncionario = resumoFuncionario.length ? resumoFuncionario[0].total : 0;
-  }
-
-  const dispositivoData = dispositivo.toObject();
-  dispositivoData.producaoFuncionario = producaoFuncionario;
-
-  io.emit('deviceStatusUpdate', dispositivoData);
-  socket.emit('operacaoSelecionada', {
-    data: {
-      deviceToken: data.deviceToken,
-      operacao: dispositivo.operacao ? {
-        _id: dispositivo.operacao._id,
-        nome: dispositivo.operacao.nome,
-        metaDiaria: dispositivo.operacao.metaDiaria,
-        quantidadeAtual: dispositivo.operacao.quantidadeAtual || 0
-        } : null,
-      producaoAtual: dispositivo.producaoAtual,
-      producaoFuncionario
+      });
+      return;
     }
+
+    if (!data.artigoId) {
+      socket.emit('artigoSelecionado', {
+        data: {
+          deviceToken: data.deviceToken,
+          artigo: null,
+          error: 'Artigo não informado'
+        }
+      });
+      return;
+    }
+
+    const artigo = await Artigo.findById(data.artigoId);
+    if (!artigo) {
+      socket.emit('artigoSelecionado', {
+        data: {
+          deviceToken: data.deviceToken,
+          artigo: null,
+          error: 'Artigo não encontrado'
+        }
+      });
+      return;
+    }
+
+    dispositivo.artigo = artigo._id;
+    dispositivo.operacao = null;
+    dispositivo.status = 'em_producao';
+    dispositivo.producaoAtual = artigo.quantidadeAtual || 0;
+    dispositivo.ultimaAtualizacao = new Date();
+    await dispositivo.save();
+
+    await dispositivo.populate(['artigo', 'funcionarioLogado']);
+
+    let producaoFuncionario = 0;
+    if (dispositivo.funcionarioLogado) {
+      const resumoFuncionario = await ProducaoDetalhada.aggregate([
+        {
+          $match: {
+            artigo: artigo._id,
+            funcionario: dispositivo.funcionarioLogado._id
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$quantidade' }
+          }
+        }
+      ]);
+      producaoFuncionario = resumoFuncionario.length ? resumoFuncionario[0].total : 0;
+    }
+
+    const dispositivoData = dispositivo.toObject();
+    dispositivoData.producaoFuncionario = producaoFuncionario;
+
+    io.emit('deviceStatusUpdate', dispositivoData);
+    socket.emit('artigoSelecionado', {
+      data: {
+        deviceToken: data.deviceToken,
+        artigo: dispositivo.artigo ? {
+          _id: dispositivo.artigo._id,
+          nome: dispositivo.artigo.nome,
+          codigo: dispositivo.artigo.codigo,
+          quantidade: dispositivo.artigo.quantidade,
+          quantidadeAtual: dispositivo.artigo.quantidadeAtual || 0,
+          cliente: dispositivo.artigo.cliente
+        } : null,
+        producaoAtual: dispositivo.producaoAtual,
+        producaoFuncionario
+      }
+    });
   });
-});
 
   console.log('Novo dispositivo conectado:', socket.id);
 
@@ -200,7 +220,6 @@ io.on('connection', (socket) => {
   // Find device and update funcionarioLogado by codigo
   const Dispositivo = require('./models/Dispositivo');
   const Funcionario = require('./models/Funcionario');
-  const Operacao = require('./models/Operacao');
   let dispositivo = await Dispositivo.findOne({ deviceToken: data.deviceToken });
   if (dispositivo) {
     if (!dispositivo.usuario) {
@@ -229,20 +248,27 @@ io.on('connection', (socket) => {
     const payload = await buildDeviceStatusPayload(dispositivo);
     io.emit('deviceStatusUpdate', payload);
 
-    // Buscar operações ativas do usuário dono do dispositivo
-    let operacoes = [];
+    // Buscar artigos disponíveis do usuário dono do dispositivo (apenas em produção)
+    let artigos = [];
     if (dispositivo.usuario) {
-      operacoes = await Operacao.find({ usuario: dispositivo.usuario, ativo: true }).sort({ nome: 1 });
+      artigos = await Artigo.find({ 
+        criadoPor: dispositivo.usuario, 
+        status: 'em_producao'
+      })
+        .sort({ nome: 1 });
     }
 
     socket.emit('loginSuccess', {
       data: {
         deviceToken: data.deviceToken,
         funcionario: { nome: funcionario.nome },
-        operacoes: operacoes.map(op => ({
-          _id: op._id,
-          nome: op.nome,
-          metaDiaria: op.metaDiaria
+        artigos: artigos.map(art => ({
+          _id: art._id,
+          nome: art.nome,
+          codigo: art.codigo,
+          quantidade: art.quantidade,
+          quantidadeAtual: art.quantidadeAtual || 0,
+          status: art.status
         }))
       }
     });
@@ -251,10 +277,53 @@ io.on('connection', (socket) => {
   }
 });
 
+// Evento para atualizar lista de artigos em tempo real
+socket.on('solicitarArtigosAtualizados', async (data) => {
+  // data: { deviceToken, usuarioId }
+  const Dispositivo = require('./models/Dispositivo');
+  
+  let usuario = data.usuarioId;
+  const deviceToken = data.deviceToken;
+  
+  if (!usuario && deviceToken) {
+    const dispositivo = await Dispositivo.findOne({ deviceToken: deviceToken });
+    usuario = dispositivo?.usuario;
+  }
+  
+  if (!usuario) {
+    socket.emit('artigosAtualizados', { 
+      data: {
+        deviceToken: deviceToken,
+        artigos: []
+      }
+    });
+    return;
+  }
+  
+  // Buscar artigos em produção
+  const artigos = await Artigo.find({ 
+    criadoPor: usuario, 
+    status: 'em_producao'
+  }).sort({ nome: 1 });
+  
+  socket.emit('artigosAtualizados', {
+    data: {
+      deviceToken: deviceToken,
+      artigos: artigos.map(art => ({
+        _id: art._id,
+        nome: art.nome,
+        codigo: art.codigo,
+        quantidade: art.quantidade,
+        quantidadeAtual: art.quantidadeAtual || 0,
+        status: art.status
+      }))
+    }
+  });
+});
+
   socket.on('producao', async (data) => {
     console.log('Produção recebida:', data);
     const Dispositivo = require('./models/Dispositivo');
-    const Operacao = require('./models/Operacao');
     const ProducaoDetalhada = require('./models/ProducaoDetalhada');
 
     const dispositivo = await Dispositivo.findOne({ deviceToken: data.deviceToken });
@@ -264,8 +333,8 @@ io.on('connection', (socket) => {
       return;
     }
 
-    if (!dispositivo.funcionarioLogado || !dispositivo.operacao) {
-      socket.emit('producaoFailed', { message: 'Funcionário ou operação não definidos para este dispositivo.' });
+    if (!dispositivo.funcionarioLogado || (!dispositivo.artigo && !dispositivo.operacao)) {
+      socket.emit('producaoFailed', { message: 'Funcionário ou artigo não definidos para este dispositivo.' });
       return;
     }
 
@@ -282,14 +351,28 @@ io.on('connection', (socket) => {
     dispositivo.ultimaAtualizacao = new Date();
     await dispositivo.save();
 
-    const operacao = await Operacao.findById(dispositivo.operacao);
-    if (operacao) {
-      operacao.quantidadeAtual = (operacao.quantidadeAtual || 0) + incremento;
-      await operacao.save();
+    let artigo = null;
+    let artigoFinalizadoAgora = false;
+    if (dispositivo.artigo) {
+      artigo = await Artigo.findById(dispositivo.artigo);
+      if (artigo) {
+        const statusAnterior = artigo.status;
+        artigo.quantidadeAtual = (artigo.quantidadeAtual || 0) + incremento;
+        if (artigo.quantidade && artigo.quantidadeAtual >= artigo.quantidade) {
+          artigo.status = 'finalizado';
+          if (statusAnterior !== 'finalizado') {
+            artigoFinalizadoAgora = true;
+          }
+        } else if (artigo.status !== 'em_producao') {
+          artigo.status = 'em_producao';
+        }
+        await artigo.save();
+      }
     }
 
     await ProducaoDetalhada.create({
       operacao: dispositivo.operacao,
+      artigo: dispositivo.artigo,
       funcionario: dispositivo.funcionarioLogado,
       dispositivo: dispositivo._id,
       quantidade: incremento,
@@ -298,17 +381,24 @@ io.on('connection', (socket) => {
 
     await dispositivo.populate('funcionarioLogado');
     await dispositivo.populate('operacao');
+    await dispositivo.populate('artigo');
 
-    if (dispositivo.operacao && operacao) {
-      dispositivo.operacao.quantidadeAtual = operacao.quantidadeAtual;
+    if (dispositivo.artigo && artigo) {
+      dispositivo.artigo.quantidadeAtual = artigo.quantidadeAtual;
+    }
+
+    const matchProducoes = {
+      funcionario: dispositivo.funcionarioLogado._id
+    };
+    if (dispositivo.artigo) {
+      matchProducoes.artigo = dispositivo.artigo._id || dispositivo.artigo;
+    } else if (dispositivo.operacao) {
+      matchProducoes.operacao = dispositivo.operacao._id || dispositivo.operacao;
     }
 
     const resumoFuncionario = await ProducaoDetalhada.aggregate([
       {
-        $match: {
-          operacao: dispositivo.operacao._id || dispositivo.operacao,
-          funcionario: dispositivo.funcionarioLogado._id
-        }
+        $match: matchProducoes
       },
       {
         $group: {
@@ -321,6 +411,7 @@ io.on('connection', (socket) => {
 
     const dispositivoData = dispositivo.toObject();
     dispositivoData.operacao = dispositivo.operacao;
+    dispositivoData.artigo = dispositivo.artigo;
     dispositivoData.funcionarioLogado = dispositivo.funcionarioLogado;
     dispositivoData.producaoFuncionario = quantidadeFuncionario;
 
@@ -328,11 +419,49 @@ io.on('connection', (socket) => {
     socket.emit('producaoSuccess', {
       message: 'Produção registrada com sucesso!',
       data: {
+        deviceToken: data.deviceToken,
         incremento,
-        quantidadeAtualTotal: operacao ? operacao.quantidadeAtual : quantidadeAtual,
-        quantidadeFuncionario
+        quantidade: quantidadeAtual,
+        quantidadeAtualTotal: artigo ? artigo.quantidadeAtual : quantidadeAtual,
+        quantidadeFuncionario,
+        artigoId: artigo ? artigo._id : null,
+        artigoNome: artigo ? artigo.nome : null,
+        meta: artigo ? artigo.quantidade : 0
       }
     });
+    
+    // Se o artigo foi finalizado agora, notificar todos os dispositivos do usuário
+    if (artigoFinalizadoAgora && artigo) {
+      console.log(`🎯 Artigo ${artigo.nome} foi finalizado!`);
+      
+      // Buscar dispositivos do usuário
+      const dispositivos = await Dispositivo.find({ usuario: artigo.criadoPor });
+      
+      // Buscar artigos em produção (excluindo finalizados)
+      const artigosEmProducao = await Artigo.find({ 
+        criadoPor: artigo.criadoPor, 
+        status: 'em_producao'
+      }).sort({ nome: 1 });
+      
+      // Notificar cada dispositivo
+      dispositivos.forEach(disp => {
+        io.emit('artigosAtualizados', {
+          data: {
+            deviceToken: disp.deviceToken,
+            artigos: artigosEmProducao.map(art => ({
+              _id: art._id,
+              nome: art.nome,
+              codigo: art.codigo,
+              quantidade: art.quantidade,
+              quantidadeAtual: art.quantidadeAtual || 0,
+              status: art.status
+            }))
+          }
+        });
+        
+        console.log(`📡 Dispositivo ${disp.deviceToken} notificado sobre artigo finalizado`);
+      });
+    }
   });
 
   socket.on('disconnect', async () => {

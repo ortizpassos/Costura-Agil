@@ -1,41 +1,48 @@
 const express = require('express');
 const router = express.Router();
-const Producao = require('../models/Producao');
 const Dispositivo = require('../models/Dispositivo');
 const Funcionario = require('../models/Funcionario');
 const { autenticar } = require('./authRoutes');
 
-// GET /api/relatorios - busca relatórios filtrados e agrupados por funcionário e dia
+// GET /api/relatorios - busca relatórios filtrados e agrupados por funcionário, artigo e dia
 router.get('/', autenticar, async (req, res) => {
   try {
-    const { dataInicio, dataFim, funcionario, dispositivo } = req.query;
+    const ProducaoDetalhada = require('../models/ProducaoDetalhada');
+    const { dataInicio, dataFim, funcionario, artigo } = req.query;
     const dispositivos = await Dispositivo.find({ usuario: req.usuario.id });
     const filtro = {
       dispositivo: { $in: dispositivos.map(d => d._id) }
     };
-    if (dataInicio) {
-      filtro.dataHora = { ...filtro.dataHora, $gte: new Date(dataInicio) };
-    }
-    if (dataFim) {
-      filtro.dataHora = { ...filtro.dataHora, $lte: new Date(dataFim) };
-    }
-    if (funcionario) {
-      const funcionarios = await Funcionario.find({ nome: { $regex: funcionario, $options: 'i' } });
-      filtro.funcionario = { $in: funcionarios.map(f => f._id) };
-    }
-    if (dispositivo) {
-      const dispositivosFiltro = await Dispositivo.find({
-        usuario: req.usuario.id,
-        $or: [
-          { nome: { $regex: dispositivo, $options: 'i' } },
-          { deviceToken: { $regex: dispositivo, $options: 'i' } }
-        ]
-      });
-      filtro.dispositivo = { $in: dispositivosFiltro.map(d => d._id) };
+    
+    // Filtro por data usando createdAt (timestamp da produção)
+    if (dataInicio || dataFim) {
+      filtro.createdAt = {};
+      if (dataInicio) filtro.createdAt.$gte = new Date(dataInicio);
+      if (dataFim) filtro.createdAt.$lte = new Date(dataFim + 'T23:59:59');
     }
     
-    // Agregação para agrupar por funcionário e dia, substituindo dispositivo por operação
-    const relatorios = await Producao.aggregate([
+    // Filtro por funcionário
+    if (funcionario) {
+      const funcionarios = await Funcionario.find({ 
+        nome: { $regex: funcionario, $options: 'i' } 
+      });
+      filtro.funcionario = { $in: funcionarios.map(f => f._id) };
+    }
+    
+    // Filtro por artigo
+    if (artigo) {
+      const Artigo = require('../models/Artigo');
+      const artigos = await Artigo.find({
+        $or: [
+          { nome: { $regex: artigo, $options: 'i' } },
+          { codigo: { $regex: artigo, $options: 'i' } }
+        ]
+      });
+      filtro.artigo = { $in: artigos.map(a => a._id) };
+    }
+    
+    // Agregação para agrupar por funcionário, artigo e dia
+    const relatorios = await ProducaoDetalhada.aggregate([
       { $match: filtro },
       {
         $lookup: {
@@ -47,20 +54,22 @@ router.get('/', autenticar, async (req, res) => {
       },
       {
         $lookup: {
-          from: 'operacoes',
-          localField: 'operacao',
+          from: 'artigos',
+          localField: 'artigo',
           foreignField: '_id',
-          as: 'operacaoData'
+          as: 'artigoData'
         }
       },
       { $unwind: { path: '$funcionarioData', preserveNullAndEmptyArrays: true } },
-      { $unwind: { path: '$operacaoData', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$artigoData', preserveNullAndEmptyArrays: true } },
       {
         $project: {
-          dia: { $dateToString: { format: '%Y-%m-%d', date: '$dataHora' } },
+          dia: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'America/Sao_Paulo' } },
           funcionario: '$funcionarioData.nome',
           funcionarioId: '$funcionario',
-          operacao: '$operacaoData.nome',
+          artigo: '$artigoData.nome',
+          artigoCodigo: '$artigoData.codigo',
+          artigoId: '$artigo',
           quantidade: 1,
           tempoProducao: 1
         }
@@ -71,7 +80,9 @@ router.get('/', autenticar, async (req, res) => {
             dia: '$dia',
             funcionarioId: '$funcionarioId',
             funcionario: '$funcionario',
-            operacao: '$operacao'
+            artigoId: '$artigoId',
+            artigo: '$artigo',
+            artigoCodigo: '$artigoCodigo'
           },
           totalProducao: { $sum: '$quantidade' },
           totalTempo: { $sum: '$tempoProducao' }
@@ -82,18 +93,61 @@ router.get('/', autenticar, async (req, res) => {
           _id: 0,
           dia: '$_id.dia',
           funcionario: '$_id.funcionario',
-          operacao: '$_id.operacao',
+          artigo: '$_id.artigo',
+          artigoCodigo: '$_id.artigoCodigo',
           totalProducao: 1,
           totalTempo: 1
         }
       },
-      { $sort: { dia: -1, funcionario: 1, operacao: 1 } }
+      { $sort: { dia: -1, funcionario: 1, artigo: 1 } }
     ]);
     
-    console.log('Relatórios agrupados por funcionário e dia:', relatorios.length);
+    console.log('Relatórios agrupados:', relatorios.length);
     res.json(relatorios);
   } catch (err) {
     console.error('Erro ao buscar relatórios:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET /api/relatorios/estatisticas - retorna estatísticas gerais
+router.get('/estatisticas', autenticar, async (req, res) => {
+  try {
+    const ProducaoDetalhada = require('../models/ProducaoDetalhada');
+    const { dataInicio, dataFim } = req.query;
+    
+    const dispositivos = await Dispositivo.find({ usuario: req.usuario.id });
+    const filtro = { dispositivo: { $in: dispositivos.map(d => d._id) } };
+    
+    if (dataInicio || dataFim) {
+      filtro.createdAt = {};
+      if (dataInicio) filtro.createdAt.$gte = new Date(dataInicio);
+      if (dataFim) filtro.createdAt.$lte = new Date(dataFim + 'T23:59:59');
+    }
+    
+    const producoes = await ProducaoDetalhada.find(filtro).populate('artigo funcionario');
+    const totalProducao = producoes.reduce((acc, p) => acc + (p.quantidade || 0), 0);
+    const funcionariosUnicos = new Set(producoes.map(p => p.funcionario?._id?.toString()).filter(Boolean)).size;
+    const artigosUnicos = new Set(producoes.map(p => p.artigo?._id?.toString()).filter(Boolean)).size;
+    
+    // Calcular percentual atingido baseado nas metas dos artigos
+    const Artigo = require('../models/Artigo');
+    const artigosEmProducao = await Artigo.find({ 
+      criadoPor: req.usuario.id, 
+      status: 'em_producao' 
+    });
+    const metaTotal = artigosEmProducao.reduce((acc, art) => acc + (art.quantidade || 0), 0);
+    const producaoAtual = artigosEmProducao.reduce((acc, art) => acc + (art.quantidadeAtual || 0), 0);
+    const percentualAtingido = metaTotal > 0 ? Math.round((producaoAtual / metaTotal) * 100) : 0;
+    
+    res.json({
+      totalProducao,
+      funcionariosAtivos: funcionariosUnicos,
+      artigosEmProducao: artigosUnicos,
+      percentualAtingido
+    });
+  } catch (err) {
+    console.error('Erro ao buscar estatísticas:', err);
     res.status(500).json({ message: err.message });
   }
 });

@@ -25,15 +25,26 @@ router.get("/", autenticar, async (req, res) => {
     const usuarioId = req.usuario.id;
     const dispositivos = await Dispositivo.find({ usuario: usuarioId })
       .populate('funcionarioLogado')
-      .populate('operacao');
+      .populate('operacao')
+      .populate('artigo');
 
     const dispositivosComTotais = await Promise.all(dispositivos.map(async (dispositivo) => {
       const dispositivoObj = dispositivo.toObject();
-      if (dispositivoObj.funcionarioLogado && dispositivoObj.operacao) {
+      const possuiFuncionario = Boolean(dispositivoObj.funcionarioLogado);
+      const artigoId = dispositivoObj.artigo?._id;
+      const operacaoId = dispositivoObj.operacao?._id;
+      const filtro = {};
+      if (artigoId) {
+        filtro.artigo = artigoId;
+      } else if (operacaoId) {
+        filtro.operacao = operacaoId;
+      }
+
+      if (possuiFuncionario && Object.keys(filtro).length) {
         const resumoFuncionario = await ProducaoDetalhada.aggregate([
           {
             $match: {
-              operacao: dispositivoObj.operacao._id,
+              ...filtro,
               funcionario: dispositivoObj.funcionarioLogado._id
             }
           },

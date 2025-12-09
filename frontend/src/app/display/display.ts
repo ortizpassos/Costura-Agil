@@ -14,23 +14,25 @@ import { Subscription } from 'rxjs';
 export class DisplayComponent implements OnInit, OnDestroy {
   splashParabens: { nome: string } | null = null;
   private splashMostradoFuncionarios = new Set<string>();
-  // Retorna o total geral da operação vindo do backend
-  getProducaoTotalOperacao(operacaoId: string): number {
-    const dispositivo = this.dispositivos.find(d => d.operacao && d.operacao._id === operacaoId);
+  // Retorna o total geral produzido por artigo vindo do backend
+  getProducaoTotalArtigo(artigoId?: string | null): number {
+    if (!artigoId) return 0;
+    const dispositivo = this.dispositivos.find(d => d.artigo && d.artigo._id === artigoId);
     if (!dispositivo) return 0;
-    return dispositivo.operacao?.quantidadeAtual ?? dispositivo.producaoAtual ?? 0;
+    return dispositivo.artigo?.quantidadeAtual ?? dispositivo.producaoAtual ?? 0;
   }
 
-  // Retorna a meta da operação (assume igual para todos os dispositivos na mesma operação)
-  getMetaOperacao(operacaoId: string): number {
-    const dispositivo = this.dispositivos.find(d => d.operacao && d.operacao._id === operacaoId);
-    return dispositivo ? dispositivo.operacaoMeta : 0;
+  // Retorna a meta do artigo
+  getMetaArtigo(artigoId?: string | null): number {
+    if (!artigoId) return 0;
+    const dispositivo = this.dispositivos.find(d => d.artigo && d.artigo._id === artigoId);
+    return dispositivo ? (dispositivo.artigo?.quantidade ?? dispositivo.artigoMeta ?? 0) : 0;
   }
 
-  // Porcentagem geral da operação
-  calcularPorcentagemGeral(operacaoId: string): number {
-    const total = this.getProducaoTotalOperacao(operacaoId);
-    const meta = this.getMetaOperacao(operacaoId);
+  // Porcentagem geral do artigo
+  calcularPorcentagemArtigo(artigoId?: string | null): number {
+    const total = this.getProducaoTotalArtigo(artigoId);
+    const meta = this.getMetaArtigo(artigoId);
     if (!meta || meta === 0) return 0;
     return Math.min(Math.round((total / meta) * 100), 100);
   }
@@ -91,15 +93,19 @@ export class DisplayComponent implements OnInit, OnDestroy {
   carregarDispositivos() {
     this.dispositivosService.listarDispositivos().subscribe({
       next: (dados: any) => {
-        // Exibir todos dispositivos com status 'online' ou 'em_producao', mesmo sem funcionário logado
-        const dispositivosConectados = dados.filter((d: any) => d.status === 'em_producao' || d.status === 'online');
+        // Exibir apenas dispositivos em produção com artigo selecionado
+        const dispositivosConectados = dados.filter((d: any) => 
+          d.status === 'em_producao' && d.artigo && d.funcionarioLogado
+        );
 
         this.dispositivos = dispositivosConectados.map((d: any) => ({
           ...d,
           funcionarioNome: d.funcionarioLogado?.nome || '-',
-          operacaoNome: d.operacao?.nome || '-',
-          operacaoMeta: d.operacao?.metaDiaria || 0,
-          operacaoSetor: d.operacao?.setor || '-',
+          artigoNome: d.artigo?.nome || '-',
+          artigoCodigo: d.artigo?.codigo || '-',
+          artigoCliente: d.artigo?.cliente || '-',
+          artigoMeta: d.artigo?.quantidade || d.metaDiaria || 0,
+          artigoProducaoTotal: d.artigo?.quantidadeAtual ?? d.producaoAtual ?? 0,
           producaoFuncionario: d.producaoFuncionario || 0,
           statusClass: this.getStatusClass(d.status),
           statusTexto: this.getStatusTexto(d.status)
@@ -119,8 +125,8 @@ export class DisplayComponent implements OnInit, OnDestroy {
     // Escutar atualizações de produção
     const prodSub = this.socketService.onProductionUpdate().subscribe(data => {
       console.log('Atualização de produção recebida:', data);
-      // Apenas processar se o dispositivo está em produção
-      if (data.dispositivo.status === 'em_producao' || data.dispositivo.status === 'online') {
+      // Apenas processar se o dispositivo está em produção com artigo
+      if (data.dispositivo.status === 'em_producao' && data.dispositivo.artigo) {
         const index = this.dispositivos.findIndex(d => d._id === data.dispositivo._id);
         if (index !== -1) {
           // Atualizar dispositivo existente
@@ -129,10 +135,12 @@ export class DisplayComponent implements OnInit, OnDestroy {
             producaoAtual: data.dispositivo.producaoAtual,
             funcionarioLogado: data.dispositivo.funcionarioLogado,
             funcionarioNome: data.dispositivo.funcionarioLogado?.nome || '-',
-            operacao: data.dispositivo.operacao,
-            operacaoNome: data.dispositivo.operacao?.nome || '-',
-            operacaoMeta: data.dispositivo.operacao?.metaDiaria || 0,
-            operacaoSetor: data.dispositivo.operacao?.setor || '-',
+            artigo: data.dispositivo.artigo,
+            artigoNome: data.dispositivo.artigo?.nome || '-',
+            artigoCodigo: data.dispositivo.artigo?.codigo || '-',
+            artigoCliente: data.dispositivo.artigo?.cliente || '-',
+            artigoMeta: data.dispositivo.artigo?.quantidade || 0,
+            artigoProducaoTotal: data.dispositivo.artigo?.quantidadeAtual ?? data.dispositivo.producaoAtual ?? 0,
             status: data.dispositivo.status,
             statusClass: this.getStatusClass(data.dispositivo.status),
             statusTexto: this.getStatusTexto(data.dispositivo.status),
@@ -144,9 +152,11 @@ export class DisplayComponent implements OnInit, OnDestroy {
           this.dispositivos.push({
             ...data.dispositivo,
             funcionarioNome: data.dispositivo.funcionarioLogado?.nome || '-',
-            operacaoNome: data.dispositivo.operacao?.nome || '-',
-            operacaoMeta: data.dispositivo.operacao?.metaDiaria || 0,
-            operacaoSetor: data.dispositivo.operacao?.setor || '-',
+            artigoNome: data.dispositivo.artigo?.nome || '-',
+            artigoCodigo: data.dispositivo.artigo?.codigo || '-',
+            artigoCliente: data.dispositivo.artigo?.cliente || '-',
+            artigoMeta: data.dispositivo.artigo?.quantidade || 0,
+            artigoProducaoTotal: data.dispositivo.artigo?.quantidadeAtual ?? data.dispositivo.producaoAtual ?? 0,
             producaoFuncionario: data.quantidadeFuncionario ?? data.dispositivo.producaoFuncionario ?? 0,
             statusClass: this.getStatusClass(data.dispositivo.status),
             statusTexto: this.getStatusTexto(data.dispositivo.status)
@@ -157,7 +167,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
 
         // Lógica do splash de parabéns (apenas uma vez por funcionário)
         const producaoAtual = data.dispositivo.producaoAtual || 0;
-        const meta = data.dispositivo.operacao?.metaDiaria || 0;
+        const meta = data.dispositivo.artigo?.quantidade || data.dispositivo.operacao?.metaDiaria || 0;
         const porcentagem = meta ? Math.round((producaoAtual / meta) * 100) : 0;
         const funcionarioNome = data.dispositivo.funcionarioLogado?.nome;
         if (
@@ -185,7 +195,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
     const statusSub = this.socketService.onDeviceStatusUpdate().subscribe(data => {
       console.log('Atualização de status recebida:', data);
       
-      if (data.status === 'em_producao' || data.status === 'online') {
+      if (data.status === 'em_producao' && data.artigo && data.funcionarioLogado) {
         // Dispositivo entrou ou está em produção
         const index = this.dispositivos.findIndex(d => d._id === data._id);
         if (index !== -1) {
@@ -197,10 +207,12 @@ export class DisplayComponent implements OnInit, OnDestroy {
             statusTexto: this.getStatusTexto(data.status),
             funcionarioLogado: data.funcionarioLogado,
             funcionarioNome: data.funcionarioLogado?.nome || '-',
-            operacao: data.operacao,
-            operacaoNome: data.operacao?.nome || '-',
-            operacaoMeta: data.operacao?.metaDiaria || 0,
-            operacaoSetor: data.operacao?.setor || '-',
+            artigo: data.artigo,
+            artigoNome: data.artigo?.nome || '-',
+            artigoCodigo: data.artigo?.codigo || '-',
+            artigoCliente: data.artigo?.cliente || '-',
+            artigoMeta: data.artigo?.quantidade || 0,
+            artigoProducaoTotal: data.artigo?.quantidadeAtual ?? data.producaoAtual ?? 0,
             producaoAtual: data.producaoAtual || 0,
             producaoFuncionario: data.producaoFuncionario || 0,
             ultimaAtualizacao: data.ultimaAtualizacao
@@ -210,9 +222,11 @@ export class DisplayComponent implements OnInit, OnDestroy {
           this.dispositivos.push({
             ...data,
             funcionarioNome: data.funcionarioLogado?.nome || '-',
-            operacaoNome: data.operacao?.nome || '-',
-            operacaoMeta: data.operacao?.metaDiaria || 0,
-            operacaoSetor: data.operacao?.setor || '-',
+            artigoNome: data.artigo?.nome || '-',
+            artigoCodigo: data.artigo?.codigo || '-',
+            artigoCliente: data.artigo?.cliente || '-',
+            artigoMeta: data.artigo?.quantidade || 0,
+            artigoProducaoTotal: data.artigo?.quantidadeAtual ?? data.producaoAtual ?? 0,
             producaoAtual: data.producaoAtual || 0,
             producaoFuncionario: data.producaoFuncionario || 0,
             statusClass: this.getStatusClass(data.status),
@@ -279,13 +293,13 @@ export class DisplayComponent implements OnInit, OnDestroy {
   getTotalProducao(): number {
     const totals = new Map<string, number>();
     this.dispositivos.forEach(d => {
-      const operacaoId = d.operacao?._id;
-      if (!operacaoId) {
+      const artigoId = d.artigo?._id;
+      if (!artigoId) {
         return;
       }
-      if (!totals.has(operacaoId)) {
-        const total = d.operacao?.quantidadeAtual ?? d.producaoAtual ?? 0;
-        totals.set(operacaoId, total);
+      if (!totals.has(artigoId)) {
+        const total = d.artigo?.quantidadeAtual ?? d.producaoAtual ?? 0;
+        totals.set(artigoId, total);
       }
     });
     let soma = 0;

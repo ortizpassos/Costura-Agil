@@ -99,16 +99,25 @@
   flex: 1;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1.5rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 /* Tabela */
 .display-table {
   width: 100%;
+  max-width: 1300px;
   border-collapse: collapse;
+  margin: 0 auto;
+  table-layout: fixed;
 }
 
 .display-table thead {
@@ -119,7 +128,7 @@
 }
 
 .display-table th {
-  padding: 1.25rem 1rem;
+  padding: 0.6rem 0.35rem;
   text-align: left;
   font-size: 1rem;
   font-weight: 700;
@@ -129,26 +138,21 @@
 }
 
 .display-table th:nth-child(1) {
-  width: 25%;
+  width: 15%;
 }
 
 .display-table th:nth-child(2) {
   width: 15%;
-  text-align: center;
+  text-align: left;
 }
 
 .display-table th:nth-child(3) {
   width: 15%;
-  text-align: center;
+  text-align: left;
 }
 
 .display-table th:nth-child(4) {
-  width: 12%;
-  text-align: center;
-}
-
-.display-table th:nth-child(5) {
-  width: 33%;
+  width: 30%;
   text-align: center;
 }
 
@@ -157,13 +161,12 @@
 }
 
 .display-table tbody tr {
-  border-bottom: 1px solid #e2e8f0;
-  transition: all 0.3s;
+  border-bottom: 1px solid #edf2f7;
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .display-table tbody tr:hover {
-  background: rgba(102, 126, 234, 0.05);
-  transform: scale(1.01);
+  background: rgba(102, 126, 234, 0.08);
 }
 
 @keyframes fadeIn {
@@ -178,7 +181,7 @@
 }
 
 .display-table td {
-  padding: 1.25rem 1rem;
+  padding: 0.6rem 0.35rem;
   font-size: 1rem;
   color: #2d3748;
 }
@@ -187,8 +190,8 @@
 .funcionario-cell {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding-left: 1.5rem !important;
+  gap: 0.4rem;
+  padding-left: 0.75rem !important;
 }
 
 .funcionario-icon {
@@ -217,40 +220,45 @@
 .operacao-cell {
   font-size: 1rem;
   font-weight: 600;
-  color: #4a5568;
-  text-align: center;
+  color: #2d3748;
+  text-align: left;
 }
 
-.grupo-cell {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #4a5568;
-  text-align: center;
+.artigo-nome {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.artigo-codigo {
+  font-size: 0.9rem;
+  color: #718096;
 }
 
 .meta-cell {
-  text-align: center;
+  text-align: left;
 }
 
 .meta-valor {
   display: inline-block;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: #667eea;
-  padding: 0.25rem 0.75rem;
-  background: rgba(102, 126, 234, 0.1);
-  border-radius: 8px;
+  padding: 0.15rem 0.45rem;
+  background: rgba(102, 126, 234, 0.12);
+  border-radius: 6px;
 }
 
 .producao-cell {
-  padding: 1rem !important;
+  padding: 0.75rem !important;
 }
 
 .producao-info {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  align-items: center;
+  gap: 0.5rem;
+  align-items: stretch;
+  width: 100%;
 }
 
 .producao-valores {
@@ -279,18 +287,18 @@
 .progress-container {
   position: relative;
   width: 100%;
-  max-width: 300px;
-  height: 40px;
+  max-width: none;
+  height: 48px;
   background: #e2e8f0;
-  border-radius: 20px;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .progress-bar {
   height: 100%;
   transition: width 0.5s ease, background-color 0.5s ease;
-  border-radius: 20px;
+  border-radius: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -299,7 +307,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #2d3748;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);

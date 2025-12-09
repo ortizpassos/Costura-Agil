@@ -1,6 +1,8 @@
 
 #include "dashboard.h"
 
+extern String currentScreen; // Variável global para rastrear tela atual
+
 lv_obj_t * scr_dashboard = nullptr;
 lv_obj_t * lbl_titulo = nullptr;
 lv_obj_t * lbl_func = nullptr;
@@ -9,7 +11,7 @@ lv_obj_t * lbl_valor = nullptr;
 lv_obj_t * lbl_percent = nullptr;
 
 void update_dashboard(const char* operacao, const char* funcionario, int meta, int qtd) {
-    if (lbl_titulo) lv_label_set_text_fmt(lbl_titulo, "Operacao: %s", operacao);
+    if (lbl_titulo) lv_label_set_text_fmt(lbl_titulo, "Artigo: %s", operacao);
     if (lbl_func) lv_label_set_text_fmt(lbl_func, "Funcionario: %s", funcionario);
     
     if (barra) {
@@ -26,6 +28,7 @@ void update_dashboard(const char* operacao, const char* funcionario, int meta, i
 }
 
 void go_dashboard() {
+    currentScreen = "dashboard"; // Marca que estamos na tela de dashboard
     if(!scr_dashboard) {
         scr_dashboard = new_screen(NULL, true);
         lv_scr_load(scr_dashboard);
@@ -128,6 +131,11 @@ void go_dashboard() {
         lv_obj_t * lbl_final = lv_label_create(btn_final);
         lv_label_set_text(lbl_final, LV_SYMBOL_OK "  Finalizar");
         lv_obj_center(lbl_final);
+        
+        lv_obj_add_event_cb(btn_final, [](lv_event_t * e) -> void {
+            extern void logoutFuncionario();
+            logoutFuncionario();
+        }, LV_EVENT_CLICKED, NULL);
 
         // BOTÃO CONFIG
         lv_obj_t * btn_cfg = lv_btn_create(linha_btn);
@@ -138,7 +146,8 @@ void go_dashboard() {
         lv_label_set_text(lbl_cfg, LV_SYMBOL_SETTINGS "  Config.");
         lv_obj_center(lbl_cfg);
         lv_obj_add_event_cb(btn_cfg, [](lv_event_t * e) -> void {
-        //go_touch();
+            extern void go_config();
+            go_config();
         }, LV_EVENT_CLICKED, NULL);    
 
         // RODAPÉ

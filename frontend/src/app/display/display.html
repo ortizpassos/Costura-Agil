@@ -33,10 +33,9 @@
       <thead>
         <tr>
           <th>Funcionário</th>
-          <th>Operação</th>
-          <th>Grupo</th>
+          <th>Artigo</th>
           <th>Meta</th>
-          <th>Produção Atual</th>
+          <th>Produção do Artigo</th>
           <!-- <th>Status</th> -->
         </tr>
       </thead>
@@ -47,28 +46,28 @@
             <span class="funcionario-nome">{{ dispositivo.funcionarioNome }}</span>
           </td>
           <td class="operacao-cell">
-            {{ dispositivo.operacaoNome }}
-          </td>
-          <td class="grupo-cell">
-            {{ dispositivo.operacaoSetor }}
+            <div class="artigo-nome">{{ dispositivo.artigoNome }}</div>
+            <div class="artigo-codigo" *ngIf="dispositivo.artigoCodigo && dispositivo.artigoCodigo !== '-'">
+              Código: {{ dispositivo.artigoCodigo }}
+            </div>
           </td>
           <td class="meta-cell">
-            <span class="meta-valor">{{ dispositivo.operacaoMeta }}</span>
+            <span class="meta-valor">{{ dispositivo.artigoMeta }}</span>
           </td>
           <td class="producao-cell">
             <div class="producao-info">
               <div class="progress-container">
                 <div 
                   class="progress-bar" 
-                  [style.width.%]="calcularPorcentagemGeral(dispositivo.operacao?._id)"
-                  [style.background-color]="getCorBarra(calcularPorcentagemGeral(dispositivo.operacao?._id))">
+                  [style.width.%]="calcularPorcentagemArtigo(dispositivo.artigo?._id)"
+                  [style.background-color]="getCorBarra(calcularPorcentagemArtigo(dispositivo.artigo?._id))">
                 </div>
                 <span class="progress-text">
-                  {{ getProducaoTotalOperacao(dispositivo.operacao?._id) }} / {{ dispositivo.operacaoMeta }} peças &mdash; {{ calcularPorcentagemGeral(dispositivo.operacao?._id) }}%
+                  {{ getProducaoTotalArtigo(dispositivo.artigo?._id) }} / {{ getMetaArtigo(dispositivo.artigo?._id) }} peças &mdash; {{ calcularPorcentagemArtigo(dispositivo.artigo?._id) }}%
                 </span>
               </div>
                 <div class="producao-individual">
-                Individual: <strong>{{ dispositivo.producaoFuncionario || 0 }}</strong> peças
+                  Produção do funcionário: <strong>{{ dispositivo.producaoFuncionario || 0 }}</strong> peças
                 </div>
             </div>
           </td>
