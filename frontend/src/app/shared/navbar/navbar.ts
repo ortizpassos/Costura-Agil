@@ -22,4 +22,13 @@ export class NavbarComponent {
     this.auth.logout();
     this.router.navigate(['/']);
   }
+
+  handleBrandClick(event: Event) {
+    event.preventDefault();
+    if (this.auth.isAuthenticated()) {
+      this.router.navigate(['/dashboard']);
+    } else {
+      this.router.navigate(['/']);
+    }
+  }
 }

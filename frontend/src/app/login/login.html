@@ -1,5 +1,10 @@
+<div class="login-page">
   <div class="container">
-  <div class="logo">Costura Ágil</div>
+    <div class="logo">Costura Ágil</div>
+
+    @if (showSuccess) {
+      <div class="sucesso">{{ successMessage }}</div>
+    }
 
     <input
       type="text"
@@ -17,26 +22,29 @@
         [(ngModel)]="dadosLogin.password"
         name="password"
       />
-      <button type="button" class="password-toggle" (click)="togglePasswordVisibility()" [title]="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'">
+      <button
+        type="button"
+        class="password-toggle"
+        (click)="togglePasswordVisibility()"
+        [title]="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'"
+      >
         <div [class]="mostrarSenha ? 'eye-off-icon' : 'eye-icon'"></div>
       </button>
     </div>
 
     <div class="link"><a href="#" (click)="onForgotPassword()">Esqueceu a senha?</a></div>
 
-    <button class="btn-login" (click)="onSubmit()" [disabled]="carregando">
-      {{ carregando ? 'Entrando...' : 'Log in' }}
+    <button class="btn-cadastro" type="button" (click)="onSubmit()" [disabled]="carregando">
+      {{ carregando ? 'Entrando...' : 'Entrar' }}
     </button>
 
-    <div class="divider">ou</div>
+    <div class="divider"></div>
 
-    <button class="btn btn-primary btn-lg" (click)="onSwitchToRegister()">Criar conta</button>
+    <button class="btn-create" type="button" (click)="onSwitchToRegister()">Criar conta</button>
+  </div>
 
-    <div class="footer">
+  <div class="footer">
     <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Flag_of_Brazil.svg" alt="Bandeira Brasil" />
     <span class="lang">Português | English</span>
   </div>
-  @if (showSuccess) {
-    <div class="sucesso">{{ successMessage }}</div>
-  }
-  </div>  
+</div>

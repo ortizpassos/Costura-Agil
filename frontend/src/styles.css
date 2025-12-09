@@ -4,9 +4,6 @@
 body.display-page app-sidebar,
 body.display-page .sidebar,
 body.display-page aside,
-body.display-page nav,
-body.display-page .navbar,
-body.display-page header.navbar,
 body.display-page .app-header,
 body.display-page app-header {
   display: none !important;
@@ -21,4 +18,5 @@ body.display-page {
 body.display-page .display-container {
   margin-left: 0 !important;
   width: 100vw !important;
+  margin-top: 80px;
 }
