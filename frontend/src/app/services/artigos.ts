@@ -19,7 +19,9 @@ export interface Artigo {
 
 @Injectable({ providedIn: 'root' })
 export class ArtigosService {
-  private apiUrl = '/api/artigos';
+  private apiUrl = window.location.hostname === 'localhost'
+    ? '/api/artigos'
+    : 'https://monitor-ellas-backend.onrender.com/api/artigos';
 
   constructor(private http: HttpClient) {}
 

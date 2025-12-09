@@ -10,7 +10,9 @@ export interface Cliente {
 
 @Injectable({ providedIn: 'root' })
 export class ClientesService {
-  private apiUrl = '/api/clientes';
+  private apiUrl = window.location.hostname === 'localhost'
+    ? '/api/clientes'
+    : 'https://monitor-ellas-backend.onrender.com/api/clientes';
 
   constructor(private http: HttpClient) {}
 
