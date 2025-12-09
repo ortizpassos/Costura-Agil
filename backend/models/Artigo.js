@@ -55,6 +55,14 @@ const artigoSchema = new mongoose.Schema({
   criadoEm: {
     type: Date,
     default: Date.now
+  },
+  dataInicioProducao: {
+    type: Date,
+    required: false
+  },
+  dataFimProducao: {
+    type: Date,
+    required: false
   }
 }, {
   timestamps: true

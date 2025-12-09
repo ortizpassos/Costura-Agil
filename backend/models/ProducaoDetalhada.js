@@ -29,6 +29,18 @@ const producaoDetalhadaSchema = new mongoose.Schema({
   tempoProducao: {
     type: Number,
     required: false
+  },
+  dataInicioPeca: {
+    type: Date,
+    required: false
+  },
+  dataFimProducao: {
+    type: Date,
+    required: false
+  },
+  tempoTotalArtigo: {
+    type: Number,
+    required: false
   }
 }, {
   timestamps: true

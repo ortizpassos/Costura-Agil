@@ -50,7 +50,8 @@ export class RelatoriosComponent implements OnInit {
           artigo: r.artigo || '-',
           artigoCodigo: r.artigoCodigo || '',
           producao: r.totalProducao || 0,
-          tempo: this.formatarTempo(r.totalTempo || 0)
+          tempoReal: this.formatarTempo(r.tempoRealArtigo || 0),
+          tempoMedio: this.formatarTempoMedia(r.tempoMedioPeca || 0)
         }));
         
         this.totalProducao = this.relatorios.reduce((acc, r) => acc + (r.producao || 0), 0);
@@ -86,6 +87,15 @@ export class RelatoriosComponent implements OnInit {
     const horas = Math.floor(segundos / 3600);
     const minutos = Math.floor((segundos % 3600) / 60);
     return `${horas}h ${minutos}min`;
+  }
+
+  formatarTempoMedia(segundos: number): string {
+    if (segundos < 60) {
+      return `${Math.round(segundos)}s`;
+    }
+    const minutos = Math.floor(segundos / 60);
+    const segs = Math.round(segundos % 60);
+    return `${minutos}min ${segs}s`;
   }
 
   exportarPDF() {
@@ -130,14 +140,15 @@ export class RelatoriosComponent implements OnInit {
     // Tabela
     autoTable(doc, {
       startY: yPos + 14,
-      head: [['Data', 'Funcionário', 'Artigo', 'Código', 'Produção', 'Tempo']],
+      head: [['Data', 'Funcionário', 'Artigo', 'Código', 'Produção', 'Tempo Total', 'Tempo Médio/Peça']],
       body: this.relatorios.map(r => [
         new Date(r.data).toLocaleDateString('pt-BR'),
         r.funcionario,
         r.artigo,
         r.artigoCodigo,
         r.producao.toString(),
-        r.tempo
+        r.tempoReal,
+        r.tempoMedio
       ]),
       headStyles: {
         fillColor: [13, 110, 253],
@@ -149,12 +160,13 @@ export class RelatoriosComponent implements OnInit {
         cellPadding: 3
       },
       columnStyles: {
-        0: { cellWidth: 22 },
-        1: { cellWidth: 35 },
-        2: { cellWidth: 45 },
-        3: { cellWidth: 20 },
-        4: { cellWidth: 20, halign: 'center', fontStyle: 'bold', textColor: [13, 110, 253] },
-        5: { cellWidth: 25 }
+        0: { cellWidth: 20 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 18 },
+        4: { cellWidth: 18, halign: 'center', fontStyle: 'bold', textColor: [13, 110, 253] },
+        5: { cellWidth: 22 },
+        6: { cellWidth: 22 }
       }
     });
     

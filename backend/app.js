@@ -353,15 +353,30 @@ socket.on('solicitarArtigosAtualizados', async (data) => {
 
     let artigo = null;
     let artigoFinalizadoAgora = false;
+    const agora = new Date();
+    let tempoTotalArtigo = 0;
+
     if (dispositivo.artigo) {
       artigo = await Artigo.findById(dispositivo.artigo);
       if (artigo) {
         const statusAnterior = artigo.status;
+        
+        // Se artigo acabou de entrar em produção, registrar timestamp de início
+        if (statusAnterior !== 'em_producao' && !artigo.dataInicioProducao) {
+          artigo.dataInicioProducao = agora;
+        }
+        
         artigo.quantidadeAtual = (artigo.quantidadeAtual || 0) + incremento;
         if (artigo.quantidade && artigo.quantidadeAtual >= artigo.quantidade) {
           artigo.status = 'finalizado';
           if (statusAnterior !== 'finalizado') {
             artigoFinalizadoAgora = true;
+            artigo.dataFimProducao = agora;
+            
+            // Calcular tempo total em segundos (fim - início)
+            if (artigo.dataInicioProducao) {
+              tempoTotalArtigo = Math.floor((agora - artigo.dataInicioProducao) / 1000);
+            }
           }
         } else if (artigo.status !== 'em_producao') {
           artigo.status = 'em_producao';
@@ -376,7 +391,10 @@ socket.on('solicitarArtigosAtualizados', async (data) => {
       funcionario: dispositivo.funcionarioLogado,
       dispositivo: dispositivo._id,
       quantidade: incremento,
-      tempoProducao: data.tempoProducao || 0
+      tempoProducao: data.tempoProducao || 0,
+      dataInicioPeca: agora,
+      dataFimProducao: artigoFinalizadoAgora ? agora : null,
+      tempoTotalArtigo: artigoFinalizadoAgora ? tempoTotalArtigo : 0
     });
 
     await dispositivo.populate('funcionarioLogado');

@@ -101,6 +101,7 @@
               <th>Código</th>
               <th>Produção</th>
               <th>Tempo Total</th>
+              <th>Tempo Médio/Peça</th>
             </tr>
           </thead>
           <tbody>
@@ -127,7 +128,10 @@
                 <span class="producao-value">{{ r.producao }}</span>
               </td>
               <td>
-                <span class="tempo-badge">{{ r.tempo }}</span>
+                <span class="tempo-badge">{{ r.tempoReal }}</span>
+              </td>
+              <td>
+                <span class="tempo-media-badge">{{ r.tempoMedio }}</span>
               </td>
             </tr>
           </tbody>

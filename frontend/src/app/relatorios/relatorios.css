@@ -376,6 +376,17 @@
   border: 1px solid #dee2e6;
 }
 
+.tempo-media-badge {
+  display: inline-block;
+  background: #e7f3ff;
+  color: #0066cc;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  border: 1px solid #b3d9ff;
+}
+
 /* Estado Vazio */
 .empty-state {
   text-align: center;

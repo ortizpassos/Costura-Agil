@@ -71,7 +71,9 @@ router.get('/', autenticar, async (req, res) => {
           artigoCodigo: '$artigoData.codigo',
           artigoId: '$artigo',
           quantidade: 1,
-          tempoProducao: 1
+          tempoProducao: 1,
+          dataInicioProducao: '$artigoData.dataInicioProducao',
+          dataFimProducao: '$artigoData.dataFimProducao'
         }
       },
       {
@@ -85,7 +87,9 @@ router.get('/', autenticar, async (req, res) => {
             artigoCodigo: '$artigoCodigo'
           },
           totalProducao: { $sum: '$quantidade' },
-          totalTempo: { $sum: '$tempoProducao' }
+          totalTempo: { $sum: '$tempoProducao' },
+          dataInicio: { $min: '$dataInicioProducao' },
+          dataFim: { $max: '$dataFimProducao' }
         }
       },
       {
@@ -96,7 +100,34 @@ router.get('/', autenticar, async (req, res) => {
           artigo: '$_id.artigo',
           artigoCodigo: '$_id.artigoCodigo',
           totalProducao: 1,
-          totalTempo: 1
+          totalTempo: 1,
+          dataInicio: 1,
+          dataFim: 1,
+          tempoRealArtigo: {
+            $cond: [
+              { $and: ['$dataInicio', '$dataFim'] },
+              { $divide: [{ $subtract: ['$dataFim', '$dataInicio'] }, 1000] },
+              0
+            ]
+          },
+          tempoMedioPeca: {
+            $cond: [
+              { $gt: ['$totalProducao', 0] },
+              {
+                $divide: [
+                  {
+                    $cond: [
+                      { $and: ['$dataInicio', '$dataFim'] },
+                      { $divide: [{ $subtract: ['$dataFim', '$dataInicio'] }, 1000] },
+                      0
+                    ]
+                  },
+                  '$totalProducao'
+                ]
+              },
+              0
+            ]
+          }
         }
       },
       { $sort: { dia: -1, funcionario: 1, artigo: 1 } }
