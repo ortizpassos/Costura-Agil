@@ -1,0 +1,24 @@
+name: costura_agil
+version: 1.0.0+1
+description: Novo frontend Flutter para o Costura Ágil
+publish_to: 'none'
+
+environment:
+  sdk: '>=2.17.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0
+  provider: ^6.0.5
+  flutter_secure_storage: ^9.0.0
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/

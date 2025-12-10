@@ -47,6 +47,11 @@ export const routes: Routes = [
 		loadComponent: () => import('./display/display').then(m => m.DisplayComponent)
 	},
 	{
+		path: 'configuracoes',
+		canActivate: [authGuard],
+		loadChildren: () => import('./configuracoes/configuracoes-module').then(m => m.ConfiguracoesModule)
+	},
+	{
 		path: 'sobre',
 		loadComponent: () => import('./sobre/sobre').then(m => m.SobreComponent)
 	},

@@ -76,7 +76,7 @@
                   <td>{{ artigo.quantidadeAtual || 0 }} / {{ artigo.quantidade }}</td>
                   <td>
                     <div class="progress-wrapper">
-                      <div class="progress" style="height: 25px;">
+                      <div class="progress" style="height: 25px; position: relative;">
                         <div 
                           class="progress-bar" 
                           [ngClass]="getProgressBarClass(calcularPercentualArtigo(artigo))"
@@ -85,8 +85,8 @@
                           [attr.aria-valuenow]="calcularPercentualArtigo(artigo)" 
                           aria-valuemin="0" 
                           aria-valuemax="100">
-                          {{ calcularPercentualArtigo(artigo) }}%
                         </div>
+                        <div class="progress-text">{{ calcularPercentualArtigo(artigo) }}%</div>
                       </div>
                     </div>
                   </td>
