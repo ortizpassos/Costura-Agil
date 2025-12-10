@@ -3,12 +3,12 @@
 
 extern String currentScreen; // Variável global para rastrear tela atual
 
-lv_obj_t * scr_dashboard = nullptr;
-lv_obj_t * lbl_titulo = nullptr;
-lv_obj_t * lbl_func = nullptr;
-lv_obj_t * barra = nullptr;
-lv_obj_t * lbl_valor = nullptr;
-lv_obj_t * lbl_percent = nullptr;
+lv_obj_t * scr_dashboard    = nullptr;
+lv_obj_t * lbl_titulo       = nullptr;
+lv_obj_t * lbl_func         = nullptr;
+lv_obj_t * barra            = nullptr;
+lv_obj_t * lbl_valor        = nullptr;
+lv_obj_t * lbl_percent      = nullptr;
 
 void update_dashboard(const char* operacao, const char* funcionario, int meta, int qtd) {
     if (lbl_titulo) lv_label_set_text_fmt(lbl_titulo, "Artigo: %s", operacao);

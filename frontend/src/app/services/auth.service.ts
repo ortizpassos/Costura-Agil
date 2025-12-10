@@ -60,6 +60,14 @@ export class AuthService {
     return localStorage.getItem('token');
   }
 
+  getCurrentUser(): User | null {
+    return this.currentUserSubject.value;
+  }
+
+  getCurrentUserId(): string | null {
+    return this.currentUserSubject.value?.id ?? null;
+  }
+
   private setAuth(user: User, token: string) {
     this.currentUserSubject.next(user);
     this.tokenSubject.next(token);

@@ -13,7 +13,7 @@ export interface Artigo {
   quantidade: number;
   quantidadeAtual?: number;
    status?: string;
-  criadoPor?: string;
+  criadoPor?: string | { _id: string };
   criadoEm?: string;
 }
 

@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 
 export interface Dispositivo {
   _id?: string;
+  usuario?: string | { _id: string };
   deviceToken: string;
   nome: string;
   metaDiaria: number;

@@ -50,7 +50,7 @@ const artigoSchema = new mongoose.Schema({
   criadoPor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',
-    required: false
+    required: true
   },
   criadoEm: {
     type: Date,

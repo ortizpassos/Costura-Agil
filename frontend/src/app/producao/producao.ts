@@ -38,6 +38,7 @@ export class ProducaoComponent implements OnInit, OnDestroy {
   
   // Subscriptions para limpeza
   private subscriptions: Subscription[] = [];
+  private userId: string | null = null;
   
   // Filtros e ordenação
   filtroStatus: string = 'todos';
@@ -86,6 +87,7 @@ export class ProducaoComponent implements OnInit, OnDestroy {
       this.router.navigate(['/login']);
       return;
     }
+    this.userId = this.authService.getCurrentUserId();
     this.carregarDispositivos();
     this.configurarSocketListeners();
     this.carregarArtigos();
@@ -96,7 +98,15 @@ export class ProducaoComponent implements OnInit, OnDestroy {
   carregarArtigos() {
     this.artigosService.listarArtigos().subscribe({
       next: (arts: Artigo[]) => {
-        this.artigos = arts;
+        const userId = this.authService.getCurrentUserId();
+        this.artigos = userId
+          ? arts.filter(art => {
+              if (!art.criadoPor) return false;
+              if (typeof art.criadoPor === 'string') return art.criadoPor === userId;
+              // caso backend retorne objeto
+              return (art.criadoPor as any)._id === userId;
+            })
+          : [];
       },
       error: (err: any) => { console.error('Erro ao buscar artigos', err); this.artigos = []; }
     });
@@ -444,9 +454,37 @@ export class ProducaoComponent implements OnInit, OnDestroy {
     });
   }
 
+  private obterUsuarioDoDispositivo(dispositivo: any): string | null {
+    if (!dispositivo) return null;
+    if (typeof dispositivo.usuario === 'string') {
+      return dispositivo.usuario;
+    }
+    if (dispositivo.usuario && typeof dispositivo.usuario === 'object') {
+      const id = dispositivo.usuario._id || dispositivo.usuario.id;
+      if (typeof id === 'string') {
+        return id;
+      }
+      if (id?.toString) {
+        return id.toString();
+      }
+    }
+    return null;
+  }
+
+  private isDispositivoDoUsuario(dispositivo: any): boolean {
+    if (!this.userId) return false;
+    const ownerId = this.obterUsuarioDoDispositivo(dispositivo);
+    return ownerId === this.userId;
+  }
+
+  private deveProcessarDispositivo(dispositivo: any): boolean {
+    return !!dispositivo && this.isDispositivoDoUsuario(dispositivo);
+  }
+
   carregarDispositivos() {
     this.dispositivosService.listarDispositivos().subscribe((data: Dispositivo[]) => {
-      this.producao = data.map((d: Dispositivo) => ({
+      const dispositivosUsuario = data.filter(d => this.isDispositivoDoUsuario(d));
+      this.producao = dispositivosUsuario.map((d: Dispositivo) => ({
         ...d,
         funcionario: d.funcionarioLogado?.nome || '-',
         progresso: d.producaoAtual || 0,
@@ -461,6 +499,7 @@ export class ProducaoComponent implements OnInit, OnDestroy {
   configurarSocketListeners() {
     const deviceStatusSub = this.socketService.onDeviceStatusUpdate().subscribe((updated: any) => {
       if (!updated || !updated._id) return;
+      if (!this.deveProcessarDispositivo(updated)) return;
       const idx = this.producao.findIndex(p => p._id === updated._id);
       if (idx !== -1) {
         this.producao[idx] = {
@@ -477,6 +516,7 @@ export class ProducaoComponent implements OnInit, OnDestroy {
     
     const productionUpdateSub = this.socketService.onProductionUpdate?.().subscribe?.((payload: any) => {
       if (!payload?.dispositivo?._id) return;
+      if (!this.deveProcessarDispositivo(payload.dispositivo)) return;
       
       // Atualizar dispositivo
       const idx = this.producao.findIndex(p => p._id === payload.dispositivo._id);

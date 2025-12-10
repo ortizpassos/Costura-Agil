@@ -42,8 +42,8 @@ const unsigned long updateCheckInterval = 10000; // 10 segundos
 String currentScreen = ""; // Rastreia tela atual
 
 // ---- Config servidor ----
-const char* host = "monitor-ellas-backend.onrender.com";   // Host do backend (produção)
-const uint16_t port = 443;             // HTTPS/WSS
+const char* host = "192.168.100.4";   // Host do backend (produção)
+const uint16_t port = 3001;             // HTTPS/WSS
 const bool useSSL = true;              // TLS habilitado para servidor online
 const char* socketPath = "/socket.io/?EIO=4";
 
@@ -224,7 +224,7 @@ void processJsonMessage(const String& msg) {
       Serial.printf("Artigos disponíveis: %d\n", artigos.size());
 
       if (artigos.size() == 0) {
-        show_operacao_message("Nenhum artigo disponível");
+        show_operacao_message("Nenhum artigo disponivel");
       }
 
       for (size_t i = 0; i < artigos.size(); i++) {

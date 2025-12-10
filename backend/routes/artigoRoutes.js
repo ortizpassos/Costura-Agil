@@ -15,7 +15,7 @@ function setSocketIO(socketIO) {
 // GET /api/artigos - lista todos os artigos
 router.get('/', autenticar, async (req, res) => {
   try {
-    const artigos = await Artigo.find().sort({ dataInclusao: -1 });
+    const artigos = await Artigo.find({ criadoPor: req.usuario.id }).sort({ dataInclusao: -1 });
     res.json(artigos);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -80,8 +80,7 @@ router.post('/', autenticar, async (req, res) => {
 // PUT /api/artigos/:id - atualiza um artigo existente
 router.put('/:id', autenticar, async (req, res) => {
   try {
-    // Buscar artigo atual antes da atualização para verificar mudança de status
-    const artigoAnterior = await Artigo.findById(req.params.id);
+    const artigoAnterior = await Artigo.findOne({ _id: req.params.id, criadoPor: req.usuario.id });
     
     if (!artigoAnterior) {
       return res.status(404).json({ message: 'Artigo não encontrado' });
@@ -90,8 +89,8 @@ router.put('/:id', autenticar, async (req, res) => {
     const statusAnterior = artigoAnterior.status;
     const novoStatus = req.body.status || statusAnterior;
     
-    const artigoAtualizado = await Artigo.findByIdAndUpdate(
-      req.params.id,
+    const artigoAtualizado = await Artigo.findOneAndUpdate(
+      { _id: req.params.id, criadoPor: req.usuario.id },
       {
         $set: {
           codigo: req.body.codigo,
@@ -150,7 +149,7 @@ router.put('/:id', autenticar, async (req, res) => {
 // DELETE /api/artigos/:id - remove um artigo
 router.delete('/:id', autenticar, async (req, res) => {
   try {
-    const artigo = await Artigo.findByIdAndDelete(req.params.id);
+    const artigo = await Artigo.findOneAndDelete({ _id: req.params.id, criadoPor: req.usuario.id });
     if (!artigo) {
       return res.status(404).json({ message: 'Artigo não encontrado' });
     }

@@ -5,7 +5,7 @@ const { autenticar } = require('./authRoutes');
 
 router.get('/', autenticar, async (req, res) => {
   try {
-    const clientes = await Cliente.find().sort({ nome: 1 });
+    const clientes = await Cliente.find({ criadoPor: req.usuario.id }).sort({ nome: 1 });
     res.json(clientes);
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -12,7 +12,8 @@ const clienteSchema = new mongoose.Schema({
   },
   criadoPor: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Usuario'
+    ref: 'Usuario',
+    required: true
   }
 }, {
   timestamps: true

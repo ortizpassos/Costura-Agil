@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DispositivosService } from '../services/dispositivos';
 import { SocketService } from '../services/socket.service';
+import { AuthService } from '../services/auth.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -14,6 +15,7 @@ import { Subscription } from 'rxjs';
 export class DisplayComponent implements OnInit, OnDestroy {
   splashParabens: { nome: string } | null = null;
   private splashMostradoFuncionarios = new Set<string>();
+  private userId: string | null = null;
   // Retorna o total geral produzido por artigo vindo do backend
   getProducaoTotalArtigo(artigoId?: string | null): number {
     if (!artigoId) return 0;
@@ -50,10 +52,12 @@ export class DisplayComponent implements OnInit, OnDestroy {
 
   constructor(
     private dispositivosService: DispositivosService,
-    private socketService: SocketService
+    private socketService: SocketService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
+    this.userId = this.authService.getCurrentUserId();
     // Adicionar classe ao body para ocultar sidebar
     document.body.classList.add('display-page');
     
@@ -95,7 +99,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
       next: (dados: any) => {
         // Exibir apenas dispositivos em produção com artigo selecionado
         const dispositivosConectados = dados.filter((d: any) => 
-          d.status === 'em_producao' && d.artigo && d.funcionarioLogado
+          d.status === 'em_producao' && d.artigo && d.funcionarioLogado && this.isDispositivoDoUsuario(d)
         );
 
         this.dispositivos = dispositivosConectados.map((d: any) => ({
@@ -125,6 +129,9 @@ export class DisplayComponent implements OnInit, OnDestroy {
     // Escutar atualizações de produção
     const prodSub = this.socketService.onProductionUpdate().subscribe(data => {
       console.log('Atualização de produção recebida:', data);
+      if (!this.deveProcessarDispositivo(data?.dispositivo)) {
+        return;
+      }
       // Apenas processar se o dispositivo está em produção com artigo
       if (data.dispositivo.status === 'em_producao' && data.dispositivo.artigo) {
         const index = this.dispositivos.findIndex(d => d._id === data.dispositivo._id);
@@ -194,6 +201,9 @@ export class DisplayComponent implements OnInit, OnDestroy {
     // Escutar atualizações de status
     const statusSub = this.socketService.onDeviceStatusUpdate().subscribe(data => {
       console.log('Atualização de status recebida:', data);
+      if (!this.deveProcessarDispositivo(data)) {
+        return;
+      }
       
       if (data.status === 'em_producao' && data.artigo && data.funcionarioLogado) {
         // Dispositivo entrou ou está em produção
@@ -314,6 +324,33 @@ export class DisplayComponent implements OnInit, OnDestroy {
   calcularPorcentagem(producaoAtual: number, meta: number): number {
     if (!meta || meta === 0) return 0;
     return Math.min(Math.round((producaoAtual / meta) * 100), 100);
+  }
+
+  private obterUsuarioDoDispositivo(dispositivo: any): string | null {
+    if (!dispositivo) return null;
+    if (typeof dispositivo.usuario === 'string') {
+      return dispositivo.usuario;
+    }
+    if (dispositivo.usuario && typeof dispositivo.usuario === 'object') {
+      const id = dispositivo.usuario._id || dispositivo.usuario.id;
+      if (typeof id === 'string') {
+        return id;
+      }
+      if (id?.toString) {
+        return id.toString();
+      }
+    }
+    return null;
+  }
+
+  private isDispositivoDoUsuario(dispositivo: any): boolean {
+    if (!this.userId) return false;
+    const ownerId = this.obterUsuarioDoDispositivo(dispositivo);
+    return ownerId === this.userId;
+  }
+
+  private deveProcessarDispositivo(dispositivo: any): boolean {
+    return !!dispositivo && this.isDispositivoDoUsuario(dispositivo);
   }
 
   getCorBarra(porcentagem: number): string {
