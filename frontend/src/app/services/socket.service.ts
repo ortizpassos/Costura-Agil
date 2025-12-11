@@ -1,16 +1,16 @@
 import { Injectable } from '@angular/core';
-import * as ioClient from 'socket.io-client';
+import { io } from 'socket.io-client';
 import { Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class SocketService {
-  private socket: SocketIOClient.Socket;
+  private socket: any;
 
   constructor() {
     const socketUrl = window.location.hostname === 'localhost'
       ? 'http://localhost:3001'
       : 'https://monitor-ellas-backend.onrender.com';
-    this.socket = ioClient.connect(socketUrl);
+    this.socket = io(socketUrl);
   }
 
   onDeviceStatusUpdate(): Observable<any> {
