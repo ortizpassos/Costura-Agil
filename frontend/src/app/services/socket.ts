@@ -1,6 +1,6 @@
 
 import { Injectable } from '@angular/core';
-import * as io from 'socket.io-client';
+import { io } from 'socket.io-client';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -13,7 +13,7 @@ export class SocketService {
     : 'https://monitor-ellas-backend.onrender.com';
 
   constructor() {
-  this.socket = io.default(this.apiUrl);
+    this.socket = io(this.apiUrl);
   }
 
   onDeviceStatusUpdate(): Observable<any> {
