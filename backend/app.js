@@ -45,12 +45,7 @@ app.use('/api/operacoes', operacaoRoutes);
 
 // Socket.IO setup
 const http = require('http').createServer(app);
-const { Server } = require('socket.io');
-const io = new Server(http, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  },
+const io = require('socket.io')(http, {
   pingTimeout: 60000, // Tempo que o servidor espera por um pong antes de desconectar
   pingInterval: 25000 // Frequência com que o servidor envia pings
 });
@@ -59,7 +54,6 @@ const io = new Server(http, {
 setArtigoSocketIO(io);
 
 io.on('connection', (socket) => {
-  console.log('Cliente conectado:', socket.id);
   const buildDeviceStatusPayload = async (dispositivo) => {
     if (!dispositivo) return null;
     if (typeof dispositivo.populate === 'function') {
