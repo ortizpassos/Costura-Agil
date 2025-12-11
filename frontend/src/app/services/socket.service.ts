@@ -11,6 +11,12 @@ export class SocketService {
       ? 'http://localhost:3001'
       : 'https://monitor-ellas-backend.onrender.com';
     this.socket = io(socketUrl);
+    this.socket.on('connect', () => {
+      console.log('Conectado ao Socket.IO:', this.socket.id);
+    });
+    this.socket.on('disconnect', () => {
+      console.log('Desconectado do Socket.IO');
+    });
   }
 
   onDeviceStatusUpdate(): Observable<any> {
