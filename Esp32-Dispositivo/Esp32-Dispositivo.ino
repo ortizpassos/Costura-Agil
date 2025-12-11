@@ -27,6 +27,7 @@ bool wifi_connected = false;
 bool token_registrado = false;
 bool login_ok = false;
 bool artigo_selecionado = false;
+bool hasPendingSync = false; // Flag para indicar se há dados pendentes para sincronizar
 
 // Controle de tentativas de registro
 unsigned long lastCheckTime = 0;
@@ -54,18 +55,13 @@ SocketIOclient socketIO;
 bool wsConnected = false;
 Preferences prefs;
 
-// ---- Declarações ----
-void socketIOEvent(socketIOmessageType_t type, uint8_t * payload, size_t length);
-void processJsonMessage(const String& msg);
-void solicitarSenhaFuncionario();
-void registerDevice();
-void loginFuncionario(const char* senha);
-void sendProductionData();
-void enviarSelecaoArtigo(const char* id);
-void sendKeepAlive();
-void solicitarArtigosAtualizados();
-void update_operacao_quantities(const char* artigoId, int quantidadeAtual, int meta);
-void logoutFuncionario();
+// ---- Estado de negócio ----
+String funcionarioSenha = "";
+String funcionarioNome = "";
+String artigoId = "";
+String artigoNome = "";
+int metaArtigo = 0;
+int quantidade = 0;
 
 // Função callback para ser chamada após conexão WiFi
 void on_wifi_connected() {
@@ -75,7 +71,19 @@ void on_wifi_connected() {
     Serial.println(WiFi.localIP());
 
     wifi_connected = true;
-    go_token();
+    
+    // Se já estava logado, ir para a tela apropriada
+    if (login_ok) {
+      if (artigo_selecionado) {
+        go_dashboard();
+        update_dashboard(artigoNome.c_str(), funcionarioNome.c_str(), metaArtigo, quantidade);
+      } else {
+        go_operacao();
+      }
+    } else {
+      go_token();
+    }
+    
     if (useSSL) {
       socketIO.beginSSL(host, port, socketPath);
       Serial.println("[IO] Iniciando conexão segura (wss)");
@@ -108,13 +116,96 @@ void on_artigo_selecionado() {
     // go_dashboard();
 }
 
-// ---- Estado de negócio ----
-String funcionarioSenha = "";
-String funcionarioNome = "";
-String artigoId = "";
-String artigoNome = "";
-int metaArtigo = 0;
-int quantidade = 0;
+void loadPersistedState() {
+  prefs.begin("prod", false);
+  login_ok = prefs.getBool("login_ok", false);
+  artigo_selecionado = prefs.getBool("artigo_selecionado", false);
+  funcionarioSenha = prefs.getString("funcionarioSenha", "");
+  funcionarioNome = prefs.getString("funcionarioNome", "");
+  artigoId = prefs.getString("operacaoId", "");
+  artigoNome = prefs.getString("operacaoNome", "");
+  metaArtigo = prefs.getInt("metaDiaria", 0);
+  quantidade = prefs.getInt("quantidade", 0);
+  prefs.end();
+  
+  Serial.printf("📂 Estado carregado: login_ok=%d, artigo_sel=%d, senha='%s', nome='%s'\n", login_ok, artigo_selecionado, funcionarioSenha.c_str(), funcionarioNome.c_str());
+}
+
+void saveLoginState() {
+  prefs.begin("prod", false);
+  prefs.putBool("login_ok", login_ok);
+  prefs.putString("funcionarioSenha", funcionarioSenha);
+  prefs.putString("funcionarioNome", funcionarioNome);
+  prefs.end();
+}
+
+void saveArtigoState() {
+  prefs.begin("prod", false);
+  prefs.putBool("artigo_selecionado", artigo_selecionado);
+  prefs.putString("operacaoId", artigoId);
+  prefs.putString("operacaoNome", artigoNome);
+  prefs.putInt("metaDiaria", metaArtigo);
+  prefs.putInt("quantidade", quantidade);
+  prefs.end();
+}
+
+void saveArtigos(String json) {
+  prefs.begin("prod", false);
+  prefs.putString("artigos", json);
+  prefs.end();
+}
+
+String loadArtigos() {
+  prefs.begin("prod", false);
+  String json = prefs.getString("artigos", "");
+  prefs.end();
+  return json;
+}
+
+void loadSavedArtigos() {
+  String artigosJson = loadArtigos();
+  if (artigosJson == "") {
+    show_operacao_message("Nenhum artigo salvo");
+    return;
+  }
+  
+  DynamicJsonDocument doc(4096);
+  DeserializationError err = deserializeJson(doc, artigosJson);
+  if (err) {
+    Serial.printf("[JSON] Erro ao carregar artigos salvos: %s\n", err.c_str());
+    show_operacao_message("Erro ao carregar artigos");
+    return;
+  }
+  
+  JsonArray artigos = doc.as<JsonArray>();
+  Serial.printf("Carregando %d artigos salvos\n", artigos.size());
+  
+  for (size_t i = 0; i < artigos.size(); i++) {
+    const char* artId = artigos[i]["_id"];
+    const char* artNome = artigos[i]["nome"];
+    int artMeta = artigos[i]["quantidade"];
+    
+    add_operacao_to_list(artId, artNome, artMeta);
+  }
+}
+
+void syncPendingProduction() {
+  if (!wsConnected || !hasPendingSync || artigoId == "") return;
+  
+  // Enviar a produção atual pendente
+  DynamicJsonDocument doc(1024);
+  JsonArray array = doc.to<JsonArray>();
+  array.add("producao");
+  JsonObject param = array.createNestedObject();
+  param["deviceToken"] = deviceToken;
+  param["quantidade"] = quantidade;
+  param["tempoProducao"] = 0; // Tempo zero para sync
+  
+  String json; serializeJson(doc, json);
+  socketIO.sendEVENT(json);
+  Serial.printf("🔄 Sincronização pendente enviada: %d peças (%s)\n", quantidade, artigoNome.c_str());
+  hasPendingSync = false;
+}
 
 // ---- Controle de conexão ----
 // static bool wsConnected = false; // Removido redefinição
@@ -132,6 +223,10 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t * payload, size_t length)
       // socketIO.send(sIOtype_CONNECT, "/"); 
       wsConnected = true;
       registerDevice();
+      if (login_ok && funcionarioSenha != "") {
+        loginFuncionario(funcionarioSenha.c_str()); // Re-logar se estava logado
+      }
+      syncPendingProduction(); // Sincronizar dados pendentes após conectar
       break;
     case sIOtype_EVENT: {
       String msg = String((char*)payload);
@@ -215,32 +310,45 @@ void processJsonMessage(const String& msg) {
     funcionarioNome = nome;
     Serial.printf("[loginSuccess] 👤 %s logado!\n", nome.c_str());
     
-    // Sempre ir para a tela de seleção de artigo
-    go_operacao();
-    clear_operacao_list();
+    login_ok = true;
+    saveLoginState();
     
-    if (doc["data"].containsKey("artigos") && doc["data"]["artigos"].is<JsonArray>()) {
-      JsonArray artigos = doc["data"]["artigos"].as<JsonArray>();
-      Serial.printf("Artigos disponíveis: %d\n", artigos.size());
-
-      if (artigos.size() == 0) {
-        show_operacao_message("Nenhum artigo disponivel");
-      }
-
-      for (size_t i = 0; i < artigos.size(); i++) {
-        const char* artId = artigos[i]["_id"].as<const char*>();
-        const char* artNome = artigos[i]["nome"].as<const char*>();
-        int artMeta = artigos[i]["quantidade"].as<int>();
-        
-        Serial.printf("[%d] %s (meta: %d)\n", (int)(i+1), artNome, artMeta);
-        add_operacao_to_list(artId, artNome, artMeta);
-      }
+    // Verificar se já há artigo selecionado (reconnect)
+    if (artigo_selecionado) {
+      go_dashboard();
     } else {
-      Serial.println("⚠️ Erro: Campo 'artigos' não encontrado ou inválido no JSON!");
-      String jsonStr;
-      serializeJson(doc, jsonStr);
-      Serial.println("JSON recebido: " + jsonStr);
-      show_operacao_message("Falha ao carregar artigos");
+      // Sempre ir para a tela de seleção de artigo
+      go_operacao();
+      clear_operacao_list();
+      
+      if (doc["data"].containsKey("artigos") && doc["data"]["artigos"].is<JsonArray>()) {
+        JsonArray artigos = doc["data"]["artigos"].as<JsonArray>();
+        Serial.printf("Artigos disponíveis: %d\n", artigos.size());
+
+        if (artigos.size() == 0) {
+          show_operacao_message("Nenhum artigo disponivel");
+        }
+
+        for (size_t i = 0; i < artigos.size(); i++) {
+          const char* artId = artigos[i]["_id"].as<const char*>();
+          const char* artNome = artigos[i]["nome"].as<const char*>();
+          int artMeta = artigos[i]["quantidade"].as<int>();
+          
+          Serial.printf("[%d] %s (meta: %d)\n", (int)(i+1), artNome, artMeta);
+          add_operacao_to_list(artId, artNome, artMeta);
+        }
+        
+        // Salvar artigos localmente para uso offline
+        String artigosJson;
+        serializeJson(artigos, artigosJson);
+        saveArtigos(artigosJson);
+      } else {
+        Serial.println("⚠️ Erro: Campo 'artigos' não encontrado ou inválido no JSON!");
+        String jsonStr;
+        serializeJson(doc, jsonStr);
+        Serial.printf("JSON recebido: %s\n", jsonStr.c_str());
+        show_operacao_message("Erro ao carregar artigos");
+      }
     }
   } else if (type == "artigoSelecionado") {
     String token = doc["data"]["deviceToken"] | "";
@@ -260,12 +368,9 @@ void processJsonMessage(const String& msg) {
       quantidade = 0;
     }
     Serial.printf("✅ Artigo carregado: %s (meta: %d, produção atual: %d)\n", artigoNome.c_str(), metaArtigo, quantidade);
-    prefs.begin("prod", false);
-    prefs.putString("operacaoId", artigoId);
-    prefs.putString("operacaoNome", artigoNome);
-    prefs.putInt("metaDiaria", metaArtigo);
-    prefs.putInt("quantidade", quantidade);
-    prefs.end();
+    
+    artigo_selecionado = true;
+    saveArtigoState();
     
     go_dashboard();
     update_dashboard(artigoNome.c_str(), funcionarioNome.c_str(), metaArtigo, quantidade);
@@ -311,6 +416,11 @@ void processJsonMessage(const String& msg) {
         Serial.printf("[%d] %s (meta: %d)\n", (int)(i+1), artNome, artMeta);
         add_operacao_to_list(artId, artNome, artMeta);
       }
+      
+      // Salvar artigos atualizados localmente
+      String artigosJson;
+      serializeJson(artigos, artigosJson);
+      saveArtigos(artigosJson);
     } else {
       Serial.println("⚠️ Erro: Campo 'artigos' não encontrado em artigosAtualizados!");
     }
@@ -413,19 +523,25 @@ void sendProductionData() {
   prefs.putInt("quantidade", quantidade);
   prefs.end();
   
-  DynamicJsonDocument doc(1024);
-  JsonArray array = doc.to<JsonArray>();
-  array.add("producao");
-  JsonObject param = array.createNestedObject();
-  param["deviceToken"] = deviceToken;
-  param["quantidade"] = quantidade;
-  param["tempoProducao"] = tempoProducao;
-  
-  String json; serializeJson(doc, json);
-  socketIO.sendEVENT(json);
-  Serial.printf("📤 Produção enviada: %d peças em %d ms (%s)\n", quantidade, tempoProducao, artigoNome.c_str());
-  
   update_dashboard(artigoNome.c_str(), funcionarioNome.c_str(), metaArtigo, quantidade);
+  
+  if (wsConnected) {
+    DynamicJsonDocument doc(1024);
+    JsonArray array = doc.to<JsonArray>();
+    array.add("producao");
+    JsonObject param = array.createNestedObject();
+    param["deviceToken"] = deviceToken;
+    param["quantidade"] = quantidade;
+    param["tempoProducao"] = tempoProducao;
+    
+    String json; serializeJson(doc, json);
+    socketIO.sendEVENT(json);
+    Serial.printf("📤 Produção enviada: %d peças em %d ms (%s)\n", quantidade, tempoProducao, artigoNome.c_str());
+    hasPendingSync = false;
+  } else {
+    Serial.printf("📱 Produção registrada localmente (offline): %d peças (%s)\n", quantidade, artigoNome.c_str());
+    hasPendingSync = true;
+  }
   
   // Verificar se atingiu a meta após incrementar
   if (quantidade >= metaArtigo) {
@@ -535,6 +651,9 @@ void setup() {
   Serial.begin(115200);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   LVGL_CYD::begin(SCREEN_ORIENTATION);
+
+  // Carregar estado persistido
+  loadPersistedState();
 
   // Botão "EXIT" que fica na camada superior
   btn_exit = lv_obj_create(lv_layer_top());

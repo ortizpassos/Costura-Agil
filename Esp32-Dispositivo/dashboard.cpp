@@ -11,8 +11,8 @@ lv_obj_t * lbl_valor        = nullptr;
 lv_obj_t * lbl_percent      = nullptr;
 
 void update_dashboard(const char* operacao, const char* funcionario, int meta, int qtd) {
-    if (lbl_titulo) lv_label_set_text_fmt(lbl_titulo, "Artigo: %s", operacao);
-    if (lbl_func) lv_label_set_text_fmt(lbl_func, "Funcionario: %s", funcionario);
+    if (lbl_titulo) lv_label_set_text_fmt(lbl_titulo, "ATIGO: %s", operacao);
+    if (lbl_func) lv_label_set_text_fmt(lbl_func, "NOME: %s", funcionario);
     
     if (barra) {
         lv_bar_set_range(barra, 0, meta);
@@ -53,11 +53,15 @@ void go_dashboard() {
         lbl_titulo = lv_label_create(card);
         lv_obj_set_style_text_font(lbl_titulo, &lv_font_montserrat_20, 0);
         lv_label_set_text(lbl_titulo, "Carregando...");
+        lv_obj_set_width(lbl_titulo, 280);
+        lv_label_set_long_mode(lbl_titulo, LV_LABEL_LONG_SCROLL_CIRCULAR);
 
         // SUBTÍTULO
         lbl_func = lv_label_create(card);
         lv_obj_set_style_text_font(lbl_func, &lv_font_montserrat_16, 0);
         lv_label_set_text(lbl_func, "Funcionario: ...");
+        lv_obj_set_width(lbl_func, 280);
+        lv_label_set_long_mode(lbl_func, LV_LABEL_LONG_SCROLL_CIRCULAR);
 
         // BARRA DE PROGRESSO
         barra = lv_bar_create(card);

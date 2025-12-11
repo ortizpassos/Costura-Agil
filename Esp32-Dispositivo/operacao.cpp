@@ -6,6 +6,8 @@
 
 extern void enviarSelecaoArtigo(const char* id);
 extern String currentScreen; // Variável global para rastrear tela atual
+extern bool wsConnected;
+extern void loadSavedArtigos();
 
 
 lv_obj_t * scr_operacao = nullptr;
@@ -48,6 +50,11 @@ void go_operacao() {
     }
     lv_scr_load(scr_operacao);   
     lv_obj_add_flag(btn_exit, LV_OBJ_FLAG_HIDDEN);
+    
+    // Se a lista estiver vazia e offline, carregar artigos salvos
+    if (lv_obj_get_child_cnt(list_ops) == 0 && !wsConnected) {
+        loadSavedArtigos();
+    }
 }
 
 
