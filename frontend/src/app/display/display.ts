@@ -174,7 +174,7 @@ export class DisplayComponent implements OnInit, OnDestroy {
 
         // Lógica do splash de parabéns (apenas uma vez por funcionário)
         const producaoAtual = data.dispositivo.producaoAtual || 0;
-        const meta = data.dispositivo.artigo?.quantidade || data.dispositivo.operacao?.metaDiaria || 0;
+        const meta = data.dispositivo.artigo?.quantidade || data.dispositivo.operacao?.pecasPorHora || 0;
         const porcentagem = meta ? Math.round((producaoAtual / meta) * 100) : 0;
         const funcionarioNome = data.dispositivo.funcionarioLogado?.nome;
         if (

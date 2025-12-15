@@ -12,7 +12,7 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './dispositivos-form.css'
 })
 export class DispositivosForm {
-  novoDispositivo: Dispositivo = { deviceToken: '', nome: '', metaDiaria: 0, operacao: '', setor: '' };
+  novoDispositivo: Dispositivo = { deviceToken: '', nome: '', metaDiaria: 0, operacao: '' };
   sucesso = false;
   erro = '';
 
@@ -23,7 +23,7 @@ export class DispositivosForm {
       next: () => {
         this.sucesso = true;
         this.erro = '';
-        this.novoDispositivo = { deviceToken: '', nome: '', metaDiaria: 0, operacao: '', setor: '' };
+        this.novoDispositivo = { deviceToken: '', nome: '', metaDiaria: 0, operacao: '' };
       },
       error: (err) => {
         this.sucesso = false;

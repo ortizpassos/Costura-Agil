@@ -1,14 +1,16 @@
 export interface User {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
+  nome?: string;
   phone?: string;
   document?: string;
   createdAt: Date;
   updatedAt: Date;
   isEmailVerified: boolean;
   isActive: boolean;
+  role?: string;
 }
 
 export interface UserRegistration {

@@ -13,7 +13,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Subscription } from 'rxjs';
 
-type ProducaoItem = Dispositivo & { progresso: number; funcionario: string; grupo: string; meta: number; };
+type ProducaoItem = Dispositivo & { progresso: number; funcionario: string; meta: number; };
 type ArtigoForm = {
   codigo: string;
   nome: string;
@@ -65,7 +65,7 @@ export class ProducaoComponent implements OnInit, OnDestroy {
   modalOperacaoAberto: boolean = false;
   modalClienteAberto: boolean = false;
   operacaoEditando: Operacao | null = null;
-  novaOperacao: any = { nome: '', metaDiaria: '', setor: '', descricao: '' };
+  novaOperacao: any = { nome: '', pecasPorHora: '', descricao: '' };
   novoCliente: any = { nome: '', contato: '' };
 
   get producaoEmProducao(): ProducaoItem[] {
@@ -399,7 +399,7 @@ export class ProducaoComponent implements OnInit, OnDestroy {
   }
 
   abrirModalOperacao() {
-    this.novaOperacao = { nome: '', metaDiaria: '', setor: '', descricao: '' };
+    this.novaOperacao = { nome: '', pecasPorHora: '', descricao: '' };
     this.operacaoEditando = null;
     this.modalOperacaoAberto = true;
   }
@@ -411,15 +411,14 @@ export class ProducaoComponent implements OnInit, OnDestroy {
   cadastrarOperacao() {
     const op = {
       nome: this.novaOperacao.nome,
-      metaDiaria: Number(this.novaOperacao.metaDiaria),
-      setor: this.novaOperacao.setor,
+      pecasPorHora: Number(this.novaOperacao.pecasPorHora),
       descricao: this.novaOperacao.descricao
     };
     this.operacoesService.cadastrarOperacao(op).subscribe({
       next: () => {
         this.fecharModalOperacao();
         this.carregarOperacoes();
-        this.novaOperacao = { nome: '', metaDiaria: '', setor: '', descricao: '' };
+        this.novaOperacao = { nome: '', pecasPorHora: '', descricao: '' };
       },
       error: (err: any) => {
         alert('Erro ao cadastrar operação!');
@@ -488,7 +487,6 @@ export class ProducaoComponent implements OnInit, OnDestroy {
         ...d,
         funcionario: d.funcionarioLogado?.nome || '-',
         progresso: d.producaoAtual || 0,
-        grupo: d.setor || '-',
         meta: d.metaDiaria || 0,
       }));
       this.calcularEstatisticas();
@@ -577,8 +575,7 @@ export class ProducaoComponent implements OnInit, OnDestroy {
       const buscaLower = this.busca.toLowerCase();
       resultado = resultado.filter(item => 
         item.nome?.toLowerCase().includes(buscaLower) ||
-        item.funcionario?.toLowerCase().includes(buscaLower) ||
-        item.grupo?.toLowerCase().includes(buscaLower)
+        item.funcionario?.toLowerCase().includes(buscaLower)
       );
     }
     

@@ -5,8 +5,7 @@ import { Observable } from 'rxjs';
 export interface Operacao {
   _id?: string;
   nome: string;
-  metaDiaria: number;
-  setor: string;
+  pecasPorHora: number;
   descricao?: string;
   ativo?: boolean;
 }

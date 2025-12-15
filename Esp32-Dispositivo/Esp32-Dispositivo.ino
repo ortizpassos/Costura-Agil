@@ -16,7 +16,7 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 
-#define SCREEN_ORIENTATION USB_RIGHT
+#define SCREEN_ORIENTATION USB_LEFT
 
 // ---- Pino do botão ----
 #define BUTTON_PIN 0 // GPIO0
@@ -62,6 +62,9 @@ String artigoId = "";
 String artigoNome = "";
 int metaArtigo = 0;
 int quantidade = 0;
+
+// Controle do sensor para incrementação
+bool sensorLow = false; // Flag para indicar se o sensor estava em nível baixo
 
 // Função callback para ser chamada após conexão WiFi
 void on_wifi_connected() {
@@ -128,7 +131,12 @@ void loadPersistedState() {
   quantidade = prefs.getInt("quantidade", 0);
   prefs.end();
   
-  Serial.printf("📂 Estado carregado: login_ok=%d, artigo_sel=%d, senha='%s', nome='%s'\n", login_ok, artigo_selecionado, funcionarioSenha.c_str(), funcionarioNome.c_str());
+  // Carregar estado do sensor
+  prefs.begin("sensor", false);
+  sensorLow = prefs.getBool("sensorLow", false);
+  prefs.end();
+  
+  Serial.printf("📂 Estado carregado: login_ok=%d, artigo_sel=%d, senha='%s', nome='%s', sensorLow=%d\n", login_ok, artigo_selecionado, funcionarioSenha.c_str(), funcionarioNome.c_str(), sensorLow);
 }
 
 void saveLoginState() {
@@ -430,6 +438,29 @@ void processJsonMessage(const String& msg) {
     // Exibir erro na tela de login
     extern void show_login_error(const char* msg);
     show_login_error(message.c_str());
+  } else if (type == "sensorData") {
+    String token = doc["data"]["deviceToken"] | "";
+    if (token != String(deviceToken)) return;
+
+    int nivel = doc["data"]["nivel"] | -1;
+    Serial.printf("[sensorData] Nível recebido: %d\n", nivel);
+
+    if (nivel == 0) {
+      // Sensor em nível baixo (peça detectada)
+      sensorLow = true;
+      prefs.begin("sensor", false);
+      prefs.putBool("sensorLow", sensorLow);
+      prefs.end();
+      Serial.println("🔴 Sensor em nível baixo");
+    } else if (nivel == 1 && sensorLow) {
+      // Sensor voltou ao nível alto após estar baixo - incrementar produção
+      sensorLow = false;
+      prefs.begin("sensor", false);
+      prefs.putBool("sensorLow", sensorLow);
+      prefs.end();
+      Serial.println("🟢 Sensor voltou ao nível alto - incrementando produção");
+      sendProductionData();
+    }
   }
 }
 
@@ -730,6 +761,7 @@ void loop() {
   // Leitura do botão com debounce simples
   static int lastButtonState = HIGH;
   static unsigned long lastDebounceTime = 0;
+  static int previousButtonState = HIGH; // Estado anterior do botão
   int reading = digitalRead(BUTTON_PIN);
 
   if (reading != lastButtonState) {
@@ -742,8 +774,11 @@ void loop() {
       buttonState = reading;
       if (buttonState == LOW) {
         Serial.println("� Botão pressionado!");
+      } else if (buttonState == HIGH && previousButtonState == LOW) {
+        Serial.println("� Botão solto!");
         sendProductionData();
       }
+      previousButtonState = buttonState;
     }
   }
   lastButtonState = reading;
