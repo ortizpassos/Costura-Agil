@@ -1,0 +1,92 @@
+<!-- Botões de ação -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex gap-3 flex-wrap">
+            <button class="btn btn-info btn-custom" routerLink="/dashboard/expenses/new" tabindex="7">
+                <i class="bi bi-plus-circle"></i> Inserir Despesa
+            </button>
+            <button class="btn btn-secondary btn-custom" routerLink="/dashboard/expenses/categories" tabindex="8">
+                <i class="bi bi-tags"></i> Categoria de Despesas
+            </button>
+            <button class="btn btn-success btn-custom" routerLink="/dashboard/expenses/suppliers" tabindex="9">
+                <i class="bi bi-person-plus"></i> Cadastrar Fornecedor
+            </button>
+            <button class="btn btn-warning btn-custom" routerLink="/dashboard/expenses/payment-methods" tabindex="10">
+                <i class="bi bi-credit-card"></i> Formas de Pagamento
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros de pesquisa -->
+<div class="card-custom mb-4">
+    <h5 class="mb-3">Pesquisar:</h5>
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Descrição</label>
+            <input id="filtro-descricao" type="text" class="form-control form-control-custom" placeholder="Luz / Aluguel / Água" tabindex="11">
+        </div>
+        <div class="col-md-2 mb-3">
+            <label class="form-label">Status</label>
+            <select id="filtro-status" class="form-control form-control-custom" tabindex="12">
+                <option value="">Todas</option>
+                <option value="pago">Pago</option>
+                <option value="aberto">A Pagar</option>
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Período</label>
+            <input id="filtro-periodo" type="text" class="form-control form-control-custom" placeholder="dd/mm/aaaa à dd/mm/aaaa" tabindex="13">
+        </div>
+        <div class="col-md-2 mb-3">
+            <label class="form-label">Categoria</label>
+            <select id="filtro-categoria" class="form-control form-control-custom" tabindex="14">
+                <option value="">Todas</option>
+            </select>
+        </div>
+        <div class="col-md-2 mb-3">
+            <label class="form-label">Fornecedor</label>
+            <select id="filtro-fornecedor" class="form-control form-control-custom" tabindex="15">
+                <option value="">Todos</option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-2 mb-3">
+            <label class="form-label">Forma de Pagamento</label>
+            <select id="filtro-forma-pagamento" class="form-control form-control-custom" tabindex="16">
+                <option value="">Todas</option>
+            </select>
+        </div>
+        <div class="col-md-2 mb-3 d-flex align-items-end">
+            <button id="btn-filtrar-despesas" class="btn btn-primary btn-custom" tabindex="17">
+                <i class="bi bi-funnel"></i> Filtrar
+            </button>
+        </div>
+        <div class="col-md-2 mb-3 d-flex align-items-end">
+            <button id="btn-limpar-filtros-despesas" class="btn btn-outline-secondary" tabindex="18">Limpar Filtros</button>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Despesas -->
+<div class="card-custom">
+    <h5 class="mb-3 text-center">Lista de Despesas</h5>
+    <div class="table-responsive">
+        <table class="table table-custom">
+            <thead>
+                <tr>
+                    <th>Descrição</th>
+                    <th>Observações</th>
+                    <th>Valor</th>
+                    <th>Data da Compra</th>
+                    <th>Data do Vencimento</th>
+                    <th>Data do Pagamento</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="despesas-tbody">
+            </tbody>
+        </table>
+    </div>
+</div>

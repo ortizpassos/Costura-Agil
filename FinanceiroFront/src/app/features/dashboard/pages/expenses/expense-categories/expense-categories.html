@@ -1,0 +1,83 @@
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <h4 class="mb-0">Categorias de Despesas</h4>
+  <a class="btn btn-outline-secondary" routerLink="/dashboard/expenses">
+    <i class="bi bi-arrow-left"></i> Voltar para Lançamentos
+  </a>
+</div>
+
+<div class="card-custom mb-4">
+  <form [formGroup]="form" (ngSubmit)="submit()" class="row g-3 align-items-end">
+    <div class="col-md-8">
+      <label class="form-label" for="categoria-nome">Nome da Categoria</label>
+      <input
+        id="categoria-nome"
+        type="text"
+        class="form-control form-control-custom"
+        placeholder="Ex: Energia, Marketing, Aluguel"
+        formControlName="nome"
+        [class.is-invalid]="form.controls.nome.invalid && form.controls.nome.touched"
+      />
+      <div class="invalid-feedback" *ngIf="form.controls.nome.errors?.['required']">
+        Informe o nome da categoria.
+      </div>
+      <div class="invalid-feedback" *ngIf="form.controls.nome.errors?.['minlength']">
+        Informe pelo menos 2 caracteres.
+      </div>
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+      <button class="btn btn-success w-100" type="submit" [disabled]="isLoading()">
+        <span *ngIf="!isLoading(); else loadingAdd">
+          <i class="bi bi-plus-circle"></i> Adicionar Categoria
+        </span>
+      </button>
+      <ng-template #loadingAdd>
+        <span class="d-flex justify-content-center align-items-center gap-2">
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          Salvando...
+        </span>
+      </ng-template>
+    </div>
+  </form>
+  <div class="alert alert-warning mt-3 mb-0" *ngIf="feedback()">
+    {{ feedback() }}
+  </div>
+</div>
+
+<div class="card-custom">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">Categorias cadastradas</h5>
+    <button class="btn btn-outline-primary btn-sm" type="button" (click)="loadCategories()" [disabled]="isLoading()">
+      <i class="bi bi-arrow-clockwise"></i> Atualizar
+    </button>
+  </div>
+
+  <div *ngIf="isLoading()" class="text-center py-4">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-2 mb-0">Carregando categorias...</p>
+  </div>
+
+  <div *ngIf="!isLoading() && categories.length === 0" class="text-center py-4 text-muted">
+    Nenhuma categoria cadastrada até o momento.
+  </div>
+
+  <div *ngIf="!isLoading() && categories.length > 0" class="table-responsive">
+    <table class="table table-custom">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let category of categories">
+          <td>{{ category.nome }}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-danger" type="button" (click)="deleteCategory(category)" [disabled]="isLoading()">
+              <i class="bi bi-trash"></i> Excluir
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

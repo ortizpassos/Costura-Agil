@@ -1,0 +1,6 @@
+/* Sidebar Background */
+.sidebar-content {
+  background-color: #CBE0FF !important;
+  min-height: 100vh;
+  padding: 20px;
+}

@@ -1,0 +1,10 @@
+import mongoose from 'mongoose';
+
+const receiptMethodSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref:'User', index:true, required:true },
+  nome: { type: String, required: true, trim:true },
+  createdAt: { type: Date, default: Date.now }
+});
+receiptMethodSchema.index({ userId:1, nome:1 }, { unique:true });
+
+export default mongoose.model('ReceiptMethod', receiptMethodSchema);

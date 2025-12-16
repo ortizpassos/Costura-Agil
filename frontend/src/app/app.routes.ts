@@ -4,6 +4,16 @@ import { redirectIfAuthenticatedGuard } from './services/redirect-home.guard';
 import { AdminGuard } from './services/admin.guard';
 
 export const routes: Routes = [
+		{
+			path: 'financeiro',
+			canActivate: [authGuard],
+			loadComponent: () => import('./financeiro/financeiro').then(m => m.Financeiro)
+		},
+		{
+			path: 'nota-fiscal',
+			canActivate: [authGuard],
+			loadComponent: () => import('./nota-fiscal/nota-fiscal').then(m => m.NotaFiscal)
+		},
 	{
 		path: '',
 		canActivate: [redirectIfAuthenticatedGuard],
