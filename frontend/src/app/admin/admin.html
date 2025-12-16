@@ -1,0 +1,37 @@
+<div class="admin-panel">
+  <header class="admin-header">
+    <h1>Painel Administrativo</h1>
+    <div class="user-info">
+      <span>Bem-vindo, {{ user?.nome }} ({{ user?.email }})</span>
+      <button (click)="logout()" class="logout-btn">Sair</button>
+    </div>
+  </header>
+
+  <main class="admin-content">
+    <div class="admin-grid">
+      <div class="admin-card">
+        <h3>Gerenciar Usuários</h3>
+        <p>Adicionar, editar ou remover usuários do sistema.</p>
+        <button class="admin-btn">Acessar</button>
+      </div>
+
+      <div class="admin-card">
+        <h3>Relatórios</h3>
+        <p>Visualizar relatórios de produção e desempenho.</p>
+        <button class="admin-btn">Ver Relatórios</button>
+      </div>
+
+      <div class="admin-card">
+        <h3>Dispositivos</h3>
+        <p>Gerenciar dispositivos IoT conectados.</p>
+        <button class="admin-btn">Gerenciar</button>
+      </div>
+
+      <div class="admin-card">
+        <h3>Configurações</h3>
+        <p>Configurações gerais do sistema.</p>
+        <button class="admin-btn">Configurar</button>
+      </div>
+    </div>
+  </main>
+</div>

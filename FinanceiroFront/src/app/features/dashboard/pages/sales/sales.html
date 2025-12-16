@@ -1,0 +1,68 @@
+<!-- Botões de ação -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex gap-3 flex-wrap">
+            <button class="btn btn-info btn-custom" routerLink="/dashboard/sales/new" tabindex="7">
+                <i class="bi bi-plus-circle"></i> Inserir Vendas
+            </button>
+            <button class="btn btn-secondary btn-custom" routerLink="/dashboard/sales/channels" tabindex="8">
+                <i class="bi bi-laptop"></i> Cadastrar Canais de Vendas
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros de pesquisa -->
+<div class="card-custom mb-4">
+    <h5 class="mb-3">Pesquisar:</h5>
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Descrição</label>
+            <input id="filtro-venda-descricao" type="text" class="form-control form-control-custom" tabindex="9">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Valor</label>
+            <input id="filtro-venda-valor" type="text" class="form-control form-control-custom" placeholder="R$ 0,00" tabindex="10">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Canal de Venda</label>
+            <select id="filtro-venda-canal" class="form-control form-control-custom" tabindex="11">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Período</label>
+            <input id="filtro-venda-periodo" type="text" class="form-control form-control-custom" placeholder="dd/mm/aaaa à dd/mm/aaaa" tabindex="12">
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-2 mb-3 d-flex align-items-end">
+            <button id="btn-filtrar-vendas" class="btn btn-primary btn-custom" tabindex="13">
+                <i class="bi bi-funnel"></i> Filtrar
+            </button>
+        </div>
+        <div class="col-md-2 mb-3 d-flex align-items-end">
+            <button id="btn-limpar-filtros-vendas" class="btn btn-outline-secondary" tabindex="14">Limpar Filtros</button>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Vendas -->
+<div class="card-custom">
+    <h5 class="mb-3 text-center">Lista de Vendas</h5>
+    <div class="table-responsive">
+        <table class="table table-custom">
+            <thead>
+                <tr>
+                    <th>Descrição</th>
+                    <th>Observações</th>
+                    <th>Valor</th>
+                    <th>Data da Venda</th>
+                    <th>Canal de Venda</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="vendas-tbody"></tbody>
+        </table>
+    </div>
+</div>

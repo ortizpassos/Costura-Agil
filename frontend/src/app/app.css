@@ -1,0 +1,23 @@
+/* Espaço superior para navbar fixa */
+html, body, app-root {
+	height: 100%;
+}
+
+body {
+	padding-top: 60px; /* espaço para navbar fixed-top */
+	margin: 0;
+}
+
+/* Conteúdo principal padrão para compensar sidebar fixa */
+.main-content-with-sidebar {
+	margin-left: 220px; /* largura da sidebar */
+	padding: 2rem 1rem; /* igual ao dashboard */
+	padding-top: 4rem; /* garante espaço abaixo da navbar */
+	min-height: calc(100vh - 4rem);
+	background: #f8fafc;
+}
+
+@media (max-width: 768px) {
+	body { padding-top: 56px; }
+	.main-content-with-sidebar { margin-left: 0; }
+}

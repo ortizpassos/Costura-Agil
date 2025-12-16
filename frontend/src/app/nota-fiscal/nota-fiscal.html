@@ -1,0 +1,39 @@
+<div class="nota-fiscal-page-layout">
+  <div class="d-flex flex-grow-1 flex-fill">
+    <app-sidebar></app-sidebar>
+    <main class="nota-fiscal-container flex-grow-1 main-content-with-sidebar">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Notas Fiscais</h2>
+        <button class="btn btn-primary" type="button">
+          Nova Nota Fiscal
+        </button>
+      </div>
+      <table class="table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Data de Emissão</th>
+            <th>Cliente</th>
+            <th>Valor Total</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Exemplo de linha, substituir por *ngFor futuramente -->
+          <tr>
+            <td>0001</td>
+            <td>16/12/2025</td>
+            <td>Cliente Exemplo</td>
+            <td>R$ 1.000,00</td>
+            <td>Emitida</td>
+            <td>
+              <button class="btn btn-sm btn-outline-secondary me-2">Editar</button>
+              <button class="btn btn-sm btn-outline-danger">Excluir</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
+</div>

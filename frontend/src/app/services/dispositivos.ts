@@ -18,7 +18,6 @@ export interface Dispositivo {
     quantidade?: number;
     quantidadeAtual?: number;
   };
-  setor: string;
   status?: string;
   producaoAtual?: number;
   funcionarioLogado?: { nome: string };

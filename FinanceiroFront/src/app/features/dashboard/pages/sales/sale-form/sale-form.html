@@ -1,0 +1,99 @@
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card-custom">
+            <h5 class="mb-4">Dados da Venda</h5>
+            <form id="form-venda" #saleForm="ngForm">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label" for="venda-descricao">Descrição:</label>
+                        <input id="venda-descricao" type="text" class="form-control form-control-custom" tabindex="7" name="descricao" [(ngModel)]="descricao" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="venda-data">Data da Venda:</label>
+                        <input id="venda-data" type="date" class="form-control form-control-custom" tabindex="8" name="dataVenda" [(ngModel)]="dataVenda" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="venda-valor">Valor:</label>
+                        <input id="venda-valor" type="text" class="form-control form-control-custom" placeholder="R$ 0,00" tabindex="9" name="valor" [(ngModel)]="valor" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label" for="venda-canal">Canal de Venda:</label>
+                        <div class="input-group">
+                            <select id="venda-canal" class="form-control form-control-custom" tabindex="10" name="canal" [(ngModel)]="canal">
+                                <option value="">Selecione...</option>
+                                <option *ngFor="let channel of salesChannels" [value]="channel._id">{{ channel.nome }}</option>
+                            </select>
+                            <button
+                                class="btn btn-outline-primary"
+                                type="button"
+                                (click)="openSalesChannelModal()"
+                                tabindex="-1"
+                                aria-label="Cadastrar novo canal de venda"
+                                title="Cadastrar novo canal de venda"
+                            >
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-custom mt-4">
+            <h5 class="mb-3">Observações:</h5>
+            <textarea id="venda-observacoes" class="form-control form-control-custom" rows="4" placeholder="Escreva..." tabindex="11" name="observacoes" [(ngModel)]="observacoes"></textarea>
+        </div>
+
+        <div class="text-center mt-4">
+            <button id="btn-salvar-venda" class="btn btn-success btn-custom btn-lg me-3" tabindex="12" (click)="salvarVenda()" [disabled]="!saleForm.form.valid">
+                <i class="bi bi-check-circle"></i> Salvar
+            </button>
+            <button id="btn-cancelar-venda" class="btn btn-secondary btn-custom btn-lg" tabindex="13" (click)="cancelar()">
+                <i class="bi bi-x-circle"></i> Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Adicionar Canal de Venda -->
+<div class="modal-overlay" *ngIf="showSalesChannelModal" (click)="closeSalesChannelModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Novo Canal de Venda</h5>
+            <button type="button" class="btn-close" aria-label="Fechar" (click)="closeSalesChannelModal()" [disabled]="salesChannelModalLoading"></button>
+        </div>
+        <form (ngSubmit)="saveSalesChannelFromModal()">
+            <div class="mb-3">
+                <label class="form-label" for="modal-sales-channel-nome">Nome</label>
+                <input
+                    id="modal-sales-channel-nome"
+                    type="text"
+                    class="form-control"
+                    name="salesChannelModalNome"
+                    [(ngModel)]="salesChannelModalNome"
+                    placeholder="Ex: Loja Física, Site, Mercado Livre"
+                    [disabled]="salesChannelModalLoading"
+                />
+            </div>
+            <div class="text-danger mb-3" *ngIf="salesChannelModalFeedback">{{ salesChannelModalFeedback }}</div>
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-secondary" (click)="closeSalesChannelModal()" [disabled]="salesChannelModalLoading">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn btn-success" [disabled]="salesChannelModalLoading">
+                    <span *ngIf="!salesChannelModalLoading; else loading">Salvar</span>
+                </button>
+                <ng-template #loading>
+                    <span class="d-flex align-items-center gap-2">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Salvando...
+                    </span>
+                </ng-template>
+            </div>
+        </form>
+    </div>
+</div>

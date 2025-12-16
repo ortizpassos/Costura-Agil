@@ -11,7 +11,7 @@ import { ProducaoComponent } from './producao/producao';
   selector: 'app-root',
   imports: [RouterOutlet, HttpClientModule, NavbarComponent, FooterComponent],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrls: ['./app.css']
 })
 export class App {
   protected readonly title = signal('production-monitor-frontend-angular');

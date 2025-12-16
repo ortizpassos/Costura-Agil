@@ -30,6 +30,20 @@ router.post('/cadastro', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
+    
+    // Verificação para usuário admin fixo
+    if (email === 'Admin' && senha === 'Rexc180523knd!') {
+      const token = jwt.sign({ id: 'admin', email: 'Admin', role: 'admin' }, JWT_SECRET, { expiresIn: '1d' });
+      return res.json({
+        success: true,
+        data: {
+          user: { id: 'admin', nome: 'Administrador', email: 'Admin', role: 'admin' },
+          token,
+          expiresIn: 86400 // 1 dia em segundos
+        }
+      });
+    }
+    
     const usuario = await Usuario.findOne({ email });
     if (!usuario) {
       return res.status(400).json({ success: false, error: { message: 'Usuário não encontrado' } });

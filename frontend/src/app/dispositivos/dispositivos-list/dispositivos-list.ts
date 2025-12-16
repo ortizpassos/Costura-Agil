@@ -23,7 +23,6 @@ export class DispositivosList implements OnInit {
     nome: '',
     deviceToken: '',
     operacao: '',
-    setor: '',
    
   };
 

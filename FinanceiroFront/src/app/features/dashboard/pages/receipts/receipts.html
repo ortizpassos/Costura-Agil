@@ -1,0 +1,68 @@
+<!-- Botões de ação -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex gap-3 flex-wrap">
+            <button class="btn btn-info btn-custom" routerLink="/dashboard/receipts/new" tabindex="7">
+                <i class="bi bi-plus-circle"></i> Inserir Valor Recebido
+            </button>
+            <button class="btn btn-success btn-custom" routerLink="/dashboard/receipts/methods" tabindex="8">
+                <i class="bi bi-credit-card"></i> Formas de Recebimentos
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros de pesquisa -->
+<div class="card-custom mb-4">
+    <h5 class="mb-3">Pesquisar:</h5>
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Descrição</label>
+            <input id="filtro-receb-descricao" type="text" class="form-control form-control-custom" placeholder="Vendas / Transferências" tabindex="9">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Valor</label>
+            <input id="filtro-receb-valor" type="text" class="form-control form-control-custom" placeholder="R$ 0,00" tabindex="10">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Forma de Recebimento</label>
+            <select id="filtro-receb-forma" class="form-control form-control-custom" tabindex="11">
+                <option value="">Todas</option>
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Período</label>
+            <input id="filtro-receb-periodo" type="text" class="form-control form-control-custom" placeholder="dd/mm/aaaa à dd/mm/aaaa" tabindex="12">
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-2 mb-3 d-flex align-items-end">
+            <button id="btn-filtrar-recebimentos" class="btn btn-primary btn-custom" tabindex="13">
+                <i class="bi bi-funnel"></i> Filtrar
+            </button>
+        </div>
+        <div class="col-md-2 mb-3 d-flex align-items-end">
+            <button id="btn-limpar-filtros-recebimentos" class="btn btn-outline-secondary" tabindex="14">Limpar Filtros</button>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Valores Recebidos -->
+<div class="card-custom">
+    <h5 class="mb-3 text-center">Lista de Valores Recebidos</h5>
+    <div class="table-responsive">
+        <table class="table table-custom">
+            <thead>
+                <tr>
+                    <th>Descrição</th>
+                    <th>Observações</th>
+                    <th>Valor</th>
+                    <th>Data do Recebimento</th>
+                    <th>Forma de Recebimento</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="recebimentos-tbody"></tbody>
+        </table>
+    </div>
+</div>

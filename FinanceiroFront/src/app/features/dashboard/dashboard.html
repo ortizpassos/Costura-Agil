@@ -1,0 +1,27 @@
+<div class="container-fluid h-100">
+  <div class="row h-100">
+
+    <div class="col-md-3 col-lg-2 sidebar p-0" [class.d-none]="!isSidebarOpen && false" [class.d-md-block]="true">
+      <app-sidebar [user]="user" [logout]="logout"></app-sidebar>
+    <!-- Botão Suporte flutuante -->
+    <a id="support-btn-float" class="suporte-float" href="https://wa.me/5547999876298" target="_blank" rel="noopener">
+      <i class="bi bi-headset"></i>
+      <span>Suporte</span>
+    </a>      
+    </div>
+
+    <div class="col-md-9 col-lg-10 main-content">
+      <div class="header-section d-flex align-items-center justify-content-between">
+        <button (click)="toggleSidebar()" class="btn btn-outline-secondary d-md-none" type="button">
+          <i class="bi bi-list" style="font-size:1.5rem;"></i>
+        </button>
+        <div class="user-welcome">
+          Bem vindo(a): <span>{{ user?.name }}</span>
+        </div>
+      </div>
+      <div class="content-area">
+        <router-outlet></router-outlet>
+      </div>
+    </div>
+  </div>
+</div>

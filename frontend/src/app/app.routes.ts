@@ -1,8 +1,19 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './services/auth.guard';
 import { redirectIfAuthenticatedGuard } from './services/redirect-home.guard';
+import { AdminGuard } from './services/admin.guard';
 
 export const routes: Routes = [
+		{
+			path: 'financeiro',
+			canActivate: [authGuard],
+			loadComponent: () => import('./financeiro/financeiro').then(m => m.Financeiro)
+		},
+		{
+			path: 'nota-fiscal',
+			canActivate: [authGuard],
+			loadComponent: () => import('./nota-fiscal/nota-fiscal').then(m => m.NotaFiscal)
+		},
 	{
 		path: '',
 		canActivate: [redirectIfAuthenticatedGuard],
@@ -45,6 +56,11 @@ export const routes: Routes = [
 		path: 'display',
 		canActivate: [authGuard],
 		loadComponent: () => import('./display/display').then(m => m.DisplayComponent)
+	},
+	{
+		path: 'admin',
+		canActivate: [AdminGuard],
+		loadComponent: () => import('./admin/admin').then(m => m.Admin)
 	},
 	{
 		path: 'configuracoes',

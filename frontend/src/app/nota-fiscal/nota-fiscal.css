@@ -1,0 +1,22 @@
+/* Estilos para a página Nota Fiscal */
+.nota-fiscal-page-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.nota-fiscal-page-layout > .d-flex {
+  flex: 1 1 auto;
+}
+
+.nota-fiscal-container {
+  padding: 2rem 1rem; /* horizontal igual ao dashboard */
+  padding-top: 5rem; /* espaço abaixo da navbar como no dashboard */
+  min-height: 60vh;
+  margin-left: 220px; /* largura da sidebar fixa */
+}
+
+.nota-fiscal-container h2 {
+  color: #1976d2;
+  margin-bottom: 1rem;
+}

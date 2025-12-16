@@ -1,0 +1,37 @@
+server:
+  port: 3002
+spring:
+  application:
+    name: email-service
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:postgres}:${POSTGRES_PORT:5432}/${POSTGRES_DB:emails}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  mail:
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+app:
+  mq:
+    exchange: ${APP_EXCHANGE:app.events}
+    queue: ${APP_EMAIL_QUEUE:email.outbox}
+    routing:
+      operacao_created: ${APP_ROUTING_OPERACAO_CREATED:operacao.created}
+  mail:
+    from: ${MAIL_FROM:no-reply@monitor-ellas.local}

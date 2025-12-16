@@ -72,7 +72,12 @@ export class LoginComponent implements OnChanges {
       next: (response) => {
         if (response.success) {
           this.loginSuccess.emit();
-          this.router.navigate(['/dashboard']);
+          // Verificar se é admin
+          if (response.data?.user.role === 'admin') {
+            this.router.navigate(['/admin']);
+          } else {
+            this.router.navigate(['/dashboard']);
+          }
         } else {
           this.erroGeral = response.error?.message || 'Erro ao fazer login';
         }

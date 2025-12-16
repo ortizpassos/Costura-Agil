@@ -1,0 +1,257 @@
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card-custom">
+            <h5 class="mb-4">Dados da Despesa</h5>
+            <form id="form-despesa">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Descrição:</label>
+                        <input id="despesa-descricao" type="text" class="form-control form-control-custom" tabindex="7" placeholder="Digite a descrição">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Data da Compra:</label>
+                        <input id="despesa-data-compra" type="date" class="form-control form-control-custom" tabindex="8">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Data Vencimento:</label>
+                        <input id="despesa-data-vencimento" type="date" class="form-control form-control-custom" tabindex="9">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Valor:</label>
+                        <input id="despesa-valor" type="text" class="form-control form-control-custom" placeholder="R$ 0,00" tabindex="10">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Parcelado:</label>
+                        <select id="despesa-parcelado" class="form-control form-control-custom" tabindex="11">
+                            <option value="">Não</option>
+                            <option value="2">2x</option>
+                            <option value="3">3x</option>
+                            <option value="5">5x</option>
+                            <option value="6">6x</option>
+                            <option value="12">12x</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Despesa Fixa:</label>
+                        <select id="despesa-fixa" class="form-control form-control-custom" tabindex="12">
+                            <option value="nao">Não</option>
+                            <option value="sim">Sim</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Categoria:</label>
+                        <div class="input-group">
+                            <select id="despesa-categoria" class="form-control form-control-custom" tabindex="13">
+                                <option value="">Selecione...</option>
+                                <option *ngIf="!categories.length" disabled>Nenhuma categoria cadastrada</option>
+                                <option *ngFor="let category of categories" [value]="category.nome">{{ category.nome }}</option>
+                            </select>
+                            <button
+                                class="btn btn-outline-primary"
+                                type="button"
+                                (click)="openCategoryModal()"
+                                tabindex="-1"
+                                aria-label="Cadastrar nova categoria"
+                                title="Cadastrar nova categoria"
+                            >
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Fornecedor:</label>
+                        <div class="input-group">
+                            <select id="despesa-fornecedor" class="form-control form-control-custom" tabindex="14">
+                                <option value="">Selecione...</option>
+                                <option *ngIf="!suppliers.length" disabled>Nenhum fornecedor cadastrado</option>
+                                <option *ngFor="let supplier of suppliers" [value]="supplier.nome">{{ supplier.nome }}</option>
+                            </select>
+                            <button
+                                class="btn btn-outline-primary"
+                                type="button"
+                                (click)="openSupplierModal()"
+                                tabindex="-1"
+                                aria-label="Cadastrar novo fornecedor"
+                                title="Cadastrar novo fornecedor"
+                            >
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <small class="text-muted">*A despesa Fixa será lança automaticamente nos próximos meses</small>
+            </form>
+        </div>
+
+        <div class="card-custom mt-4">
+            <h5 class="mb-4">Dados do Pagamento</h5>
+            <form id="form-despesa-pagamento">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check form-switch">
+                            <input id="despesa-pagamento-realizado" class="form-check-input" type="checkbox" checked tabindex="15">
+                            <label class="form-check-label">Pagamento Realizado:</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Data do Pagamento:</label>
+                        <input id="despesa-data-pagamento" type="date" class="form-control form-control-custom" tabindex="16">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check form-switch">
+                            <input id="despesa-pagamento-nao-realizado" class="form-check-input" type="checkbox" tabindex="17">
+                            <label class="form-check-label">Pagamento Não Realizado:</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Valor Pago:</label>
+                        <input id="despesa-valor-pago" type="text" class="form-control form-control-custom" placeholder="R$ 0,00" tabindex="18">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Forma de Pagamento:</label>
+                        <select id="despesa-forma-pagamento" class="form-control form-control-custom" tabindex="19">
+                            <option value="">Selecione...</option>
+                            <option *ngFor="let method of paymentMethods" [value]="method.nome">{{ method.nome }}</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-custom mt-4">
+            <h5 class="mb-3">Observações:</h5>
+            <textarea id="despesa-observacoes" class="form-control form-control-custom" rows="4" placeholder="Escreva..." tabindex="20"></textarea>
+        </div>
+
+        <div class="text-center mt-4">
+            <button class="btn btn-success btn-custom btn-lg me-3" tabindex="21" (click)="salvarDespesa()" type="button">
+                <i class="bi bi-check-circle"></i> Salvar
+            </button>
+            <button class="btn btn-secondary btn-custom btn-lg" tabindex="22">
+                <i class="bi bi-x-circle"></i> Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+        <div class="modal-overlay" *ngIf="showCategoryModal" (click)="closeCategoryModal()">
+            <div class="modal-card" (click)="$event.stopPropagation()">
+                <div class="modal-header d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Nova categoria</h5>
+                    <button type="button" class="btn-close" aria-label="Fechar" (click)="closeCategoryModal()" [disabled]="categoryModalLoading"></button>
+                </div>
+                <form (ngSubmit)="saveCategoryFromModal()">
+                    <div class="mb-3">
+                        <label class="form-label" for="modal-categoria-nome">Nome da categoria</label>
+                        <input
+                            id="modal-categoria-nome"
+                            type="text"
+                            class="form-control"
+                            name="modalCategoriaNome"
+                            [(ngModel)]="categoryModalNome"
+                            placeholder="Ex: Energia, Marketing"
+                            [disabled]="categoryModalLoading"
+                        />
+                    </div>
+                    <div class="text-danger mb-3" *ngIf="categoryModalFeedback">{{ categoryModalFeedback }}</div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-outline-secondary" (click)="closeCategoryModal()" [disabled]="categoryModalLoading">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-success" [disabled]="categoryModalLoading">
+                            <span *ngIf="!categoryModalLoading; else loadingCategory">Salvar</span>
+                        </button>
+                        <ng-template #loadingCategory>
+                            <span class="d-flex align-items-center gap-2">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Salvando...
+                            </span>
+                        </ng-template>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="modal-overlay" *ngIf="showSupplierModal" (click)="closeSupplierModal()">
+            <div class="modal-card" (click)="$event.stopPropagation()">
+                <div class="modal-header d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Novo fornecedor</h5>
+                    <button type="button" class="btn-close" aria-label="Fechar" (click)="closeSupplierModal()" [disabled]="supplierModalLoading"></button>
+                </div>
+                <form (ngSubmit)="saveSupplierFromModal()">
+                    <div class="mb-3">
+                        <label class="form-label" for="modal-fornecedor-nome">Nome</label>
+                        <input
+                            id="modal-fornecedor-nome"
+                            type="text"
+                            class="form-control"
+                            name="modalFornecedorNome"
+                            [(ngModel)]="supplierModal.nome"
+                            placeholder="Ex: Imobiliária Ideal"
+                            [disabled]="supplierModalLoading"
+                        />
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="modal-fornecedor-contato">Contato</label>
+                            <input
+                                id="modal-fornecedor-contato"
+                                type="text"
+                                class="form-control"
+                                name="modalFornecedorContato"
+                                [(ngModel)]="supplierModal.contato"
+                                placeholder="Responsável"
+                                [disabled]="supplierModalLoading"
+                            />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="modal-fornecedor-telefone">Telefone</label>
+                            <input
+                                id="modal-fornecedor-telefone"
+                                type="text"
+                                class="form-control"
+                                name="modalFornecedorTelefone"
+                                [(ngModel)]="supplierModal.telefone"
+                                placeholder="(00) 00000-0000"
+                                [disabled]="supplierModalLoading"
+                            />
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label" for="modal-fornecedor-email">Email</label>
+                            <input
+                                id="modal-fornecedor-email"
+                                type="email"
+                                class="form-control"
+                                name="modalFornecedorEmail"
+                                [(ngModel)]="supplierModal.email"
+                                placeholder="contato@empresa.com"
+                                [disabled]="supplierModalLoading"
+                            />
+                        </div>
+                    </div>
+                    <div class="text-danger my-3" *ngIf="supplierModalFeedback">{{ supplierModalFeedback }}</div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-outline-secondary" (click)="closeSupplierModal()" [disabled]="supplierModalLoading">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-success" [disabled]="supplierModalLoading">
+                            <span *ngIf="!supplierModalLoading; else loadingSupplier">Salvar</span>
+                        </button>
+                        <ng-template #loadingSupplier>
+                            <span class="d-flex align-items-center gap-2">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Salvando...
+                            </span>
+                        </ng-template>
+                    </div>
+                </form>
+            </div>
+        </div>
