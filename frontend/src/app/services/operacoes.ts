@@ -6,6 +6,7 @@ export interface Operacao {
   _id?: string;
   nome: string;
   pecasPorHora: number;
+  cortesPorPeca?: number;
   descricao?: string;
   ativo?: boolean;
 }

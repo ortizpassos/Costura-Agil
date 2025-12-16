@@ -25,6 +25,10 @@ const operacaoSchema = new mongoose.Schema({
     trim: true,
     default: '',
   },
+  cortesPorPeca: {
+    type: Number,
+    default: 0,
+  },
   ativo: {
     type: Boolean,
     default: true,

@@ -65,7 +65,7 @@ export class ProducaoComponent implements OnInit, OnDestroy {
   modalOperacaoAberto: boolean = false;
   modalClienteAberto: boolean = false;
   operacaoEditando: Operacao | null = null;
-  novaOperacao: any = { nome: '', pecasPorHora: '', descricao: '' };
+  novaOperacao: any = { nome: '', pecasPorHora: '', cortesPorPeca: '', descricao: '' };
   novoCliente: any = { nome: '', contato: '' };
 
   get producaoEmProducao(): ProducaoItem[] {
@@ -399,7 +399,7 @@ export class ProducaoComponent implements OnInit, OnDestroy {
   }
 
   abrirModalOperacao() {
-    this.novaOperacao = { nome: '', pecasPorHora: '', descricao: '' };
+    this.novaOperacao = { nome: '', pecasPorHora: '', cortesPorPeca: '', descricao: '' };
     this.operacaoEditando = null;
     this.modalOperacaoAberto = true;
   }
@@ -412,13 +412,14 @@ export class ProducaoComponent implements OnInit, OnDestroy {
     const op = {
       nome: this.novaOperacao.nome,
       pecasPorHora: Number(this.novaOperacao.pecasPorHora),
+      cortesPorPeca: Number(this.novaOperacao.cortesPorPeca),
       descricao: this.novaOperacao.descricao
     };
     this.operacoesService.cadastrarOperacao(op).subscribe({
       next: () => {
         this.fecharModalOperacao();
         this.carregarOperacoes();
-        this.novaOperacao = { nome: '', pecasPorHora: '', descricao: '' };
+        this.novaOperacao = { nome: '', pecasPorHora: '', cortesPorPeca: '', descricao: '' };
       },
       error: (err: any) => {
         alert('Erro ao cadastrar operação!');
