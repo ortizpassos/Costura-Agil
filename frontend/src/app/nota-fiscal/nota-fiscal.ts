@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { SidebarComponent } from '../shared/sidebar/sidebar';
 import { NfeService, Nfe } from '../services/nfe.service';
 
@@ -14,7 +15,7 @@ export class NotaFiscal implements OnInit {
   nfeList: Nfe[] = [];
   loading = false;
 
-  constructor(private nfeService: NfeService) { }
+  constructor(private nfeService: NfeService, private router: Router) { }
 
   ngOnInit(): void {
     this.loadNfe();
@@ -54,7 +55,10 @@ export class NotaFiscal implements OnInit {
   }
 
   createNfe(): void {
-    // TODO: Implementar criação
-    console.log('Criar nova NFe');
+    this.router.navigate(['/nota-fiscal/gerar']);
+  }
+
+  consultarNfe(): void {
+    this.router.navigate(['/nota-fiscal/consultar']);
   }
 }
