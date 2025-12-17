@@ -35,6 +35,13 @@ export interface NfeResponse {
   error?: string;
 }
 
+export interface NfeEstatisticas {
+  emitidas: number;
+  recebidas: number;
+  canceladas: number;
+  totalMensal: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -83,5 +90,10 @@ export class NfeService {
   enviarCce(chave: string, correcao: string): Observable<NfeResponse> {
     const request: NfeCceRequest = { chave, correcao };
     return this.http.post<NfeResponse>(`${this.apiUrl}/cce`, request);
+  }
+
+  // Método para estatísticas do dashboard
+  getEstatisticas(): Observable<NfeEstatisticas> {
+    return this.http.get<NfeEstatisticas>(`${this.apiUrl}/estatisticas`);
   }
 }

@@ -1,5 +1,6 @@
 package com.costuraagil.service;
 
+import com.costuraagil.nfe.NfeClient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -12,13 +13,15 @@ public class NfeMessageService {
 
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
+    private final NfeClient nfeClient;
 
     @Value("${nfe.exchange}")
     private String exchangeName;
 
-    public NfeMessageService(RabbitTemplate rabbitTemplate, ObjectMapper objectMapper) {
+    public NfeMessageService(RabbitTemplate rabbitTemplate, ObjectMapper objectMapper, NfeClient nfeClient) {
         this.rabbitTemplate = rabbitTemplate;
         this.objectMapper = objectMapper;
+        this.nfeClient = nfeClient;
     }
 
     @RabbitListener(queues = "${nfe.queue.request}")
@@ -46,7 +49,8 @@ public class NfeMessageService {
         try {
             switch (operation.toLowerCase()) {
                 case "status":
-                    return processStatusRequest();
+                    String statusXml = nfeClient.statusServico();
+                    return createSuccessResponse(statusXml);
                 case "gerar":
                     return processGerarRequest(request);
                 case "consultar":
@@ -63,20 +67,18 @@ public class NfeMessageService {
         }
     }
 
-    private String processStatusRequest() {
-        // Simulação de consulta de status do serviço SEFAZ em homologação
-        return createSuccessResponse("Status do serviço SEFAZ Homologação: Serviço em Operação");
-    }
-
     private String processGerarRequest(JsonNode request) {
         String xml = request.get("xml").asText();
         if (xml == null || xml.trim().isEmpty()) {
             return createErrorResponse("XML da NFe é obrigatório");
         }
 
-        // Simular processamento
-        String numeroRecibo = "123456789012345"; // Simulado
-        return createSuccessResponse("NFe enviada para homologação com sucesso. Recibo: " + numeroRecibo);
+        try {
+            String retornoXml = nfeClient.enviarNfe(xml);
+            return createSuccessResponse(retornoXml);
+        } catch (Exception e) {
+            return createErrorResponse("Erro ao enviar NFe: " + e.getMessage());
+        }
     }
 
     private String processConsultarRequest(JsonNode request) {
@@ -85,9 +87,12 @@ public class NfeMessageService {
             return createErrorResponse("Chave de acesso deve ter 44 caracteres");
         }
 
-        // Simular resposta
-        String respostaXml = "<retConsSitNFe><infProt><chNFe>" + chave + "</chNFe><nProt>123456789012345</nProt><digVal>ABC123</digVal></infProt></retConsSitNFe>";
-        return createSuccessResponse("Consulta realizada em homologação: " + respostaXml);
+        try {
+            String retornoXml = nfeClient.consultar(chave);
+            return createSuccessResponse(retornoXml);
+        } catch (Exception e) {
+            return createErrorResponse("Erro ao consultar NFe: " + e.getMessage());
+        }
     }
 
     private String processCancelarRequest(JsonNode request) {
@@ -102,7 +107,12 @@ public class NfeMessageService {
             return createErrorResponse("Justificativa deve ter pelo menos 15 caracteres");
         }
 
-        return createSuccessResponse("NFe cancelada em homologação com sucesso. Chave: " + chave);
+        try {
+            String retornoXml = nfeClient.cancelar(chave, justificativa);
+            return createSuccessResponse(retornoXml);
+        } catch (Exception e) {
+            return createErrorResponse("Erro ao cancelar NFe: " + e.getMessage());
+        }
     }
 
     private String processCceRequest(JsonNode request) {
@@ -113,7 +123,12 @@ public class NfeMessageService {
             return createErrorResponse("Chave de acesso deve ter 44 caracteres");
         }
 
-        return createSuccessResponse("CC-e enviada para homologação com sucesso. Chave: " + chave);
+        try {
+            String retornoXml = nfeClient.enviarCce(chave, correcao);
+            return createSuccessResponse(retornoXml);
+        } catch (Exception e) {
+            return createErrorResponse("Erro ao enviar CC-e: " + e.getMessage());
+        }
     }
 
     private String createSuccessResponse(String message) {

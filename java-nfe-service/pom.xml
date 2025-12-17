@@ -28,6 +28,12 @@
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>br.com.swconsultoria</groupId>
+            <artifactId>java-nfe</artifactId>
+            <version>4.00.47</version>
+        </dependency>
+
         <!-- JSON Processing -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
