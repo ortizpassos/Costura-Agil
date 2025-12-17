@@ -12,6 +12,7 @@ const clienteRoutes = require('./routes/clienteRoutes');
 const relatorioRoutes = require('./routes/relatorioRoutes');
 const operacaoRoutes = require('./routes/operacaoRoutes');
 const dispositivoTesteRoute = require('./routes/dispositivoTesteRoute');
+const nfeRoutes = require('./routes/nfeRoutes');
 const ProducaoDetalhada = require('./models/ProducaoDetalhada');
 const Artigo = require('./models/Artigo');
 
@@ -42,6 +43,7 @@ app.use('/api/artigos', artigoRoutes);
 app.use('/api/clientes', clienteRoutes);
 app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/operacoes', operacaoRoutes);
+app.use('/api/nfe', nfeRoutes);
 
 // Socket.IO setup
 const http = require('http').createServer(app);
@@ -516,11 +518,21 @@ socket.on('solicitarArtigosAtualizados', async (data) => {
   });
 });
 
+const nfeMessagingService = require('./services/nfeMessagingService');
+
 // Conexão com MongoDB - iniciar servidor somente após conexão bem-sucedida
 const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/production-monitor';
 
 mongoose.connect(mongoUri, {})
-  .then(() => {
+  .then(async () => {
+    // Inicializar serviço de mensageria NFe
+    try {
+      await nfeMessagingService.connect();
+    } catch (error) {
+      console.error('Falha ao conectar ao RabbitMQ:', error.message);
+      console.error('O serviço NFe funcionará apenas com simulação HTTP.');
+    }
+
     const PORT = process.env.PORT || 3001;
     http.listen(PORT, () => {
       console.log(`API + Socket.IO rodando na porta ${PORT}`);

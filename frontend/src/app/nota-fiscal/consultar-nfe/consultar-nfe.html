@@ -1,0 +1,312 @@
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">
+            <i class="fas fa-search me-2"></i>
+            Consultar Nota Fiscal Eletrônica (NFe)
+          </h3>
+        </div>
+        <div class="card-body">
+          <!-- Mensagens de sucesso/erro -->
+          <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            {{ successMessage }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+
+          <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            {{ errorMessage }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+
+          <!-- Formulário de consulta -->
+          <form [formGroup]="consultaForm" (ngSubmit)="onSubmit()" class="mb-4">
+            <div class="row">
+              <div class="col-md-8">
+                <label for="chave" class="form-label">Chave de Acesso da NFe *</label>
+                <input type="text" class="form-control" id="chave" formControlName="chave"
+                       placeholder="Digite a chave de acesso (44 dígitos)"
+                       [class.is-invalid]="consultaForm.get('chave')?.invalid && consultaForm.get('chave')?.touched"
+                       maxlength="44">
+                <div class="invalid-feedback">Chave de acesso deve conter exatamente 44 dígitos</div>
+                <div class="form-text">A chave de acesso pode ser encontrada no DANFE (Documento Auxiliar da Nota Fiscal Eletrônica)</div>
+              </div>
+              <div class="col-md-4 d-flex align-items-end">
+                <div class="d-flex gap-2 w-100">
+                  <button type="submit" class="btn btn-primary flex-fill" [disabled]="loading || consultaForm.invalid">
+                    <i class="fas fa-search me-2" *ngIf="!loading"></i>
+                    <i class="fas fa-spinner fa-spin me-2" *ngIf="loading"></i>
+                    {{ loading ? 'Consultando...' : 'Consultar' }}
+                  </button>
+                  <button type="button" class="btn btn-secondary" (click)="limpar()">
+                    <i class="fas fa-eraser me-2"></i>
+                    Limpar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <!-- Detalhes da NFe -->
+          <div *ngIf="nfeDetalhes" class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-file-invoice-dollar me-2"></i>
+                Detalhes da NFe
+              </h5>
+            </div>
+            <div class="card-body">
+              <!-- Informações gerais -->
+              <div class="row mb-4">
+                <div class="col-12">
+                  <h6 class="text-primary mb-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Informações Gerais
+                  </h6>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-3">
+                  <strong>Chave de Acesso:</strong><br>
+                  <span class="text-muted small">{{ nfeDetalhes.chave }}</span>
+                </div>
+                <div class="col-md-2">
+                  <strong>Número:</strong><br>
+                  {{ nfeDetalhes.numero }}
+                </div>
+                <div class="col-md-2">
+                  <strong>Série:</strong><br>
+                  {{ nfeDetalhes.serie }}
+                </div>
+                <div class="col-md-3">
+                  <strong>Data Emissão:</strong><br>
+                  {{ nfeDetalhes.dataEmissao | date:'dd/MM/yyyy HH:mm' }}
+                </div>
+                <div class="col-md-2">
+                  <strong>Status:</strong><br>
+                  <span class="badge bg-success">{{ nfeDetalhes.status }}</span>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-3">
+                  <strong>Modelo:</strong><br>
+                  {{ nfeDetalhes.modelo }} (NFe)
+                </div>
+                <div class="col-md-3">
+                  <strong>Tipo de Operação:</strong><br>
+                  {{ nfeDetalhes.tipoOperacao === '1' ? 'Saída' : 'Entrada' }}
+                </div>
+                <div class="col-md-3">
+                  <strong>Finalidade:</strong><br>
+                  {{ nfeDetalhes.finalidade === '1' ? 'Normal' : 'Complementar' }}
+                </div>
+                <div class="col-md-3" *ngIf="nfeDetalhes.protocolo">
+                  <strong>Protocolo:</strong><br>
+                  {{ nfeDetalhes.protocolo }}
+                </div>
+              </div>
+
+              <!-- Emitente -->
+              <div class="row mb-4">
+                <div class="col-12">
+                  <h6 class="text-primary mb-3">
+                    <i class="fas fa-building me-2"></i>
+                    Emitente
+                  </h6>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <strong>CNPJ:</strong><br>
+                  {{ nfeDetalhes.emitente.cnpj | slice:0:2 }}.{{ nfeDetalhes.emitente.cnpj | slice:2:3 }}.{{ nfeDetalhes.emitente.cnpj | slice:5:3 }}/0001-{{ nfeDetalhes.emitente.cnpj | slice:12:2 }}
+                </div>
+                <div class="col-md-8">
+                  <strong>Razão Social:</strong><br>
+                  {{ nfeDetalhes.emitente.razaoSocial }}
+                </div>
+              </div>
+
+              <div class="row mb-3" *ngIf="nfeDetalhes.emitente.nomeFantasia">
+                <div class="col-md-6">
+                  <strong>Nome Fantasia:</strong><br>
+                  {{ nfeDetalhes.emitente.nomeFantasia }}
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-8">
+                  <strong>Endereço:</strong><br>
+                  {{ nfeDetalhes.emitente.endereco }}
+                </div>
+                <div class="col-md-4">
+                  <strong>CEP:</strong><br>
+                  {{ nfeDetalhes.emitente.cep | slice:0:5 }}-{{ nfeDetalhes.emitente.cep | slice:5:3 }}
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-8">
+                  <strong>Cidade:</strong><br>
+                  {{ nfeDetalhes.emitente.cidade }}
+                </div>
+                <div class="col-md-4">
+                  <strong>UF:</strong><br>
+                  {{ nfeDetalhes.emitente.uf }}
+                </div>
+              </div>
+
+              <!-- Destinatário -->
+              <div class="row mb-4">
+                <div class="col-12">
+                  <h6 class="text-primary mb-3">
+                    <i class="fas fa-user-tie me-2"></i>
+                    Destinatário
+                  </h6>
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <strong>CNPJ:</strong><br>
+                  {{ nfeDetalhes.destinatario.cnpj | slice:0:2 }}.{{ nfeDetalhes.destinatario.cnpj | slice:2:3 }}.{{ nfeDetalhes.destinatario.cnpj | slice:5:3 }}/0001-{{ nfeDetalhes.destinatario.cnpj | slice:12:2 }}
+                </div>
+                <div class="col-md-8">
+                  <strong>Razão Social:</strong><br>
+                  {{ nfeDetalhes.destinatario.razaoSocial }}
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-8">
+                  <strong>Endereço:</strong><br>
+                  {{ nfeDetalhes.destinatario.endereco }}
+                </div>
+                <div class="col-md-4">
+                  <strong>CEP:</strong><br>
+                  {{ nfeDetalhes.destinatario.cep | slice:0:5 }}-{{ nfeDetalhes.destinatario.cep | slice:5:3 }}
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-8">
+                  <strong>Cidade:</strong><br>
+                  {{ nfeDetalhes.destinatario.cidade }}
+                </div>
+                <div class="col-md-4">
+                  <strong>UF:</strong><br>
+                  {{ nfeDetalhes.destinatario.uf }}
+                </div>
+              </div>
+
+              <!-- Produtos -->
+              <div class="row mb-4">
+                <div class="col-12">
+                  <h6 class="text-primary mb-3">
+                    <i class="fas fa-boxes me-2"></i>
+                    Produtos/Serviços
+                  </h6>
+                </div>
+              </div>
+
+              <div class="table-responsive mb-4">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Descrição</th>
+                      <th>CFOP</th>
+                      <th>NCM</th>
+                      <th>Qtde</th>
+                      <th>Vlr Unit.</th>
+                      <th>Vlr Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let produto of nfeDetalhes.produtos">
+                      <td>{{ produto.codigo }}</td>
+                      <td>{{ produto.descricao }}</td>
+                      <td>{{ produto.cfop }}</td>
+                      <td>{{ produto.ncm }}</td>
+                      <td>{{ produto.quantidade }}</td>
+                      <td>R$ {{ produto.valorUnitario.toFixed(2) }}</td>
+                      <td>R$ {{ produto.valorTotal.toFixed(2) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Totais -->
+              <div class="row mb-4">
+                <div class="col-12">
+                  <h6 class="text-primary mb-3">
+                    <i class="fas fa-calculator me-2"></i>
+                    Totais
+                  </h6>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="card bg-light">
+                    <div class="card-body">
+                      <div class="row text-center">
+                        <div class="col-md-2">
+                          <strong>Valor Produtos:</strong><br>
+                          <span class="h5 text-primary">R$ {{ nfeDetalhes.totais.valorProdutos.toFixed(2) }}</span>
+                        </div>
+                        <div class="col-md-2">
+                          <strong>ICMS:</strong><br>
+                          <span class="h6">R$ {{ nfeDetalhes.totais.valorICMS.toFixed(2) }}</span>
+                        </div>
+                        <div class="col-md-2">
+                          <strong>IPI:</strong><br>
+                          <span class="h6">R$ {{ nfeDetalhes.totais.valorIPI.toFixed(2) }}</span>
+                        </div>
+                        <div class="col-md-2">
+                          <strong>PIS:</strong><br>
+                          <span class="h6">R$ {{ nfeDetalhes.totais.valorPIS.toFixed(2) }}</span>
+                        </div>
+                        <div class="col-md-2">
+                          <strong>COFINS:</strong><br>
+                          <span class="h6">R$ {{ nfeDetalhes.totais.valorCOFINS.toFixed(2) }}</span>
+                        </div>
+                        <div class="col-md-2">
+                          <strong>Valor Total:</strong><br>
+                          <span class="h4 text-success fw-bold">R$ {{ nfeDetalhes.totais.valorTotal.toFixed(2) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botões -->
+          <div class="row mt-4">
+            <div class="col-12">
+              <div class="d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary" (click)="voltar()">
+                  <i class="fas fa-arrow-left me-2"></i>
+                  Voltar
+                </button>
+                <div class="d-flex gap-2" *ngIf="nfeDetalhes">
+                  <button type="button" class="btn btn-warning" (click)="limpar()">
+                    <i class="fas fa-search-plus me-2"></i>
+                    Nova Consulta
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

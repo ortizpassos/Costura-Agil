@@ -1,39 +1,237 @@
-<div class="nota-fiscal-page-layout">
-  <div class="d-flex flex-grow-1 flex-fill">
-    <app-sidebar></app-sidebar>
-    <main class="nota-fiscal-container flex-grow-1 main-content-with-sidebar">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Notas Fiscais</h2>
-        <button class="btn btn-primary" type="button">
-          Nova Nota Fiscal
-        </button>
+<div class="d-flex">
+  <!-- SIDEBAR LATERAL -->
+  <app-sidebar></app-sidebar>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <div class="content-wrapper flex-grow-1" style="margin-left: 220px; padding-top: 20px;">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12">
+          <h2 class="mb-4">📊 Sistema de Gestão Fiscal</h2>
+        </div>
       </div>
-      <table class="table table-striped table-bordered">
-        <thead>
-          <tr>
-            <th>Número</th>
-            <th>Data de Emissão</th>
-            <th>Cliente</th>
-            <th>Valor Total</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Exemplo de linha, substituir por *ngFor futuramente -->
-          <tr>
-            <td>0001</td>
-            <td>16/12/2025</td>
-            <td>Cliente Exemplo</td>
-            <td>R$ 1.000,00</td>
-            <td>Emitida</td>
-            <td>
-              <button class="btn btn-sm btn-outline-secondary me-2">Editar</button>
-              <button class="btn btn-sm btn-outline-danger">Excluir</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </main>
+
+      <!-- MENU DE NAVEGAÇÃO INTERNA -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <nav class="nav nav-pills nav-fill">            
+            <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-emitir">
+              ➕ Emitir Nota
+            </button>
+            <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-emitidas">
+              📤 Notas Emitidas
+            </button>
+            <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-recebidas">
+              📥 Notas Recebidas
+            </button>
+            <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-canceladas">
+              ❌ Cancelamentos
+            </button>
+            <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-faturadas">
+              💰 Notas Faturadas
+            </button>
+            <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-cc-e">
+              ✏️ Carta de Correção
+            </button>
+            <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-inutilizacao">
+              🚫 Inutilização
+            </button>
+            <!-- <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-manifestacao">
+              📨 Manifestação
+            </button> -->
+            <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-config">
+              ⚙️ Configurações
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- CONTEÚDO DAS SEÇÕES -->
+        <main class="col-12">
+
+          <!-- DASHBOARD -->
+          <section id="dashboard">            
+            <div class="row mt-3">
+              <div class="col-md-3">
+                <div class="card text-center">
+                  <div class="card-body">
+                    <h5 class="card-title">📤 Emitidas</h5>
+                    <h2 class="text-primary">{{ estatisticas.emitidas }}</h2>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="card text-center">
+                  <div class="card-body">
+                    <h5 class="card-title">📥 Recebidas</h5>
+                    <h2 class="text-success">{{ estatisticas.recebidas }}</h2>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="card text-center">
+                  <div class="card-body">
+                    <h5 class="card-title">❌ Canceladas</h5>
+                    <h2 class="text-danger">{{ estatisticas.canceladas }}</h2>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="card text-center">
+                  <div class="card-body">
+                    <h5 class="card-title">💰 Total Mensal</h5>
+                    <h2 class="text-info">R$ {{ estatisticas.totalMensal | number:'1.2-2' }}</h2>
+                  </div>
+                </div>
+              </div>
+            </div>            
+            <!-- Gráfico de status das notas -->
+            <div class="row mt-4">
+              <div class="col-12">
+                <div class="card">
+                  <div class="card-header">
+                    <h5>Status das Notas Fiscais</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <h6>Notas Recentes</h6>
+                        <div class="list-group" *ngIf="nfeList.length > 0; else noNfe">
+                          <div class="list-group-item d-flex justify-content-between align-items-center" 
+                               *ngFor="let nfe of nfeList.slice(0, 5)">
+                            <div>
+                              <strong>{{ nfe.numero }}</strong> - {{ nfe.cliente }}
+                            </div>
+                            <span class="badge" [ngClass]="getStatusBadgeClass(nfe.status)">
+                              {{ nfe.status }}
+                            </span>
+                          </div>
+                        </div>
+                        <ng-template #noNfe>
+                          <p class="text-muted">Nenhuma nota fiscal encontrada.</p>
+                        </ng-template>
+                      </div>
+                      <div class="col-md-6">
+                        <h6>Ações Rápidas</h6>
+                        <div class="d-grid gap-2">
+                          <button class="btn btn-primary" (click)="showDesenvolvimentoModal()">
+                            ➕ Emitir Nova Nota
+                          </button>
+                          <button class="btn btn-secondary" (click)="showDesenvolvimentoModal()">
+                            📤 Ver Notas Emitidas
+                          </button>                        
+                          <button class="btn btn-success" (click)="showDesenvolvimentoModal()">
+                            💰 Ver Notas Faturadas
+                          </button>
+                          <button class="btn btn-warning" (click)="showDesenvolvimentoModal()">
+                            ❌ Cancelar Nota
+                          </button>
+                          <button class="btn btn-info" (click)="showDesenvolvimentoModal()">
+                            🔍 Consultar por Chave
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- EMITIR -->
+          <section id="emitir" class="d-none">
+            <h3>Emissão de NF-e / NFC-e</h3>
+            <app-gerar-nfe></app-gerar-nfe>
+          </section>
+
+          <!-- EMITIDAS -->
+          <section id="emitidas" class="d-none">
+            <h3>Notas Emitidas</h3>
+            <app-consultar-nfe></app-consultar-nfe>
+          </section>
+
+          <!-- RECEBIDAS -->
+          <section id="recebidas" class="d-none">
+            <h3>Notas Recebidas</h3>
+            <div class="alert alert-info">
+              <p>Funcionalidade em desenvolvimento.</p>
+            </div>
+          </section>
+
+          <!-- CANCELADAS -->
+          <section id="canceladas" class="d-none">
+            <h3>Notas Canceladas</h3>
+            <div class="alert alert-info">
+              <p>Funcionalidade em desenvolvimento.</p>
+            </div>
+          </section>
+
+          <!-- FATURADAS -->
+          <section id="faturadas" class="d-none">
+            <h3>Notas Faturadas</h3>
+            <div class="alert alert-info">
+              <p>Funcionalidade em desenvolvimento.</p>
+            </div>
+          </section>
+
+          <!-- CC-e -->
+          <section id="cc-e" class="d-none">
+            <h3>Carta de Correção Eletrônica</h3>
+            <div class="alert alert-info">
+              <p>Funcionalidade em desenvolvimento.</p>
+            </div>
+          </section>
+
+          <!-- INUTILIZAÇÃO -->
+          <section id="inutilizacao" class="d-none">
+            <h3>Inutilização de Numeração</h3>
+            <div class="alert alert-info">
+              <p>Funcionalidade em desenvolvimento.</p>
+            </div>
+          </section>
+
+          <!-- MANIFESTAÇÃO -->
+          <section id="manifestacao" class="d-none">
+            <h3>Manifestação do Destinatário</h3>
+            <div class="alert alert-info">
+              <p>Funcionalidade em desenvolvimento.</p>
+            </div>
+          </section>
+
+          <!-- CONFIG -->
+          <section id="config" class="d-none">
+            <h3>Configurações do Sistema</h3>
+            <div class="alert alert-info">
+              <p>Funcionalidade em desenvolvimento.</p>
+            </div>
+          </section>
+
+        </main>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- Modal de Desenvolvimento -->
+<div *ngIf="showModal" class="custom-modal-overlay">
+  <div class="custom-modal">
+    <div class="custom-modal-header">
+      <h5 class="custom-modal-title">🚧 Em Desenvolvimento</h5>
+      <button type="button" class="custom-modal-close" (click)="hideDesenvolvimentoModal()">&times;</button>
+    </div>
+    <div class="custom-modal-body">
+      <div class="text-center">
+        <div class="mb-3">
+          <span style="font-size: 3rem; color: #ffc107;">🔧</span>
+        </div>
+        <p class="mb-2" style="font-size: 1.1rem; font-weight: 500;">Essa função está em desenvolvimento, por favor aguarde.</p>
+        <p class="text-muted">Agradecemos sua compreensão.</p>
+      </div>
+    </div>
+    <div class="custom-modal-footer">
+      <button type="button" class="btn btn-primary" (click)="hideDesenvolvimentoModal()">Entendi</button>
+    </div>
+  </div>
+</div>
+

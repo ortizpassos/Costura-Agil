@@ -12,7 +12,20 @@ export const routes: Routes = [
 		{
 			path: 'nota-fiscal',
 			canActivate: [authGuard],
-			loadComponent: () => import('./nota-fiscal/nota-fiscal').then(m => m.NotaFiscal)
+			children: [
+				{
+					path: '',
+					loadComponent: () => import('./nota-fiscal/nota-fiscal').then(m => m.NotaFiscal)
+				},
+				{
+					path: 'gerar',
+					loadComponent: () => import('./nota-fiscal/gerar-nfe/gerar-nfe').then(m => m.GerarNfeComponent)
+				},
+				{
+					path: 'consultar',
+					loadComponent: () => import('./nota-fiscal/consultar-nfe/consultar-nfe').then(m => m.ConsultarNfeComponent)
+				}
+			]
 		},
 	{
 		path: '',
