@@ -4,36 +4,47 @@
     <main class="nota-fiscal-container flex-grow-1 main-content-with-sidebar">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Notas Fiscais</h2>
-        <button class="btn btn-primary" type="button">
+        <button class="btn btn-primary" type="button" (click)="createNfe()">
           Nova Nota Fiscal
         </button>
       </div>
-      <table class="table table-striped table-bordered">
-        <thead>
-          <tr>
-            <th>Número</th>
-            <th>Data de Emissão</th>
-            <th>Cliente</th>
-            <th>Valor Total</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Exemplo de linha, substituir por *ngFor futuramente -->
-          <tr>
-            <td>0001</td>
-            <td>16/12/2025</td>
-            <td>Cliente Exemplo</td>
-            <td>R$ 1.000,00</td>
-            <td>Emitida</td>
-            <td>
-              <button class="btn btn-sm btn-outline-secondary me-2">Editar</button>
-              <button class="btn btn-sm btn-outline-danger">Excluir</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </main>
-  </div>
-</div>
+
+      <div *ngIf="loading" class="text-center">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Carregando...</span>
+        </div>
+      </div>
+
+      <div *ngIf="!loading">
+        <table class="table table-striped table-bordered" *ngIf="nfeList.length > 0; else noData">
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Data de Emissão</th>
+              <th>Cliente</th>
+              <th>Valor Total</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let nfe of nfeList">
+              <td>{{ nfe.numero }}</td>
+              <td>{{ nfe.dataEmissao | date:'dd/MM/yyyy' }}</td>
+              <td>{{ nfe.cliente }}</td>
+              <td>R$ {{ nfe.valorTotal | number:'1.2-2' }}</td>
+              <td>{{ nfe.status }}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-secondary me-2" (click)="editNfe(nfe)">Editar</button>
+                <button class="btn btn-sm btn-outline-danger" (click)="deleteNfe(nfe.id!)">Excluir</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <ng-template #noData>
+          <div class="text-center mt-4">
+            <p class="text-muted">Nenhuma nota fiscal encontrada.</p>
+          </div>
+        </ng-template>
+      </div>

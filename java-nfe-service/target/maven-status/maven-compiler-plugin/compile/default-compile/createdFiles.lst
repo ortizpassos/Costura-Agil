@@ -1,0 +1,4 @@
+com\costuraagil\controller\NfeController.class
+com\costuraagil\config\RabbitMQConfig.class
+com\costuraagil\JavaNfeServiceApplication.class
+com\costuraagil\service\NfeMessageService.class
