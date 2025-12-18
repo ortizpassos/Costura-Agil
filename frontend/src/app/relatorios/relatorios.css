@@ -424,7 +424,7 @@
   }
 
   .estatisticas-cards {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
   }
 
@@ -469,5 +469,15 @@
   .producao-value {
     font-size: 1rem;
     padding: 0;
+  }
+
+  /* Ocultar colunas da tabela em mobile */
+  .relatorios-table th:nth-child(4), /* Código */
+  .relatorios-table td:nth-child(4),
+  .relatorios-table th:nth-child(6), /* Tempo Total */
+  .relatorios-table td:nth-child(6),
+  .relatorios-table th:nth-child(7), /* Tempo Médio/Peça */
+  .relatorios-table td:nth-child(7) {
+    display: none;
   }
 }

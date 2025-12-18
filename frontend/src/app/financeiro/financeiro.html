@@ -2,7 +2,9 @@
   <div class="d-flex flex-grow-1 flex-fill">
     <app-sidebar></app-sidebar>
     <main class="financeiro-container flex-grow-1 main-content-with-sidebar">
-      <h2>Financeiro</h2>
+      <div class="d-flex align-items-center mb-3">
+        <h2>Financeiro</h2>
+      </div>
       <nav class="nav-menu nav-menu-inline mb-4">
         <a href="#" (click)="showDesenvolvimentoModal(); $event.preventDefault()" class="nav-item text-decoration-none"><i class="bi bi-receipt"></i><span>LANÇAMENTO<br>DESPESAS</span></a>
         <a href="#" (click)="showDesenvolvimentoModal(); $event.preventDefault()" class="nav-item text-decoration-none"><i class="bi bi-receipt"></i><span>LANÇAMENTO<br>RECEBIMENTOS</span></a>

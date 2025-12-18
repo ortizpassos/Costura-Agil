@@ -1,7 +1,7 @@
 
 
 // Removido import duplicado
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { SidebarComponent } from '../shared/sidebar/sidebar';
 import { RouterOutlet, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
@@ -10,6 +10,8 @@ import { HttpClient } from '@angular/common/http';
 import { SocketService } from '../services/socket.service';
 import { CommonModule } from '@angular/common';
 import Chart from 'chart.js/auto';
+import { SidebarService } from '../services/sidebar.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -18,7 +20,7 @@ import Chart from 'chart.js/auto';
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css']
 })
-export class Dashboard implements OnInit, AfterViewInit {
+export class Dashboard implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('producaoChart', { static: false }) producaoChartRef!: ElementRef<HTMLCanvasElement>;
   static formatarDataHora(data: string | Date): string {
     const dt = new Date(data);
@@ -38,15 +40,22 @@ export class Dashboard implements OnInit, AfterViewInit {
   alertas: any[] = [];
   dispositivosTable: any[] = [];
 
+  private sidebarSubscription: Subscription = new Subscription();
+
   constructor(
     private authService: AuthService,
     private router: Router,
     private dispositivosService: DispositivosService,
   private http: HttpClient,
-  private socketService: SocketService
+  private socketService: SocketService,
+  private sidebarService: SidebarService
   ) {}
 
   ngOnInit() {
+    this.sidebarSubscription = this.sidebarService.sidebarOpen$.subscribe(isOpen => {
+      // Opcional: lógica adicional se necessário
+    });
+
     if (!this.authService.isAuthenticated()) {
       this.router.navigate(['/login']);
       return;
@@ -210,5 +219,7 @@ export class Dashboard implements OnInit, AfterViewInit {
     }
   }
 
-  // Mantém apenas UM ngAfterViewInit
+  ngOnDestroy() {
+    this.sidebarSubscription.unsubscribe();
+  }
 }

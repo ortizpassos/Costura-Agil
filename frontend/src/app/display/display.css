@@ -571,3 +571,36 @@
     text-shadow: 0 0 48px #38a169;
   }
 }
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .display-header {
+    display: none;
+  }
+  .display-container {
+    padding: 0.5rem;
+  }
+  .display-content {
+    text-align: center;
+  }
+}
+
+/* Forçar landscape em mobile */
+@media (max-width: 768px) and (orientation: portrait) {
+  .display-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+  }
+  .display-container::before {
+    content: "🔄 Gire o dispositivo para landscape para visualizar o display";
+    font-size: 1.5rem;
+    color: white;
+    font-weight: bold;
+  }
+  .display-content, .display-header, .splash-parabens {
+    display: none;
+  }
+}

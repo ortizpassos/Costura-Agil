@@ -1,6 +1,24 @@
 /* Layout principal */
 .producao-layout { display: flex; min-height: 100vh; background: #f0f4fa; }
 .producao-content { flex: 1; margin-left: 220px; padding: 1rem 2rem; padding-top: 5rem; }
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .producao-content { margin-left: 0; padding: 1rem; padding-top: 5rem; }
+  .header-stats { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .producao-actions .btn { min-width: auto; flex: 1; margin-right: 0.5rem; }
+  .producao-actions .btn:nth-child(1) { margin-left: 0rem; }
+  .producao-actions .btn:nth-child(2) { margin-right: 0rem; }
+  /* Ocultar colunas da tabela em mobile */
+  .producao-artigo-card .table th:nth-child(4), /* Cliente */
+  .producao-artigo-card .table td:nth-child(4),
+  .producao-artigo-card .table th:nth-child(5), /* Data */
+  .producao-artigo-card .table td:nth-child(5),
+  .producao-artigo-card .table th:nth-child(7), /* Valor */
+  .producao-artigo-card .table td:nth-child(7) {
+    display: none;
+  }
+}
 .producao-header { margin-bottom: 1.2rem; margin-top: 0; }
 .producao-header h2 { font-size: 1.5rem; font-weight: 700; color: #0d6efd; margin-bottom: 1rem; }
 .producao-actions {
@@ -120,6 +138,12 @@
 /* Estilos da barra de progresso */
 .progress-wrapper {
   min-width: 120px;
+}
+
+@media (max-width: 768px) {
+  .progress-wrapper {
+    min-width: 80px;
+  }
 }
 
 .progress {

@@ -23,6 +23,20 @@
   width: 100%;
 }
 
+@media (max-width: 768px) {
+  .nav-menu-inline {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .nav-menu .nav-item:last-child {
+    grid-column: span 2;
+  }
+  .nav-menu .nav-item {
+    width: 100% !important;
+  }
+}
+
 
 /* === Bloco de CSS fornecido pelo usuário para os botões da página Financeiro === */
 .nav-menu {
@@ -194,4 +208,13 @@
   border-top: 1px solid #dee2e6;
   display: flex;
   justify-content: flex-end;
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .financeiro-container {
+    margin-left: 0;
+    padding: 1rem;
+    padding-top: 5rem;
+  }
 }

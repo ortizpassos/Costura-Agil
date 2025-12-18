@@ -3,10 +3,10 @@
   <app-sidebar></app-sidebar>
 
   <!-- CONTEÚDO PRINCIPAL -->
-  <div class="content-wrapper flex-grow-1" style="margin-left: 220px; padding-top: 20px;">
+  <div class="content-wrapper flex-grow-1" style="padding-top: 20px;">
     <div class="container-fluid">
       <div class="row">
-        <div class="col-12">
+        <div class="col-12 d-flex align-items-center">
           <h2 class="mb-4">📊 Sistema de Gestão Fiscal</h2>
         </div>
       </div>
@@ -53,7 +53,7 @@
           <!-- DASHBOARD -->
           <section id="dashboard">            
             <div class="row mt-3">
-              <div class="col-md-3">
+              <div class="col-6 col-md-3">
                 <div class="card text-center">
                   <div class="card-body">
                     <h5 class="card-title">📤 Emitidas</h5>
@@ -61,7 +61,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-6 col-md-3">
                 <div class="card text-center">
                   <div class="card-body">
                     <h5 class="card-title">📥 Recebidas</h5>
@@ -69,7 +69,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-6 col-md-3">
                 <div class="card text-center">
                   <div class="card-body">
                     <h5 class="card-title">❌ Canceladas</h5>
@@ -77,7 +77,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-6 col-md-3">
                 <div class="card text-center">
                   <div class="card-body">
                     <h5 class="card-title">💰 Total Mensal</h5>
@@ -95,7 +95,7 @@
                   </div>
                   <div class="card-body">
                     <div class="row">
-                      <div class="col-md-6">
+                      <div class="col-md-6 order-2 order-md-1">
                         <h6>Notas Recentes</h6>
                         <div class="list-group" *ngIf="nfeList.length > 0; else noNfe">
                           <div class="list-group-item d-flex justify-content-between align-items-center" 
@@ -112,7 +112,7 @@
                           <p class="text-muted">Nenhuma nota fiscal encontrada.</p>
                         </ng-template>
                       </div>
-                      <div class="col-md-6">
+                      <div class="col-md-6 order-1 order-md-2">
                         <h6>Ações Rápidas</h6>
                         <div class="d-grid gap-2">
                           <button class="btn btn-primary" (click)="showDesenvolvimentoModal()">

@@ -2,6 +2,22 @@
 .content-wrapper {
   min-height: 100vh;
   background-color: #f8f9fa;
+  margin-left: 0;
+  transition: margin-left 0.3s ease;
+}
+
+/* Desktop: always show sidebar margin */
+@media (min-width: 769px) {
+  .content-wrapper {
+    margin-left: 220px;
+  }
+}
+
+/* Mobile: margin only when sidebar is open */
+@media (max-width: 768px) {
+  .content-wrapper.sidebar-open {
+    margin-left: 220px;
+  }
 }
 
 /* Menu de navegação interna */
@@ -41,11 +57,7 @@
 /* Responsividade do menu interno */
 @media (max-width: 768px) {
   .nav-pills {
-    flex-direction: column;
-  }
-
-  .nav-pills .nav-link {
-    margin: 0.25rem 0;
+    display: none;
   }
 }
 

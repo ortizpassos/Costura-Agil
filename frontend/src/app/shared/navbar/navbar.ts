@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { SidebarService } from '../../services/sidebar.service';
 
 @Component({
   selector: 'app-navbar',
@@ -12,7 +13,7 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./navbar.css']
 })
 export class NavbarComponent {
-  constructor(private router: Router, public auth: AuthService) {}
+  constructor(public router: Router, public auth: AuthService, private sidebarService: SidebarService) {}
 
   irParaLogin() {
     this.router.navigate(['/login']);
@@ -30,5 +31,9 @@ export class NavbarComponent {
     } else {
       this.router.navigate(['/']);
     }
+  }
+
+  toggleSidebar() {
+    this.sidebarService.toggleSidebar();
   }
 }

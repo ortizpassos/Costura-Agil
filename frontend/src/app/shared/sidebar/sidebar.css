@@ -8,6 +8,18 @@
   left: 0;
   padding-top: 60px;
   box-shadow: 2px 0 8px rgba(0,0,0,0.04);
+  z-index: 1000;
+  transition: transform 0.4s ease-in-out;
+}
+
+/* Hide sidebar on mobile by default */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebar.show {
+    transform: translateX(0);
+  }
 }
 .sidebar ul {
   list-style: none;
