@@ -1,0 +1,442 @@
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <h4 class="mb-0">Relatórios Financeiros</h4>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-primary" (click)="printReport('all')" [disabled]="isLoading()">
+      <i class="bi bi-printer"></i> Imprimir
+    </button>
+    <button class="btn btn-outline-success" (click)="exportToPDF('all')" [disabled]="isLoading()">
+      <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+    </button>
+  </div>
+</div>
+
+<!-- Mensagem de feedback -->
+<div *ngIf="feedback()" class="alert alert-danger mb-4">
+  {{ feedback() }}
+</div>
+
+<div class="row">
+  <!-- DRE - Demonstrativo de Resultado do Exercício -->
+  <div class="col-md-6 mb-4">
+    <div class="card-custom">
+      <div class="d-flex align-items-center mb-3">
+        <div class="me-3" style="color: #28a745; font-size: 2rem;">
+          <i class="bi bi-graph-up"></i>
+        </div>
+        <div>
+          <h5 class="mb-1">DRE - Demonstrativo de Resultado</h5>
+          <p class="text-muted mb-0 small">Receitas, despesas e resultado do período</p>
+        </div>
+      </div>
+
+      <form [formGroup]="dreForm" class="mb-3">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small">Data Inicial</label>
+            <input type="date" class="form-control form-control-sm" formControlName="startDate">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Data Final</label>
+            <input type="date" class="form-control form-control-sm" formControlName="endDate">
+          </div>
+        </div>
+      </form>
+
+      <button class="btn btn-success btn-sm w-100" (click)="generateDRE()" [disabled]="isLoading()">
+        <span *ngIf="!isLoading(); else loading">Gerar DRE</span>
+        <ng-template #loading>
+          <span class="d-flex align-items-center justify-content-center gap-2">
+            <span class="spinner-border spinner-border-sm" role="status"></span>
+            Gerando...
+          </span>
+        </ng-template>
+      </button>
+    </div>
+  </div>
+
+  <!-- Fluxo de Caixa -->
+  <div class="col-md-6 mb-4">
+    <div class="card-custom">
+      <div class="d-flex align-items-center mb-3">
+        <div class="me-3" style="color: #007bff; font-size: 2rem;">
+          <i class="bi bi-cash-stack"></i>
+        </div>
+        <div>
+          <h5 class="mb-1">Fluxo de Caixa</h5>
+          <p class="text-muted mb-0 small">Entradas, saídas e saldo do período</p>
+        </div>
+      </div>
+
+      <form [formGroup]="cashFlowForm" class="mb-3">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small">Data Inicial</label>
+            <input type="date" class="form-control form-control-sm" formControlName="startDate">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Data Final</label>
+            <input type="date" class="form-control form-control-sm" formControlName="endDate">
+          </div>
+        </div>
+      </form>
+
+      <button class="btn btn-primary btn-sm w-100" (click)="generateCashFlow()" [disabled]="isLoading()">
+        <span *ngIf="!isLoading(); else loading">Gerar Fluxo de Caixa</span>
+        <ng-template #loading>
+          <span class="d-flex align-items-center justify-content-center gap-2">
+            <span class="spinner-border spinner-border-sm" role="status"></span>
+            Gerando...
+          </span>
+        </ng-template>
+      </button>
+    </div>
+  </div>
+
+  <!-- Contas a Pagar -->
+  <div class="col-md-6 mb-4">
+    <div class="card-custom">
+      <div class="d-flex align-items-center mb-3">
+        <div class="me-3" style="color: #dc3545; font-size: 2rem;">
+          <i class="bi bi-calendar-x"></i>
+        </div>
+        <div>
+          <h5 class="mb-1">Contas a Pagar</h5>
+          <p class="text-muted mb-0 small">Despesas pendentes do mês</p>
+        </div>
+      </div>
+
+      <form [formGroup]="accountsPayableForm" class="mb-3">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small">Mês</label>
+            <select class="form-control form-control-sm" formControlName="month">
+              <option value="1">Janeiro</option>
+              <option value="2">Fevereiro</option>
+              <option value="3">Março</option>
+              <option value="4">Abril</option>
+              <option value="5">Maio</option>
+              <option value="6">Junho</option>
+              <option value="7">Julho</option>
+              <option value="8">Agosto</option>
+              <option value="9">Setembro</option>
+              <option value="10">Outubro</option>
+              <option value="11">Novembro</option>
+              <option value="12">Dezembro</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Ano</label>
+            <input type="number" class="form-control form-control-sm" formControlName="year" min="2020" max="2030">
+          </div>
+        </div>
+      </form>
+
+      <button class="btn btn-danger btn-sm w-100" (click)="generateAccountsPayable()" [disabled]="isLoading()">
+        <span *ngIf="!isLoading(); else loading">Ver Contas a Pagar</span>
+        <ng-template #loading>
+          <span class="d-flex align-items-center justify-content-center gap-2">
+            <span class="spinner-border spinner-border-sm" role="status"></span>
+            Gerando...
+          </span>
+        </ng-template>
+      </button>
+    </div>
+  </div>
+
+  <!-- Relatório de Vendas -->
+  <div class="col-md-6 mb-4">
+    <div class="card-custom">
+      <div class="d-flex align-items-center mb-3">
+        <div class="me-3" style="color: #ffc107; font-size: 2rem;">
+          <i class="bi bi-bar-chart"></i>
+        </div>
+        <div>
+          <h5 class="mb-1">Relatório de Vendas</h5>
+          <p class="text-muted mb-0 small">Vendas e performance por período</p>
+        </div>
+      </div>
+
+      <form [formGroup]="salesReportForm" class="mb-3">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label small">Data Inicial</label>
+            <input type="date" class="form-control form-control-sm" formControlName="startDate">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">Data Final</label>
+            <input type="date" class="form-control form-control-sm" formControlName="endDate">
+          </div>
+        </div>
+      </form>
+
+      <button class="btn btn-warning btn-sm w-100" (click)="generateSalesReport()" [disabled]="isLoading()">
+        <span *ngIf="!isLoading(); else loading">Gerar Relatório de Vendas</span>
+        <ng-template #loading>
+          <span class="d-flex align-items-center justify-content-center gap-2">
+            <span class="spinner-border spinner-border-sm" role="status"></span>
+            Gerando...
+          </span>
+        </ng-template>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal DRE -->
+<div class="modal-overlay" *ngIf="showDREModal()" (click)="closeDREModal()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header d-flex justify-content-between align-items-center mb-4">
+      <h4 class="mb-0">DRE - Demonstrativo de Resultado do Exercício</h4>
+      <button type="button" class="btn-close" (click)="closeDREModal()"></button>
+    </div>
+
+    <div *ngIf="dreData()" class="report-content">
+      <div class="report-header mb-4">
+        <h5>Período: {{ formatDate(dreData()!.period.start) }} à {{ formatDate(dreData()!.period.end) }}</h5>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card-custom mb-3">
+            <h6 class="text-success mb-3">Receitas</h6>
+            <div class="d-flex justify-content-between">
+              <span>Vendas:</span>
+              <strong class="text-success">{{ formatCurrency(dreData()!.revenue) }}</strong>
+            </div>
+            <small class="text-muted">{{ dreData()!.sales }} vendas realizadas</small>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card-custom mb-3">
+            <h6 class="text-danger mb-3">Despesas</h6>
+            <div class="d-flex justify-content-between">
+              <span>Total:</span>
+              <strong class="text-danger">{{ formatCurrency(dreData()!.expenses) }}</strong>
+            </div>
+            <small class="text-muted">{{ dreData()!.expenseCount }} despesas registradas</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-custom">
+        <h6 class="mb-3" [class]="dreData()!.profit >= 0 ? 'text-success' : 'text-danger'">
+          Resultado: {{ dreData()!.profit >= 0 ? 'LUCRO' : 'PREJUÍZO' }}
+        </h6>
+        <div class="d-flex justify-content-between align-items-center">
+          <span>Valor:</span>
+          <h3 [class]="dreData()!.profit >= 0 ? 'text-success' : 'text-danger'">
+            {{ formatCurrency(getAbsoluteValue(dreData()!.profit)) }}
+          </h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer mt-4">
+      <button type="button" class="btn btn-outline-secondary" (click)="closeDREModal()">Fechar</button>
+      <button type="button" class="btn btn-primary" (click)="printReport('dre')">Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Fluxo de Caixa -->
+<div class="modal-overlay" *ngIf="showCashFlowModal()" (click)="closeCashFlowModal()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header d-flex justify-content-between align-items-center mb-4">
+      <h4 class="mb-0">Fluxo de Caixa</h4>
+      <button type="button" class="btn-close" (click)="closeCashFlowModal()"></button>
+    </div>
+
+    <div *ngIf="cashFlowData()" class="report-content">
+      <div class="report-header mb-4">
+        <h5>Período: {{ formatDate(cashFlowData()!.period.start) }} à {{ formatDate(cashFlowData()!.period.end) }}</h5>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card-custom mb-3 text-center">
+            <h6 class="text-info mb-3">Saldo Inicial</h6>
+            <h4 class="text-info">{{ formatCurrency(cashFlowData()!.initialBalance) }}</h4>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card-custom mb-3 text-center">
+            <h6 class="text-success mb-3">Entradas</h6>
+            <h4 class="text-success">{{ formatCurrency(cashFlowData()!.receipts) }}</h4>
+            <small class="text-muted">{{ cashFlowData()!.receiptCount }} recebimentos</small>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card-custom mb-3 text-center">
+            <h6 class="text-danger mb-3">Saídas</h6>
+            <h4 class="text-danger">{{ formatCurrency(cashFlowData()!.payments) }}</h4>
+            <small class="text-muted">{{ cashFlowData()!.paymentCount }} pagamentos</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-custom">
+        <div class="row">
+          <div class="col-md-6">
+            <h6 class="mb-3" [class]="cashFlowData()!.netCashFlow >= 0 ? 'text-success' : 'text-danger'">
+              Fluxo Líquido: {{ cashFlowData()!.netCashFlow >= 0 ? 'POSITIVO' : 'NEGATIVO' }}
+            </h6>
+            <div class="d-flex justify-content-between">
+              <span>Valor:</span>
+              <strong [class]="cashFlowData()!.netCashFlow >= 0 ? 'text-success' : 'text-danger'">
+                {{ formatCurrency(getAbsoluteValue(cashFlowData()!.netCashFlow)) }}
+              </strong>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <h6 class="mb-3 text-primary">Saldo Final</h6>
+            <div class="d-flex justify-content-between">
+              <span>Valor:</span>
+              <strong class="text-primary">{{ formatCurrency(cashFlowData()!.finalBalance) }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer mt-4">
+      <button type="button" class="btn btn-outline-secondary" (click)="closeCashFlowModal()">Fechar</button>
+      <button type="button" class="btn btn-primary" (click)="printReport('cash-flow')">Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Contas a Pagar -->
+<div class="modal-overlay" *ngIf="showAccountsPayableModal()" (click)="closeAccountsPayableModal()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header d-flex justify-content-between align-items-center mb-4">
+      <h4 class="mb-0">Contas a Pagar - {{ accountsPayableData()!.period.monthName }}/{{ accountsPayableData()!.period.year }}</h4>
+      <button type="button" class="btn-close" (click)="closeAccountsPayableModal()"></button>
+    </div>
+
+    <div *ngIf="accountsPayableData()" class="report-content">
+      <div class="summary-card mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h5>Total a Pagar</h5>
+            <span class="badge bg-danger">{{ accountsPayableData()!.count }} contas</span>
+          </div>
+          <h3 class="text-danger mb-0">{{ formatCurrency(accountsPayableData()!.totalValue) }}</h3>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th>Valor</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let expense of accountsPayableData()!.expenses">
+              <td>{{ formatDate(expense.createdAt) }}</td>
+              <td>{{ expense.descricao }}</td>
+              <td>
+                <span class="badge bg-secondary">{{ expense.categoria?.nome || 'N/A' }}</span>
+              </td>
+              <td class="text-danger fw-bold">{{ formatCurrency(expense.valor) }}</td>
+              <td>
+                <span class="badge" [class]="expense.status === 'pago' ? 'bg-success' : 'bg-warning'">
+                  {{ expense.status === 'pago' ? 'Pago' : 'Pendente' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal-footer mt-4">
+      <button type="button" class="btn btn-outline-secondary" (click)="closeAccountsPayableModal()">Fechar</button>
+      <button type="button" class="btn btn-primary" (click)="printReport('accounts-payable')">Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Relatório de Vendas -->
+<div class="modal-overlay" *ngIf="showSalesReportModal()" (click)="closeSalesReportModal()">
+  <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header d-flex justify-content-between align-items-center mb-4">
+      <h4 class="mb-0">Relatório de Vendas</h4>
+      <button type="button" class="btn-close" (click)="closeSalesReportModal()"></button>
+    </div>
+
+    <div *ngIf="salesReportData()" class="report-content">
+      <div class="report-header mb-4">
+        <h5>Período: {{ formatDate(salesReportData()!.period.start) }} à {{ formatDate(salesReportData()!.period.end) }}</h5>
+      </div>
+
+      <!-- Resumo -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card-custom text-center">
+            <h6 class="text-primary mb-2">Total Vendas</h6>
+            <h4 class="text-primary">{{ salesReportData()!.summary.totalSales }}</h4>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card-custom text-center">
+            <h6 class="text-success mb-2">Valor Total</h6>
+            <h4 class="text-success">{{ formatCurrency(salesReportData()!.summary.totalValue) }}</h4>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card-custom text-center">
+            <h6 class="text-info mb-2">Itens Vendidos</h6>
+            <h4 class="text-info">{{ salesReportData()!.summary.totalItems }}</h4>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card-custom text-center">
+            <h6 class="text-warning mb-2">Ticket Médio</h6>
+            <h4 class="text-warning">{{ formatCurrency(salesReportData()!.summary.averageValue) }}</h4>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vendas por Canal -->
+      <div class="card-custom mb-4">
+        <h6 class="mb-3">Vendas por Canal</h6>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Canal</th>
+                <th class="text-center">Quantidade</th>
+                <th class="text-end">Valor Total</th>
+                <th class="text-end">Percentual</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let channel of objectKeys(salesReportData()!.salesByChannel)">
+                <td>{{ channel }}</td>
+                <td class="text-center">{{ salesReportData()!.salesByChannel[channel].count }}</td>
+                <td class="text-end">{{ formatCurrency(salesReportData()!.salesByChannel[channel].value) }}</td>
+                <td class="text-end">
+                  {{ ((salesReportData()!.salesByChannel[channel].value / salesReportData()!.summary.totalValue) * 100).toFixed(1) }}%
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer mt-4">
+      <button type="button" class="btn btn-outline-secondary" (click)="closeSalesReportModal()">Fechar</button>
+      <button type="button" class="btn btn-primary" (click)="printReport('sales')">Imprimir</button>
+    </div>
+  </div>
+</div>

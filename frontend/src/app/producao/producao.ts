@@ -1,3 +1,6 @@
+// método carregarXmlNota está implementado dentro da classe ProducaoComponent mais abaixo
+// método carregarXmlNota está implementado dentro da classe ProducaoComponent mais abaixo
+// ...existing code...
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,7 +16,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Subscription } from 'rxjs';
 
-type ProducaoItem = Dispositivo & { progresso: number; funcionario: string; grupo: string; meta: number; };
+type ProducaoItem = Dispositivo & { progresso: number; funcionario: string; meta: number; };
 type ArtigoForm = {
   codigo: string;
   nome: string;
@@ -65,7 +68,7 @@ export class ProducaoComponent implements OnInit, OnDestroy {
   modalOperacaoAberto: boolean = false;
   modalClienteAberto: boolean = false;
   operacaoEditando: Operacao | null = null;
-  novaOperacao: any = { nome: '', metaDiaria: '', setor: '', descricao: '' };
+  novaOperacao: any = { nome: '', pecasPorHora: '', cortesPorPeca: '', descricao: '' };
   novoCliente: any = { nome: '', contato: '' };
 
   get producaoEmProducao(): ProducaoItem[] {
@@ -128,6 +131,48 @@ export class ProducaoComponent implements OnInit, OnDestroy {
       },
       error: (err: any) => console.error('Erro ao buscar clientes', err)
     });
+  }
+
+  // Permite carregar um XML de nota fiscal e preencher automaticamente o formulário de novo artigo
+  carregarXmlNota(event: Event) {
+    const input = event?.target as HTMLInputElement | undefined;
+    if (!input || !input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      const xmlContent = (e.target && (e.target as FileReader).result) as string | null;
+      if (!xmlContent) return;
+      try {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlContent, 'application/xml');
+        const prod = xmlDoc.querySelector('det > prod') || xmlDoc.querySelector('prod');
+        if (prod && this.novoArtigo) {
+          const cProd = prod.querySelector('cProd')?.textContent?.trim() || '';
+          const xProd = prod.querySelector('xProd')?.textContent?.trim() || '';
+          const vUnCom = prod.querySelector('vUnCom')?.textContent?.trim() || '0';
+          const qCom = prod.querySelector('qCom')?.textContent?.trim() || '0';
+          this.novoArtigo.codigo = cProd;
+          this.novoArtigo.nome = xProd;
+          this.novoArtigo.valor = vUnCom ? parseFloat(vUnCom) : null;
+          this.novoArtigo.quantidade = qCom ? parseFloat(qCom) : null;
+        }
+        const dest = xmlDoc.querySelector('dest > xNome') || xmlDoc.querySelector('xNome');
+        if (dest && this.novoArtigo) {
+          this.novoArtigo.cliente = dest.textContent?.trim() || '';
+        }
+        const dhEmi = xmlDoc.querySelector('ide > dhEmi') || xmlDoc.querySelector('dhEmi') || xmlDoc.querySelector('ide > dEmi');
+        if (dhEmi && this.novoArtigo) {
+          const dt = dhEmi.textContent?.trim() || '';
+          this.novoArtigo.dataInclusao = dt ? dt.substring(0, 10) : this.novoArtigo.dataInclusao;
+        }
+        // Abrir o modal caso não esteja aberto
+        this.modalArtigoAberto = true;
+      } catch (err) {
+        console.error('Erro ao processar XML da nota fiscal', err);
+        alert('Erro ao processar XML da nota fiscal. Verifique o arquivo.');
+      }
+    };
+    reader.readAsText(file);
   }
 
   abrirModalArtigo() {
@@ -399,7 +444,7 @@ export class ProducaoComponent implements OnInit, OnDestroy {
   }
 
   abrirModalOperacao() {
-    this.novaOperacao = { nome: '', metaDiaria: '', setor: '', descricao: '' };
+    this.novaOperacao = { nome: '', pecasPorHora: '', cortesPorPeca: '', descricao: '' };
     this.operacaoEditando = null;
     this.modalOperacaoAberto = true;
   }
@@ -411,15 +456,15 @@ export class ProducaoComponent implements OnInit, OnDestroy {
   cadastrarOperacao() {
     const op = {
       nome: this.novaOperacao.nome,
-      metaDiaria: Number(this.novaOperacao.metaDiaria),
-      setor: this.novaOperacao.setor,
+      pecasPorHora: Number(this.novaOperacao.pecasPorHora),
+      cortesPorPeca: Number(this.novaOperacao.cortesPorPeca),
       descricao: this.novaOperacao.descricao
     };
     this.operacoesService.cadastrarOperacao(op).subscribe({
       next: () => {
         this.fecharModalOperacao();
         this.carregarOperacoes();
-        this.novaOperacao = { nome: '', metaDiaria: '', setor: '', descricao: '' };
+        this.novaOperacao = { nome: '', pecasPorHora: '', cortesPorPeca: '', descricao: '' };
       },
       error: (err: any) => {
         alert('Erro ao cadastrar operação!');
@@ -488,7 +533,6 @@ export class ProducaoComponent implements OnInit, OnDestroy {
         ...d,
         funcionario: d.funcionarioLogado?.nome || '-',
         progresso: d.producaoAtual || 0,
-        grupo: d.setor || '-',
         meta: d.metaDiaria || 0,
       }));
       this.calcularEstatisticas();
@@ -577,8 +621,7 @@ export class ProducaoComponent implements OnInit, OnDestroy {
       const buscaLower = this.busca.toLowerCase();
       resultado = resultado.filter(item => 
         item.nome?.toLowerCase().includes(buscaLower) ||
-        item.funcionario?.toLowerCase().includes(buscaLower) ||
-        item.grupo?.toLowerCase().includes(buscaLower)
+        item.funcionario?.toLowerCase().includes(buscaLower)
       );
     }
     

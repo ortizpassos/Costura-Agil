@@ -1,0 +1,38 @@
+<div class="financeiro-page-layout">
+  <div class="d-flex flex-grow-1 flex-fill">
+    <app-sidebar></app-sidebar>
+    <main class="financeiro-container flex-grow-1 main-content-with-sidebar">
+      <h2>Financeiro</h2>
+      <nav class="nav-menu nav-menu-inline mb-4">
+        <a href="#" (click)="showDesenvolvimentoModal(); $event.preventDefault()" class="nav-item text-decoration-none"><i class="bi bi-receipt"></i><span>LANÇAMENTO<br>DESPESAS</span></a>
+        <a href="#" (click)="showDesenvolvimentoModal(); $event.preventDefault()" class="nav-item text-decoration-none"><i class="bi bi-receipt"></i><span>LANÇAMENTO<br>RECEBIMENTOS</span></a>
+        <a href="#" (click)="showDesenvolvimentoModal(); $event.preventDefault()" class="nav-item text-decoration-none"><i class="bi bi-receipt"></i><span>LANÇAMENTO<br>DE VENDAS</span></a>
+        <a href="#" (click)="showDesenvolvimentoModal(); $event.preventDefault()" class="nav-item text-decoration-none"><i class="bi bi-wallet2"></i><span>SALDO EM<br>CONTAS</span></a>
+        <a href="#" (click)="showDesenvolvimentoModal(); $event.preventDefault()" class="nav-item text-decoration-none"><i class="bi bi-bar-chart"></i><span>RELATÓRIOS</span></a>
+      </nav>
+      <app-overview (showModalEvent)="showDesenvolvimentoModal()"></app-overview>
+    </main>
+  </div>
+</div>
+
+<!-- Modal de Desenvolvimento -->
+<div *ngIf="showModal" class="custom-modal-overlay">
+  <div class="custom-modal">
+    <div class="custom-modal-header">
+      <h5 class="custom-modal-title">🚧 Em Desenvolvimento</h5>
+      <button type="button" class="custom-modal-close" (click)="hideDesenvolvimentoModal()">&times;</button>
+    </div>
+    <div class="custom-modal-body">
+      <div class="text-center">
+        <div class="mb-3">
+          <span style="font-size: 3rem; color: #ffc107;">🔧</span>
+        </div>
+        <p class="mb-2" style="font-size: 1.1rem; font-weight: 500;">Essa função está em desenvolvimento, por favor aguarde.</p>
+        <p class="text-muted">Agradecemos sua compreensão.</p>
+      </div>
+    </div>
+    <div class="custom-modal-footer">
+      <button type="button" class="btn btn-primary" (click)="hideDesenvolvimentoModal()">Entendi</button>
+    </div>
+  </div>
+</div>

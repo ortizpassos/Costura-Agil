@@ -1,0 +1,404 @@
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0">
+            <i class="fas fa-file-invoice-dollar me-2"></i>
+            Gerar Nota Fiscal Eletrônica (NFe)
+          </h3>
+        </div>
+        <div class="card-body">
+          <!-- Mensagens de sucesso/erro -->
+          <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            {{ successMessage }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+
+          <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            {{ errorMessage }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+
+          <form [formGroup]="nfeForm" (ngSubmit)="onSubmit()">
+            <!-- Dados da NFe -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="text-primary mb-3">
+                  <i class="fas fa-info-circle me-2"></i>
+                  Dados da Nota Fiscal
+                </h5>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-3">
+                <label for="numero" class="form-label">Número da NFe *</label>
+                <input type="text" class="form-control" id="numero" formControlName="numero"
+                       [class.is-invalid]="nfeForm.get('numero')?.invalid && nfeForm.get('numero')?.touched">
+                <div class="invalid-feedback">Número da NFe é obrigatório</div>
+              </div>
+              <div class="col-md-3">
+                <label for="serie" class="form-label">Série *</label>
+                <input type="text" class="form-control" id="serie" formControlName="serie"
+                       [class.is-invalid]="nfeForm.get('serie')?.invalid && nfeForm.get('serie')?.touched">
+                <div class="invalid-feedback">Série é obrigatória</div>
+              </div>
+              <div class="col-md-3">
+                <label for="dataEmissao" class="form-label">Data de Emissão *</label>
+                <input type="date" class="form-control" id="dataEmissao" formControlName="dataEmissao"
+                       [class.is-invalid]="nfeForm.get('dataEmissao')?.invalid && nfeForm.get('dataEmissao')?.touched">
+                <div class="invalid-feedback">Data de emissão é obrigatória</div>
+              </div>
+              <div class="col-md-3">
+                <label for="naturezaOperacao" class="form-label">Natureza da Operação *</label>
+                <input type="text" class="form-control" id="naturezaOperacao" formControlName="naturezaOperacao"
+                       placeholder="Ex: Venda de mercadorias"
+                       [class.is-invalid]="nfeForm.get('naturezaOperacao')?.invalid && nfeForm.get('naturezaOperacao')?.touched">
+                <div class="invalid-feedback">Natureza da operação é obrigatória</div>
+              </div>
+            </div>
+
+            <!-- Dados do Emitente -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="text-primary mb-3">
+                  <i class="fas fa-building me-2"></i>
+                  Dados do Emitente
+                </h5>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label for="emitenteCnpj" class="form-label">CNPJ *</label>
+                <input type="text" class="form-control" id="emitenteCnpj" formControlName="emitenteCnpj"
+                       placeholder="00.000.000/0000-00"
+                       [class.is-invalid]="nfeForm.get('emitenteCnpj')?.invalid && nfeForm.get('emitenteCnpj')?.touched">
+                <div class="invalid-feedback">CNPJ válido é obrigatório (14 dígitos)</div>
+              </div>
+              <div class="col-md-8">
+                <label for="emitenteRazaoSocial" class="form-label">Razão Social *</label>
+                <input type="text" class="form-control" id="emitenteRazaoSocial" formControlName="emitenteRazaoSocial"
+                       [class.is-invalid]="nfeForm.get('emitenteRazaoSocial')?.invalid && nfeForm.get('emitenteRazaoSocial')?.touched">
+                <div class="invalid-feedback">Razão social é obrigatória</div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="emitenteNomeFantasia" class="form-label">Nome Fantasia</label>
+                <input type="text" class="form-control" id="emitenteNomeFantasia" formControlName="emitenteNomeFantasia">
+              </div>
+              <div class="col-md-6">
+                <label for="emitenteInscricaoEstadual" class="form-label">Inscrição Estadual</label>
+                <input type="text" class="form-control" id="emitenteInscricaoEstadual" formControlName="emitenteInscricaoEstadual">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-8">
+                <label for="emitenteEndereco" class="form-label">Endereço *</label>
+                <input type="text" class="form-control" id="emitenteEndereco" formControlName="emitenteEndereco"
+                       [class.is-invalid]="nfeForm.get('emitenteEndereco')?.invalid && nfeForm.get('emitenteEndereco')?.touched">
+                <div class="invalid-feedback">Endereço é obrigatório</div>
+              </div>
+              <div class="col-md-4">
+                <label for="emitenteCEP" class="form-label">CEP *</label>
+                <input type="text" class="form-control" id="emitenteCEP" formControlName="emitenteCEP"
+                       placeholder="00000-000"
+                       [class.is-invalid]="nfeForm.get('emitenteCEP')?.invalid && nfeForm.get('emitenteCEP')?.touched">
+                <div class="invalid-feedback">CEP válido é obrigatório (8 dígitos)</div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-8">
+                <label for="emitenteCidade" class="form-label">Cidade *</label>
+                <input type="text" class="form-control" id="emitenteCidade" formControlName="emitenteCidade"
+                       [class.is-invalid]="nfeForm.get('emitenteCidade')?.invalid && nfeForm.get('emitenteCidade')?.touched">
+                <div class="invalid-feedback">Cidade é obrigatória</div>
+              </div>
+              <div class="col-md-4">
+                <label for="emitenteUF" class="form-label">UF *</label>
+                <select class="form-select" id="emitenteUF" formControlName="emitenteUF"
+                        [class.is-invalid]="nfeForm.get('emitenteUF')?.invalid && nfeForm.get('emitenteUF')?.touched">
+                  <option value="">Selecione...</option>
+                  <option value="AC">AC</option>
+                  <option value="AL">AL</option>
+                  <option value="AP">AP</option>
+                  <option value="AM">AM</option>
+                  <option value="BA">BA</option>
+                  <option value="CE">CE</option>
+                  <option value="DF">DF</option>
+                  <option value="ES">ES</option>
+                  <option value="GO">GO</option>
+                  <option value="MA">MA</option>
+                  <option value="MT">MT</option>
+                  <option value="MS">MS</option>
+                  <option value="MG">MG</option>
+                  <option value="PA">PA</option>
+                  <option value="PB">PB</option>
+                  <option value="PR">PR</option>
+                  <option value="PE">PE</option>
+                  <option value="PI">PI</option>
+                  <option value="RJ">RJ</option>
+                  <option value="RN">RN</option>
+                  <option value="RS">RS</option>
+                  <option value="RO">RO</option>
+                  <option value="RR">RR</option>
+                  <option value="SC">SC</option>
+                  <option value="SP">SP</option>
+                  <option value="SE">SE</option>
+                  <option value="TO">TO</option>
+                </select>
+                <div class="invalid-feedback">UF é obrigatória</div>
+              </div>
+            </div>
+
+            <!-- Dados do Destinatário -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="text-primary mb-3">
+                  <i class="fas fa-user-tie me-2"></i>
+                  Dados do Destinatário
+                </h5>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label for="destinatarioCnpj" class="form-label">CNPJ *</label>
+                <input type="text" class="form-control" id="destinatarioCnpj" formControlName="destinatarioCnpj"
+                       placeholder="00.000.000/0000-00"
+                       [class.is-invalid]="nfeForm.get('destinatarioCnpj')?.invalid && nfeForm.get('destinatarioCnpj')?.touched">
+                <div class="invalid-feedback">CNPJ válido é obrigatório (14 dígitos)</div>
+              </div>
+              <div class="col-md-8">
+                <label for="destinatarioRazaoSocial" class="form-label">Razão Social *</label>
+                <input type="text" class="form-control" id="destinatarioRazaoSocial" formControlName="destinatarioRazaoSocial"
+                       [class.is-invalid]="nfeForm.get('destinatarioRazaoSocial')?.invalid && nfeForm.get('destinatarioRazaoSocial')?.touched">
+                <div class="invalid-feedback">Razão social é obrigatória</div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-8">
+                <label for="destinatarioEndereco" class="form-label">Endereço *</label>
+                <input type="text" class="form-control" id="destinatarioEndereco" formControlName="destinatarioEndereco"
+                       [class.is-invalid]="nfeForm.get('destinatarioEndereco')?.invalid && nfeForm.get('destinatarioEndereco')?.touched">
+                <div class="invalid-feedback">Endereço é obrigatório</div>
+              </div>
+              <div class="col-md-4">
+                <label for="destinatarioCEP" class="form-label">CEP *</label>
+                <input type="text" class="form-control" id="destinatarioCEP" formControlName="destinatarioCEP"
+                       placeholder="00000-000"
+                       [class.is-invalid]="nfeForm.get('destinatarioCEP')?.invalid && nfeForm.get('destinatarioCEP')?.touched">
+                <div class="invalid-feedback">CEP válido é obrigatório (8 dígitos)</div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-8">
+                <label for="destinatarioCidade" class="form-label">Cidade *</label>
+                <input type="text" class="form-control" id="destinatarioCidade" formControlName="destinatarioCidade"
+                       [class.is-invalid]="nfeForm.get('destinatarioCidade')?.invalid && nfeForm.get('destinatarioCidade')?.touched">
+                <div class="invalid-feedback">Cidade é obrigatória</div>
+              </div>
+              <div class="col-md-4">
+                <label for="destinatarioUF" class="form-label">UF *</label>
+                <select class="form-select" id="destinatarioUF" formControlName="destinatarioUF"
+                        [class.is-invalid]="nfeForm.get('destinatarioUF')?.invalid && nfeForm.get('destinatarioUF')?.touched">
+                  <option value="">Selecione...</option>
+                  <option value="AC">AC</option>
+                  <option value="AL">AL</option>
+                  <option value="AP">AP</option>
+                  <option value="AM">AM</option>
+                  <option value="BA">BA</option>
+                  <option value="CE">CE</option>
+                  <option value="DF">DF</option>
+                  <option value="ES">ES</option>
+                  <option value="GO">GO</option>
+                  <option value="MA">MA</option>
+                  <option value="MT">MT</option>
+                  <option value="MS">MS</option>
+                  <option value="MG">MG</option>
+                  <option value="PA">PA</option>
+                  <option value="PB">PB</option>
+                  <option value="PR">PR</option>
+                  <option value="PE">PE</option>
+                  <option value="PI">PI</option>
+                  <option value="RJ">RJ</option>
+                  <option value="RN">RN</option>
+                  <option value="RS">RS</option>
+                  <option value="RO">RO</option>
+                  <option value="RR">RR</option>
+                  <option value="SC">SC</option>
+                  <option value="SP">SP</option>
+                  <option value="SE">SE</option>
+                  <option value="TO">TO</option>
+                </select>
+                <div class="invalid-feedback">UF é obrigatória</div>
+              </div>
+            </div>
+
+            <!-- Produtos -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="text-primary mb-3">
+                  <i class="fas fa-boxes me-2"></i>
+                  Produtos/Serviços
+                </h5>
+              </div>
+            </div>
+
+            <!-- Formulário de produto -->
+            <div class="card mb-4">
+              <div class="card-header">
+                <h6 class="card-title mb-0">Adicionar Produto</h6>
+              </div>
+              <div class="card-body">
+                <div class="row mb-3">
+                  <div class="col-md-3">
+                    <label for="produtoCodigo" class="form-label">Código *</label>
+                    <input type="text" class="form-control" id="produtoCodigo" formControlName="produtoCodigo"
+                           [class.is-invalid]="nfeForm.get('produtoCodigo')?.invalid && nfeForm.get('produtoCodigo')?.touched">
+                    <div class="invalid-feedback">Código é obrigatório</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="produtoDescricao" class="form-label">Descrição *</label>
+                    <input type="text" class="form-control" id="produtoDescricao" formControlName="produtoDescricao"
+                           [class.is-invalid]="nfeForm.get('produtoDescricao')?.invalid && nfeForm.get('produtoDescricao')?.touched">
+                    <div class="invalid-feedback">Descrição é obrigatória</div>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="produtoQuantidade" class="form-label">Quantidade *</label>
+                    <input type="number" class="form-control" id="produtoQuantidade" formControlName="produtoQuantidade" step="0.001" min="0.001"
+                           [class.is-invalid]="nfeForm.get('produtoQuantidade')?.invalid && nfeForm.get('produtoQuantidade')?.touched">
+                    <div class="invalid-feedback">Quantidade deve ser maior que 0</div>
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col-md-3">
+                    <label for="produtoValorUnitario" class="form-label">Valor Unitário *</label>
+                    <input type="number" class="form-control" id="produtoValorUnitario" formControlName="produtoValorUnitario" step="0.01" min="0"
+                           [class.is-invalid]="nfeForm.get('produtoValorUnitario')?.invalid && nfeForm.get('produtoValorUnitario')?.touched">
+                    <div class="invalid-feedback">Valor unitário deve ser maior ou igual a 0</div>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="produtoCFOP" class="form-label">CFOP *</label>
+                    <input type="text" class="form-control" id="produtoCFOP" formControlName="produtoCFOP" placeholder="5102"
+                           [class.is-invalid]="nfeForm.get('produtoCFOP')?.invalid && nfeForm.get('produtoCFOP')?.touched">
+                    <div class="invalid-feedback">CFOP válido é obrigatório (4 dígitos)</div>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="produtoNCM" class="form-label">NCM *</label>
+                    <input type="text" class="form-control" id="produtoNCM" formControlName="produtoNCM" placeholder="61091000"
+                           [class.is-invalid]="nfeForm.get('produtoNCM')?.invalid && nfeForm.get('produtoNCM')?.touched">
+                    <div class="invalid-feedback">NCM válido é obrigatório (8 dígitos)</div>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="produtoCST" class="form-label">CST ICMS *</label>
+                    <select class="form-select" id="produtoCST" formControlName="produtoCST"
+                            [class.is-invalid]="nfeForm.get('produtoCST')?.invalid && nfeForm.get('produtoCST')?.touched">
+                      <option value="">Selecione...</option>
+                      <option value="00">00 - Tributada integralmente</option>
+                      <option value="10">10 - Tributada e com cobrança do ICMS por ST</option>
+                      <option value="20">20 - Com redução da BC</option>
+                      <option value="30">30 - Isenta ou não tributada e com cobrança do ICMS por ST</option>
+                      <option value="40">40 - Isenta</option>
+                      <option value="41">41 - Não tributada</option>
+                      <option value="50">50 - Suspensão</option>
+                      <option value="51">51 - Diferimento</option>
+                      <option value="60">60 - ICMS cobrado anteriormente por ST</option>
+                      <option value="70">70 - Com redução da BC e cobrança do ICMS por ST</option>
+                      <option value="90">90 - Outros</option>
+                    </select>
+                    <div class="invalid-feedback">CST é obrigatório</div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-12">
+                    <button type="button" class="btn btn-success" (click)="adicionarProduto()"
+                            [disabled]="!nfeForm.get('produtoCodigo')?.valid || !nfeForm.get('produtoDescricao')?.valid ||
+                                       !nfeForm.get('produtoQuantidade')?.valid || !nfeForm.get('produtoValorUnitario')?.valid ||
+                                       !nfeForm.get('produtoCFOP')?.valid || !nfeForm.get('produtoNCM')?.valid ||
+                                       !nfeForm.get('produtoCST')?.valid">
+                      <i class="fas fa-plus me-2"></i>
+                      Adicionar Produto
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lista de produtos -->
+            <div class="card mb-4" *ngIf="produtos.length > 0">
+              <div class="card-header">
+                <h6 class="card-title mb-0">Produtos Adicionados</h6>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Código</th>
+                        <th>Descrição</th>
+                        <th>Quantidade</th>
+                        <th>Valor Unitário</th>
+                        <th>Valor Total</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let produto of produtos; let i = index">
+                        <td>{{ produto.codigo }}</td>
+                        <td>{{ produto.descricao }}</td>
+                        <td>{{ produto.quantidade }}</td>
+                        <td>R$ {{ produto.valorUnitario.toFixed(2) }}</td>
+                        <td>R$ {{ produto.valorTotal.toFixed(2) }}</td>
+                        <td>
+                          <button type="button" class="btn btn-sm btn-danger" (click)="removerProduto(i)">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr class="table-primary">
+                        <td colspan="4" class="text-end fw-bold">Total:</td>
+                        <td class="fw-bold">R$ {{ calcularTotalProdutos().toFixed(2) }}</td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botões -->
+            <div class="row">
+              <div class="col-12">
+                <div class="d-flex justify-content-between">
+                  <button type="button" class="btn btn-secondary" (click)="voltar()">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Voltar
+                  </button>
+                  <button type="submit" class="btn btn-primary" [disabled]="loading || produtos.length === 0">
+                    <i class="fas fa-save me-2" *ngIf="!loading"></i>
+                    <i class="fas fa-spinner fa-spin me-2" *ngIf="loading"></i>
+                    {{ loading ? 'Gerando NFe...' : 'Gerar NFe' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

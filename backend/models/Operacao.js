@@ -11,7 +11,7 @@ const operacaoSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
-  metaDiaria: {
+  pecasPorHora: {
     type: Number,
     required: true,
     default: 0,
@@ -20,15 +20,14 @@ const operacaoSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  setor: {
-    type: String,
-    trim: true,
-    default: '',
-  },
   descricao: {
     type: String,
     trim: true,
     default: '',
+  },
+  cortesPorPeca: {
+    type: Number,
+    default: 0,
   },
   ativo: {
     type: Boolean,

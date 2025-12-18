@@ -1,0 +1,124 @@
+/* NAVBAR BASE */
+.nav-wrapper {
+  width: 100%;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e5e5;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999;
+  font-family: 'Inter', sans-serif;
+}
+
+.nav-container {
+  max-width: 1300px;
+  margin: 0 auto;
+  height: 95px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+}
+
+/* LOGO */
+.nav-logo {
+  height: 58px;
+  object-fit: contain;
+}
+
+/* LINKS */
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 40px;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links li a {
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 400;
+  color: #000;
+  transition: color 0.2s;
+}
+
+.nav-links li a:hover {
+  color: #0075ff;
+}
+
+/* BOTÃO DIREITA - Mesmo estilo do botão Saiba Mais */
+.nav-btn {
+  background: linear-gradient(135deg, #092145 0%, #1793d1 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 12px 24px !important;
+  border-radius: 50px !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  text-decoration: none !important;
+  display: inline-block !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 15px rgba(9, 33, 69, 0.3) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.nav-btn::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent) !important;
+  transition: left 0.5s !important;
+}
+
+.nav-btn:hover {
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 8px 25px rgba(9, 33, 69, 0.4) !important;
+  background: linear-gradient(135deg, #0a2a4a 0%, #1a8ac7 100%) !important;
+}
+
+.nav-btn:hover::before {
+  left: 100% !important;
+}
+
+.nav-btn:active {
+  transform: translateY(0) scale(0.98) !important;
+  box-shadow: 0 2px 10px rgba(9, 33, 69, 0.3) !important;
+}
+
+.nav-btn:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(23, 147, 209, 0.3) !important;
+}
+
+/* RESPONSIVIDADE */
+@media (max-width: 992px) {
+  .nav-links {
+    gap: 25px;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-container {
+    padding: 0 18px;
+  }
+
+  .nav-links {
+    display: none; /* mobile menu opcional */
+  }
+
+  .nav-btn {
+    padding: 10px 20px !important;
+    font-size: 0.9rem !important;
+  }
+
+  .nav-logo {
+    height: 48px;
+  }
+}

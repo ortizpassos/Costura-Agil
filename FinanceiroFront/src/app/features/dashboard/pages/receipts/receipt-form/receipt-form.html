@@ -1,0 +1,99 @@
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card-custom">
+            <h5 class="mb-4">Dados do Recebimento</h5>
+            <form id="form-recebimento" #receiptForm="ngForm">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label" for="receb-descricao">Descrição:</label>
+                        <input id="receb-descricao" type="text" class="form-control form-control-custom" tabindex="7" name="descricao" [(ngModel)]="descricao" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="receb-data-recebimento">Data do Recebimento:</label>
+                        <input id="receb-data-recebimento" type="date" class="form-control form-control-custom" tabindex="8" name="dataRecebimento" [(ngModel)]="dataRecebimento" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="receb-valor">Valor:</label>
+                        <input id="receb-valor" type="text" class="form-control form-control-custom" placeholder="R$ 0,00" tabindex="9" name="valor" [(ngModel)]="valor" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label" for="receb-forma">Forma de Recebimento:</label>
+                        <div class="input-group">
+                            <select id="receb-forma" class="form-control form-control-custom" tabindex="10" name="formaRecebimento" [(ngModel)]="formaRecebimento" required>
+                                <option value="">Selecione...</option>
+                                <option *ngFor="let method of receiptMethods" [value]="method._id">{{ method.nome }}</option>
+                            </select>
+                            <button
+                                class="btn btn-outline-primary"
+                                type="button"
+                                (click)="openReceiptMethodModal()"
+                                tabindex="-1"
+                                aria-label="Cadastrar nova forma de recebimento"
+                                title="Cadastrar nova forma de recebimento"
+                            >
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-custom mt-4">
+            <h5 class="mb-3">Observações:</h5>
+            <textarea id="receb-observacoes" class="form-control form-control-custom" rows="4" placeholder="Escreva..." tabindex="11" name="observacoes" [(ngModel)]="observacoes"></textarea>
+        </div>
+
+        <div class="text-center mt-4">
+            <button id="btn-salvar-recebimento" class="btn btn-success btn-custom btn-lg me-3" tabindex="12" (click)="salvarRecebimento()" [disabled]="!receiptForm.form.valid">
+                <i class="bi bi-check-circle"></i> Salvar
+            </button>
+            <button id="btn-cancelar-recebimento" class="btn btn-secondary btn-custom btn-lg" tabindex="13" (click)="cancelar()">
+                <i class="bi bi-x-circle"></i> Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Adicionar Forma de Recebimento -->
+<div class="modal-overlay" *ngIf="showReceiptMethodModal" (click)="closeReceiptMethodModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Nova Forma de Recebimento</h5>
+            <button type="button" class="btn-close" aria-label="Fechar" (click)="closeReceiptMethodModal()" [disabled]="receiptMethodModalLoading"></button>
+        </div>
+        <form (ngSubmit)="saveReceiptMethodFromModal()">
+            <div class="mb-3">
+                <label class="form-label" for="modal-receipt-method-nome">Nome</label>
+                <input
+                    id="modal-receipt-method-nome"
+                    type="text"
+                    class="form-control"
+                    name="receiptMethodModalNome"
+                    [(ngModel)]="receiptMethodModalNome"
+                    placeholder="Ex: Dinheiro, PIX, Cartão"
+                    [disabled]="receiptMethodModalLoading"
+                />
+            </div>
+            <div class="text-danger mb-3" *ngIf="receiptMethodModalFeedback">{{ receiptMethodModalFeedback }}</div>
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-secondary" (click)="closeReceiptMethodModal()" [disabled]="receiptMethodModalLoading">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn btn-success" [disabled]="receiptMethodModalLoading">
+                    <span *ngIf="!receiptMethodModalLoading; else loading">Salvar</span>
+                </button>
+                <ng-template #loading>
+                    <span class="d-flex align-items-center gap-2">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Salvando...
+                    </span>
+                </ng-template>
+            </div>
+        </form>
+    </div>
+</div>

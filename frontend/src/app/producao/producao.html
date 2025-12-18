@@ -152,6 +152,12 @@
             <button type="button" class="btn-close" (click)="fecharModalArtigo()"></button>
           </div>
           <form (ngSubmit)="cadastrarArtigo()" #formArtigo="ngForm" autocomplete="off">
+            <div class="mb-3 d-flex justify-content-end">
+              <label for="xmlNotaInput" class="btn btn-outline-secondary mb-2 me-2">
+                <i class="bi bi-file-earmark-arrow-up"></i> Carregar XML Nota Fiscal
+                <input type="file" id="xmlNotaInput" accept=".xml" (change)="carregarXmlNota($event)" hidden />
+              </label>
+            </div>
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label">Código:</label>
@@ -220,12 +226,12 @@
                 <input type="text" name="nome" [(ngModel)]="novaOperacao.nome" required class="form-control" autocomplete="off" />
               </div>
               <div class="mb-3">
-                <label class="form-label">Meta Diária:</label>
-                <input type="number" name="metaDiaria" [(ngModel)]="novaOperacao.metaDiaria" required min="1" class="form-control" />
+                <label class="form-label">Peças por Hora:</label>
+                <input type="number" name="pecasPorHora" [(ngModel)]="novaOperacao.pecasPorHora" required min="1" class="form-control" />
               </div>
               <div class="mb-3">
-                <label class="form-label">Grupo/Setor:</label>
-                <input type="text" name="setor" [(ngModel)]="novaOperacao.setor" required class="form-control" autocomplete="off" />
+                <label class="form-label">Cortes por Peça:</label>
+                <input type="number" name="cortesPorPeca" [(ngModel)]="novaOperacao.cortesPorPeca" required min="0" class="form-control" />
               </div>
               <div class="mb-3">
                 <label class="form-label">Descrição:</label>

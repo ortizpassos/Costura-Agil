@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sistema Completo de Emissão de Notas Fiscais</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <style>
+    body { background-color: #f3f4f6; }
+    .sidebar {
+      min-height: 100vh;
+      background-color: #0f172a;
+      color: #fff;
+    }
+    .sidebar a { color: #cbd5f5; text-decoration: none; display: block; padding: 6px 0; }
+    .sidebar a:hover { color: #fff; }
+    .badge-status { font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+
+<div class="container-fluid">
+  <div class="row">
+
+    <!-- MENU LATERAL -->
+    <aside class="col-md-2 sidebar p-3">
+      <h5 class="mb-4">📊 Painel Fiscal</h5>
+      <a href="#" onclick="showSection('dashboard')">🏠 Dashboard</a>
+      <a href="#" onclick="showSection('emitir')">➕ Emitir Nota</a>
+      <a href="#" onclick="showSection('emitidas')">📤 Notas Emitidas</a>
+      <a href="#" onclick="showSection('recebidas')">📥 Notas Recebidas</a>
+      <a href="#" onclick="showSection('canceladas')">❌ Cancelamentos</a>
+      <a href="#" onclick="showSection('cc-e')">✏️ Carta de Correção</a>
+      <a href="#" onclick="showSection('inutilizacao')">🚫 Inutilização</a>
+      <a href="#" onclick="showSection('manifestacao')">📨 Manifestação</a>
+      <a href="#" onclick="showSection('config')">⚙️ Configurações</a>
+    </aside>
+
+    <!-- CONTEÚDO -->
+    <main class="col-md-10 p-4">
+
+      <!-- DASHBOARD -->
+      <section id="dashboard">
+        <h3>Dashboard Fiscal</h3>
+        <div class="row mt-3">
+          <div class="col-md-3"><div class="card"><div class="card-body">Emitidas<br><strong>120</strong></div></div></div>
+          <div class="col-md-3"><div class="card"><div class="card-body">Recebidas<br><strong>98</strong></div></div></div>
+          <div class="col-md-3"><div class="card"><div class="card-body">Canceladas<br><strong>5</strong></div></div></div>
+          <div class="col-md-3"><div class="card"><div class="card-body">Total Mensal<br><strong>R$ 152.300</strong></div></div></div>
+        </div>
+      </section>
+
+      <!-- EMITIR NOTA -->
+      <section id="emitir" class="d-none">
+        <h3>Emissão de NF-e / NFC-e</h3>
+        <form class="row g-3">
+          <h6 class="mt-3">Destinatário</h6>
+          <div class="col-md-4"><input class="form-control" placeholder="CNPJ / CPF"></div>
+          <div class="col-md-4"><input class="form-control" placeholder="Razão Social"></div>
+          <div class="col-md-4"><input class="form-control" placeholder="UF / Município"></div>
+
+          <h6 class="mt-3">Operação</h6>
+          <div class="col-md-3"><input class="form-control" placeholder="CFOP"></div>
+          <div class="col-md-3"><input class="form-control" placeholder="Natureza da Operação"></div>
+          <div class="col-md-3"><input class="form-control" placeholder="Modelo (55/65)"></div>
+          <div class="col-md-3"><input class="form-control" placeholder="Ambiente"></div>
+
+          <h6 class="mt-3">Itens</h6>
+          <div class="col-md-12"><textarea class="form-control" placeholder="Descrição dos produtos / serviços"></textarea></div>
+
+          <h6 class="mt-3">Totais</h6>
+          <div class="col-md-3"><input class="form-control" placeholder="Valor Produtos"></div>
+          <div class="col-md-3"><input class="form-control" placeholder="ICMS"></div>
+          <div class="col-md-3"><input class="form-control" placeholder="IPI"></div>
+          <div class="col-md-3"><input class="form-control" placeholder="Valor Total"></div>
+
+          <div class="col-md-12 mt-3">
+            <button type="button" class="btn btn-warning">🔍 Validar XML</button>
+            <button type="button" class="btn btn-success">✅ Emitir</button>
+            <button type="button" class="btn btn-secondary">💾 Salvar Rascunho</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- EMITIDAS -->
+      <section id="emitidas" class="d-none">
+        <h3>Notas Emitidas</h3>
+        <input class="form-control mb-2" placeholder="Buscar por número, cliente, chave">
+        <table class="table table-striped">
+          <thead><tr><th>Nº</th><th>Cliente</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody>
+            <tr><td>3021</td><td>Empresa ABC</td><td>R$ 3.200</td><td><span class="badge bg-success badge-status">Autorizada</span></td>
+              <td><button class="btn btn-sm btn-danger">Cancelar</button></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- RECEBIDAS -->
+      <section id="recebidas" class="d-none">
+        <h3>Notas Recebidas</h3>
+        <button class="btn btn-primary mb-2">↗ Gerar Saída / Devolução</button>
+        <table class="table table-bordered">
+          <thead><tr><th></th><th>Chave</th><th>CFOP</th><th>Emitente</th><th>Valor</th><th>Ações</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>3525...</td>
+              <td>5901</td>
+              <td>Fornecedor X</td>
+              <td>R$ 1.500</td>
+              <td><button class="btn btn-sm btn-warning">Devolver</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- CANCELADAS -->
+      <section id="canceladas" class="d-none">
+        <h3>Notas Canceladas</h3>
+        <table class="table">
+          <thead><tr><th>Nº</th><th>Motivo</th><th>Data</th></tr></thead>
+          <tbody><tr><td>2990</td><td>Erro CFOP</td><td>10/12/2025</td></tr></tbody>
+        </table>
+      </section>
+
+      <!-- CC-E -->
+      <section id="cc-e" class="d-none">
+        <h3>Carta de Correção Eletrônica</h3>
+        <input class="form-control mb-2" placeholder="Chave da NF-e">
+        <textarea class="form-control mb-2" placeholder="Texto da correção"></textarea>
+        <button class="btn btn-success">Enviar CC-e</button>
+      </section>
+
+      <!-- INUTILIZAÇÃO -->
+      <section id="inutilizacao" class="d-none">
+        <h3>Inutilização de Numeração</h3>
+        <input class="form-control mb-2" placeholder="Série">
+        <input class="form-control mb-2" placeholder="Número Inicial">
+        <input class="form-control mb-2" placeholder="Número Final">
+        <textarea class="form-control mb-2" placeholder="Justificativa"></textarea>
+        <button class="btn btn-danger">Inutilizar</button>
+      </section>
+
+      <!-- MANIFESTAÇÃO -->
+      <section id="manifestacao" class="d-none">
+        <h3>Manifestação do Destinatário</h3>
+        <input class="form-control mb-2" placeholder="Chave de Acesso">
+        <select class="form-select mb-2"><option>Confirmação</option><option>Desconhecimento</option><option>Operação não realizada</option></select>
+        <button class="btn btn-primary">Manifestar</button>
+      </section>
+
+      <!-- CONFIG -->
+      <section id="config" class="d-none">
+        <h3>Configurações do Sistema</h3>
+        <input class="form-control mb-2" placeholder="CNPJ Emitente">
+        <input class="form-control mb-2" placeholder="Certificado Digital">
+        <input class="form-control mb-2" placeholder="Ambiente (Homologação / Produção)">
+        <button class="btn btn-success">Salvar</button>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('main section').forEach(s => s.classList.add('d-none'));
+  document.getElementById(id).classList.remove('d-none');
+}
+</script>
+
+</body>
+</html>

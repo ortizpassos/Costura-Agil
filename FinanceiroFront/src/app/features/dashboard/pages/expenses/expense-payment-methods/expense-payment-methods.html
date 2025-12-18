@@ -1,0 +1,86 @@
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+  <h4 class="mb-0">Formas de Pagamento</h4>
+  <a class="btn btn-outline-secondary" routerLink="/dashboard/expenses">
+    <i class="bi bi-arrow-left"></i> Voltar para Lançamentos
+  </a>
+</div>
+
+<div class="card-custom mb-4">
+  <form [formGroup]="form" (ngSubmit)="submit()" class="row g-3 align-items-end">
+    <div class="col-md-8">
+      <label class="form-label" for="forma-nome">Nome da forma</label>
+      <input
+        id="forma-nome"
+        type="text"
+        class="form-control form-control-custom"
+        placeholder="Ex: Cartão de Crédito, PIX, Dinheiro"
+        formControlName="nome"
+        [class.is-invalid]="form.controls.nome.invalid && form.controls.nome.touched"
+      />
+      <div class="invalid-feedback" *ngIf="form.controls.nome.errors?.['required']">
+        Informe o nome da forma de pagamento.
+      </div>
+      <div class="invalid-feedback" *ngIf="form.controls.nome.errors?.['minlength']">
+        Informe pelo menos 2 caracteres.
+      </div>
+      <div class="invalid-feedback" *ngIf="form.controls.nome.errors?.['maxlength']">
+        O nome pode ter no máximo 60 caracteres.
+      </div>
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+      <button class="btn btn-success w-100" type="submit" [disabled]="isLoading()">
+        <span *ngIf="!isLoading(); else loadingAdd">
+          <i class="bi bi-plus-circle"></i> Adicionar forma
+        </span>
+      </button>
+      <ng-template #loadingAdd>
+        <span class="d-flex justify-content-center align-items-center gap-2">
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          Salvando...
+        </span>
+      </ng-template>
+    </div>
+  </form>
+  <div class="alert alert-warning mt-3 mb-0" *ngIf="feedback()">
+    {{ feedback() }}
+  </div>
+</div>
+
+<div class="card-custom">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">Formas cadastradas</h5>
+    <button class="btn btn-outline-primary btn-sm" type="button" (click)="loadMethods()" [disabled]="isLoading()">
+      <i class="bi bi-arrow-clockwise"></i> Atualizar
+    </button>
+  </div>
+
+  <div *ngIf="isLoading()" class="text-center py-4">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-2 mb-0">Carregando formas de pagamento...</p>
+  </div>
+
+  <div *ngIf="!isLoading() && methods.length === 0" class="text-center py-4 text-muted">
+    Nenhuma forma de pagamento cadastrada até o momento.
+  </div>
+
+  <div *ngIf="!isLoading() && methods.length > 0" class="table-responsive">
+    <table class="table table-custom">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let method of methods">
+          <td>{{ method.nome }}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-danger" type="button" (click)="delete(method)" [disabled]="isLoading()">
+              <i class="bi bi-trash"></i> Excluir
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
