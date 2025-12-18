@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 
 @Component({
@@ -10,10 +10,11 @@ import { Router } from '@angular/router';
 export class OverviewComponent {
   private router = inject(Router);
 
+  // Evento para comunicar com o componente pai (financeiro)
+  @Output() showModalEvent = new EventEmitter<void>();
+
   navigateToReports(type: string): void {
-    // Navegar para a página de relatórios com parâmetro de tipo
-    this.router.navigate(['/dashboard/reports'], {
-      queryParams: { type }
-    });
+    // Em vez de navegar, emitir evento para mostrar modal
+    this.showModalEvent.emit();
   }
 }
