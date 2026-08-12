@@ -1,0 +1,5 @@
+com\costuraagil\controller\NfeController.class
+com\costuraagil\JavaNfeServiceApplication.class
+com\costuraagil\nfe\NfeProperties.class
+com\costuraagil\nfe\NfeClient.class
+com\costuraagil\nfe\SefazNfeClient.class
