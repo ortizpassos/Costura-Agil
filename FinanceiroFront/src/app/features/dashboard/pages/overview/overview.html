@@ -1,0 +1,76 @@
+<div class="row">
+    <!-- Cards superiores -->
+    <div class="col-md-6 mb-4">
+        <div class="card-custom">
+            <div class="d-flex align-items-center mb-3">
+                <div class="me-3" style="color: #dc3545; font-size: 2rem;">
+                    <i class="bi bi-calendar-x"></i>
+                </div>
+                <div>
+                    <h5 class="mb-1">Contas a Pagar no Mês</h5>
+                    <h2 id="home-contas-pagar-mes" class="text-danger mb-0">R$ 0,00</h2>
+                </div>
+            </div>
+            <button class="btn btn-danger btn-sm" tabindex="7" (click)="navigateToReports('accounts-payable')">VER RELATÓRIO DE CONTAS</button>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card-custom">
+            <div class="d-flex align-items-center mb-3">
+                <div class="me-3" style="color: #17a2b8; font-size: 2rem;">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <div>
+                    <h5 class="mb-1">Contas Pagas no Mês</h5>
+                    <h2 id="home-contas-pagas-mes" class="text-info mb-0">R$ 0,00</h2>
+                </div>
+            </div>
+            <button class="btn btn-info btn-sm" tabindex="8" (click)="navigateToReports('accounts-paid')">VER RELATÓRIO DE PAGAMENTOS</button>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros serão exibidos inline no header -->
+
+<div class="row">
+    <!-- Gráficos -->
+    <div class="col-md-6 mb-4">
+        <div class="card-custom">
+            <h5 class="mb-3">Resultado de Vendas</h5>
+            <div class="chart-container" style="height: 200px; background: #f8f9fa; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <canvas id="vendasChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card-custom">
+            <h5 class="mb-3">Total Valor Recebido</h5>
+            <div class="chart-container" style="height: 200px; background: #f8f9fa; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <canvas id="recebimentosChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Gráficos de pizza -->
+    <div class="col-md-6 mb-4">
+        <div class="card-custom">
+            <h5 class="mb-3">Demonstrativo de Despesas Pagas</h5>
+            <div class="chart-container" style="height: 250px; background: #f8f9fa; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <canvas id="despesasChart" width="300" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card-custom">
+            <h5 class="mb-3">Demonstrativo Vendas por Canal</h5>
+            <div class="chart-container" style="height: 250px; background: #f8f9fa; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <canvas id="canaisChart" width="300" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,109 @@
+<div class="display-container">
+  <div *ngIf="splashParabens" class="splash-parabens">
+    <h2>Parabéns {{ splashParabens.nome }}!</h2>
+    <h2>Você bateu a meta!</h2>
+  </div>
+  <!-- Cabeçalho -->
+  <header class="display-header">
+    <div class="header-content">
+      <h1>Monitor de Produção em Tempo Real</h1>
+      <div class="data-hora">{{ dataHoraAtual }}</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi-card">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-info">
+          <div class="kpi-label">Total Produzido Hoje</div>
+          <div class="kpi-value">{{ getTotalProducao() }}</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🏭</div>
+        <div class="kpi-info">
+          <div class="kpi-label">Funcionários Produzindo</div>
+          <div class="kpi-value">{{ dispositivos.length }}</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tabela de Produção -->
+  <div class="display-content">
+    <table class="display-table">
+      <thead>
+        <tr>
+          <th>Funcionário</th>
+          <th>Artigo</th>
+          <th>Meta</th>
+          <th>Produção do Artigo</th>
+          <!-- <th>Status</th> -->
+        </tr>
+      </thead>
+      <tbody>
+  <tr *ngFor="let dispositivo of dispositivosPaginados">
+          <td class="funcionario-cell">
+            <div class="funcionario-icon" [class.icon-producao]="dispositivo.status === 'em_producao'" [class.icon-offline]="dispositivo.status === 'offline'">🧍‍♀️</div>
+            <span class="funcionario-nome">{{ dispositivo.funcionarioNome }}</span>
+          </td>
+          <td class="operacao-cell">
+            <div class="artigo-nome">{{ dispositivo.artigoNome }}</div>
+            <div class="artigo-codigo" *ngIf="dispositivo.artigoCodigo && dispositivo.artigoCodigo !== '-'">
+              Código: {{ dispositivo.artigoCodigo }}
+            </div>
+          </td>
+          <td class="meta-cell">
+            <span class="meta-valor">{{ dispositivo.artigoMeta }}</span>
+          </td>
+          <td class="producao-cell">
+            <div class="producao-info">
+              <div class="progress-container">
+                <div 
+                  class="progress-bar" 
+                  [style.width.%]="calcularPorcentagemArtigo(dispositivo.artigo?._id)"
+                  [style.background-color]="getCorBarra(calcularPorcentagemArtigo(dispositivo.artigo?._id))">
+                </div>
+                <span class="progress-text">
+                  {{ getProducaoTotalArtigo(dispositivo.artigo?._id) }} / {{ getMetaArtigo(dispositivo.artigo?._id) }} peças &mdash; {{ calcularPorcentagemArtigo(dispositivo.artigo?._id) }}%
+                </span>
+              </div>
+                <div class="producao-individual">
+                  Produção do funcionário: <strong>{{ dispositivo.producaoFuncionario || 0 }}</strong> peças
+                </div>
+            </div>
+          </td>
+          <!-- <td class="status-cell">
+            <span [ngClass]="dispositivo.statusClass">{{ dispositivo.statusTexto }}</span>
+          </td> -->
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="dispositivos.length === 0" class="empty-state">
+      <div class="empty-icon">⏸️</div>
+      <p>Nenhum funcionário em produção no momento</p>
+    </div>
+
+    <!-- Indicador de paginação -->
+    <div *ngIf="totalPaginas > 1" class="pagination-indicator">
+      <div class="pagination-dots">
+        <span 
+          *ngFor="let page of [].constructor(totalPaginas); let i = index" 
+          class="dot" 
+          [class.active]="i === paginaAtual"
+          (click)="irParaPagina(i)">
+        </span>
+      </div>
+      <div class="pagination-info">
+        Página {{ paginaAtual + 1 }} de {{ totalPaginas }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Rodapé -->
+  <footer class="display-footer">
+    <div class="footer-content">
+      <span>Sistema de Monitoramento Industrial</span>
+      <span class="pulse-indicator">● Atualizando em tempo real</span>
+    </div>
+  </footer>
+</div>

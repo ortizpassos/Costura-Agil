@@ -1,0 +1,67 @@
+<div class="dashboard-layout">
+  <app-sidebar></app-sidebar>
+  <div class="dashboard-content">
+    <div class="d-flex align-items-center mb-3">
+      <h1 class="d-none d-md-block">Dashboard</h1>
+    </div>
+    <div class="dashboard-kpis">
+      <div class="kpi-card">
+        <div class="kpi-title">Produção do Dia</div>
+        <div class="kpi-value">{{ producaoHoje }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Dispositivos em Produção</div>
+        <div class="kpi-value">{{ online }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Dispositivos Offline</div>
+        <div class="kpi-value">{{ offline }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Alertas Ativos</div>
+        <div class="kpi-value">{{ alertas.length }}</div>
+      </div>
+    </div>
+
+    <div class="dashboard-main-grid">
+      <div class="dashboard-graph">
+  <h2>Produção (Últimos 7 dias)</h2>
+  <canvas #producaoChart id="producaoChart" width="400" height="180"></canvas>
+      </div>
+      <div class="dashboard-alerts">
+        <h2>Alertas Recentes</h2>
+        <ul class="alerts-list">
+          <li *ngFor="let alerta of alertas">{{ alerta.mensagem }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="dashboard-devices-actions">
+      <div class="dashboard-devices">
+        <h2>Status dos Dispositivos</h2>
+        <table class="devices-table">
+          <thead>
+            <tr><th>Nome</th><th>Status</th><th>Última Atualização</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of dispositivosTable">
+              <td>{{ d.nome }}</td>
+              <td>
+                <span [ngClass]="{'status-online': d.status === 'online', 'status-offline': d.status === 'offline'}">
+                  {{ d.status === 'online' ? 'Online' : (d.status === 'offline' ? 'Offline' : d.status) }}
+                </span>
+              </td>
+              <td>{{ d.ultimaAtualizacao }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="dashboard-actions">
+        <h2>Ações Rápidas</h2>
+        <button class="action-btn">Adicionar Dispositivo</button>
+        <button class="action-btn">Visualizar Relatórios</button>
+      </div>
+    </div>
+    <router-outlet></router-outlet>
+  </div>
+</div>

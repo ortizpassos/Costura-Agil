@@ -1,0 +1,53 @@
+<aside class="sidebar" [class.show]="isOpen" aria-label="Navegação principal" role="navigation">
+  <div class="brand d-flex align-items-center gap-2 px-3 py-2 border-bottom">
+    <div class="brand-text ms-2">
+      <ng-container *ngIf="(auth.currentUser$ | async) as user">
+        <h1 class="h5 mb-0 fw-bold text-primary">{{ user.firstName }} {{ user.lastName }}</h1>
+      </ng-container>
+    </div>
+  </div>
+  <div class="sidebar-actions mt-3">
+    <div class="quick-actions d-flex flex-column gap-1 px-2">
+      <a class="quick-action-btn d-flex align-items-center gap-2 py-2 px-3 rounded" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        <span class="action-icon fs-5">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a class="quick-action-btn d-flex align-items-center gap-2 py-2 px-3 rounded" routerLink="/producao" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        <span class="action-icon fs-5">🏭</span>
+        <span>Produção</span>
+      </a>
+      <a class="quick-action-btn d-flex align-items-center gap-2 py-2 px-3 rounded" routerLink="/funcionarios" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        <span class="action-icon fs-5">👷</span>
+        <span>Funcionários</span>
+      </a>
+      <a class="quick-action-btn d-flex align-items-center gap-2 py-2 px-3 rounded" routerLink="/dispositivos" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        <span class="action-icon fs-5">🔌</span>
+        <span>Dispositivos</span>
+      </a>
+      <a class="quick-action-btn d-flex align-items-center gap-2 py-2 px-3 rounded" routerLink="/financeiro" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        <span class="action-icon fs-5">💰</span>
+        <span>Financeiro</span>
+      </a>
+      <a class="quick-action-btn d-flex align-items-center gap-2 py-2 px-3 rounded" routerLink="/nota-fiscal" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        <span class="action-icon fs-5">🧾</span>
+        <span>Nota Fiscal</span>
+      </a>
+      <a class="quick-action-btn d-flex align-items-center gap-2 py-2 px-3 rounded" routerLink="/relatorios" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        <span class="action-icon fs-5">📑</span>
+        <span>Relatórios</span>
+      </a>
+      <a class="quick-action-btn d-flex align-items-center gap-2 py-2 px-3 rounded" routerLink="/display" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        <span class="action-icon fs-5">📺</span>
+        <span>Display</span>
+      </a>
+      <a class="quick-action-btn d-flex align-items-center gap-2 py-2 px-3 rounded" routerLink="/configuracoes" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        <span class="action-icon fs-5">⚙️</span>
+        <span>Configurações</span>
+      </a>
+      <button type="button" class="quick-action-btn d-flex align-items-center gap-2 py-2 px-3 rounded border-0 bg-transparent text-danger shadow-sm" (click)="sair()" style="transition:background .2s;">
+        <span class="action-icon fs-5">🚪</span>
+        <span>Sair</span>
+      </button>
+    </div>
+  </div>
+</aside>

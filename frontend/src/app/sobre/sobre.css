@@ -1,0 +1,39 @@
+.sobre-container {
+     background: linear-gradient(180deg, #007bff, #ff7b00) !important;
+  box-shadow: 5px 2px 0px rgba(1,0,0,0.0);
+  background: #f8f9fa;
+  min-height: 100vh;
+  padding: 60px 0 40px 0;
+}
+
+.sobre-hero {
+  background: linear-gradient(90deg, #00c9a7, #0052cc);
+  color: #fff;
+  text-align: center;
+  padding: 2rem 1rem 1.5rem 1rem;
+  border-radius: 12px;
+  margin-bottom: 2.5rem;
+}
+
+.sobre-hero h1 {
+  font-weight: 700;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sobre-container h2 {
+  color: #003366;
+  font-weight: 600;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.sobre-container ul {
+  margin-left: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.sobre-container p, .sobre-container li {
+  font-size: 1.1rem;
+ 
+}

@@ -1,0 +1,278 @@
+<div class="producao-layout">
+  <app-sidebar></app-sidebar>
+  <div class="producao-content">
+    <div class="producao-header">
+      <h2>Produção em Tempo Real</h2>
+      <div class="header-stats">
+        <div class="stat-card">
+          <span class="stat-label">Total Produzido Hoje</span>
+          <span class="stat-value">{{ totalProducaoHoje }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Dispositivos Ativos</span>
+          <span class="stat-value">{{ dispositivosAtivos }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Meta do Dia</span>
+          <span class="stat-value">{{ metaTotal }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">% Atingido</span>
+          <span class="stat-value">{{ percentualMeta }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Operações cadastradas -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+          <div class="producao-actions d-flex flex-wrap gap-2">
+            <button class="btn btn-outline-primary btn-lg" (click)="abrirModalCliente()">
+              <i class="bi bi-people"></i> Novo Cliente
+            </button>
+            <button class="btn btn-outline-primary btn-lg" (click)="abrirModalOperacao()">
+              <i class="bi bi-diagram-3"></i> Nova Operação
+            </button>
+            <button class="btn btn-outline-primary btn-lg" (click)="abrirModalArtigo()">
+              <i class="bi bi-stack"></i> Novo Artigo
+            </button>
+          </div>
+        </div>
+        <div class="card shadow-sm border-0 producao-artigo-card">
+          <div class="card-body p-0">
+            <div class="table-responsive">
+            <table class="table table-bordered table-striped table-hover align-middle mb-0 rounded shadow-sm overflow-hidden w-100" style="background:#fff;">
+              <thead class="bg-gradient bg-primary text-white">
+                <tr>
+                  <th class="rounded-top-start">Código</th>
+                  <th>Nome</th>
+                  <th>Operação</th>
+                  <th>Cliente</th>
+                  <th>Data de Inclusão</th>
+                  <th>Status</th>
+                  <th>Valor (R$)</th>
+                  <th>Quantidade</th>
+                  <th>% Concluída</th>
+                  <th class="rounded-top-end text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="artigos.length === 0">
+                  <td colspan="10" class="text-center text-muted">Nenhum artigo cadastrado</td>
+                </tr>
+                <tr *ngFor="let artigo of artigos">
+                  <td class="fw-semibold text-dark">{{ artigo.codigo }}</td>
+                  <td>{{ artigo.nome }}</td>
+                  <td>{{ artigo.operacao }}</td>
+                  <td>{{ artigo.cliente }}</td>
+                  <td>{{ artigo.dataInclusao | date:'shortDate' }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="obterClasseStatus(artigo.status)">
+                      {{ formatarStatus(artigo.status) }}
+                    </span>
+                  </td>
+                  <td>{{ artigo.valor | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
+                  <td>{{ artigo.quantidadeAtual || 0 }} / {{ artigo.quantidade }}</td>
+                  <td>
+                    <div class="progress-wrapper">
+                      <div class="progress" style="height: 25px; position: relative;">
+                        <div 
+                          class="progress-bar" 
+                          [ngClass]="getProgressBarClass(calcularPercentualArtigo(artigo))"
+                          role="progressbar" 
+                          [style.width.%]="calcularPercentualArtigo(artigo)" 
+                          [attr.aria-valuenow]="calcularPercentualArtigo(artigo)" 
+                          aria-valuemin="0" 
+                          aria-valuemax="100">
+                        </div>
+                        <div class="progress-text">{{ calcularPercentualArtigo(artigo) }}%</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <div class="artigo-actions d-inline-flex gap-2">
+                      <button 
+                        *ngIf="artigo.status === 'pendente' || artigo.status === 'pausado'" 
+                        type="button" 
+                        class="btn btn-outline-success btn-acao" 
+                        (click)="iniciarProducaoArtigo(artigo)" 
+                        title="Colocar em produção">
+                        <i class="bi bi-play-circle"></i>
+                        <span>Iniciar</span>
+                      </button>
+                      <button 
+                        *ngIf="artigo.status === 'em_producao'" 
+                        type="button" 
+                        class="btn btn-outline-warning btn-acao" 
+                        (click)="pausarProducaoArtigo(artigo)" 
+                        title="Pausar produção">
+                        <i class="bi bi-pause-circle"></i>
+                        <span>Pausar</span>
+                      </button>
+                      <button 
+                        *ngIf="artigo.status === 'finalizado'" 
+                        type="button" 
+                        class="btn btn-outline-info btn-acao" 
+                        (click)="reabrirProducaoArtigo(artigo)" 
+                        title="Reabrir como novo artigo">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        <span>Reabrir</span>
+                      </button>
+                      <button type="button" class="btn btn-outline-primary btn-acao" (click)="editarArtigo(artigo)" title="Editar artigo">
+                        <i class="bi bi-pencil"></i>
+                        <span>Editar</span>
+                      </button>
+                      <button type="button" class="btn btn-outline-danger btn-acao" (click)="excluirArtigo(artigo)" title="Excluir artigo">
+                        <i class="bi bi-trash"></i>
+                        <span>Excluir</span>
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary btn-acao" (click)="gerarPdfArtigo(artigo)" title="Exportar PDF">
+                        <i class="bi bi-filetype-pdf"></i>
+                        <span>PDF</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Modal Cadastro Artigo -->
+    <div *ngIf="modalArtigoAberto" class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.3);">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ artigoEditando ? 'Editar Artigo' : 'Cadastrar Artigo' }}</h5>
+            <button type="button" class="btn-close" (click)="fecharModalArtigo()"></button>
+          </div>
+          <form (ngSubmit)="cadastrarArtigo()" #formArtigo="ngForm" autocomplete="off">
+            <div class="mb-3 d-flex justify-content-end">
+              <label for="xmlNotaInput" class="btn btn-outline-secondary mb-2 me-2">
+                <i class="bi bi-file-earmark-arrow-up"></i> Carregar XML Nota Fiscal
+                <input type="file" id="xmlNotaInput" accept=".xml" (change)="carregarXmlNota($event)" hidden />
+              </label>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Código:</label>
+                <input type="text" name="codigo" [(ngModel)]="novoArtigo.codigo" required class="form-control" autocomplete="off" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Nome do Artigo:</label>
+                <input type="text" name="nome" [(ngModel)]="novoArtigo.nome" required class="form-control" autocomplete="off" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Operação:</label>
+                <div class="input-group">
+                  <input type="text" name="operacao" list="listaOperacoes" [(ngModel)]="novoArtigo.operacao" required class="form-control" autocomplete="off" />
+                  <button type="button" class="btn btn-outline-primary px-3" (click)="abrirModalOperacao()" title="Cadastrar nova operação">+</button>
+                </div>
+                <datalist id="listaOperacoes">
+                  <option *ngFor="let op of operacoes" [value]="op.nome"></option>
+                </datalist>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Cliente:</label>
+                <div class="input-group">
+                  <input type="text" name="cliente" list="listaClientes" [(ngModel)]="novoArtigo.cliente" required class="form-control" autocomplete="off" />
+                  <button type="button" class="btn btn-outline-primary px-3" (click)="abrirModalCliente()" title="Cadastrar novo cliente">+</button>
+                </div>
+                <datalist id="listaClientes">
+                  <option *ngFor="let cliente of clientes" [value]="cliente.nome"></option>
+                </datalist>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Data de Inclusão:</label>
+                <input type="date" name="dataInclusao" [(ngModel)]="novoArtigo.dataInclusao" required class="form-control" />
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Valor (R$):</label>
+                  <input type="number" step="0.01" min="0" name="valor" [(ngModel)]="novoArtigo.valor" placeholder="Digite o valor" required class="form-control" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Quantidade:</label>
+                  <input type="number" min="0" name="quantidade" [(ngModel)]="novoArtigo.quantidade" placeholder="Digite a quantidade" required class="form-control" />
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary" [disabled]="formArtigo.invalid">Salvar</button>
+              <button type="button" (click)="fecharModalArtigo()" class="btn btn-secondary">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Cadastro Operação -->
+    <div *ngIf="modalOperacaoAberto" class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.3);">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Cadastrar Operação</h5>
+            <button type="button" class="btn-close" (click)="fecharModalOperacao()"></button>
+          </div>
+          <form (ngSubmit)="cadastrarOperacao()" #formOperacao="ngForm" autocomplete="off">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Nome da Operação:</label>
+                <input type="text" name="nome" [(ngModel)]="novaOperacao.nome" required class="form-control" autocomplete="off" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Peças por Hora:</label>
+                <input type="number" name="pecasPorHora" [(ngModel)]="novaOperacao.pecasPorHora" required min="1" class="form-control" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Cortes por Peça:</label>
+                <input type="number" name="cortesPorPeca" [(ngModel)]="novaOperacao.cortesPorPeca" required min="0" class="form-control" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Descrição:</label>
+                <textarea name="descricao" [(ngModel)]="novaOperacao.descricao" class="form-control" rows="3"></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary" [disabled]="formOperacao.invalid">Salvar</button>
+              <button type="button" class="btn btn-secondary" (click)="fecharModalOperacao()">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Cadastro Cliente -->
+    <div *ngIf="modalClienteAberto" class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.3);">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Cadastrar Cliente</h5>
+            <button type="button" class="btn-close" (click)="fecharModalCliente()"></button>
+          </div>
+          <form (ngSubmit)="cadastrarCliente()" #formCliente="ngForm" autocomplete="off">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Nome do Cliente:</label>
+                <input type="text" name="nome" [(ngModel)]="novoCliente.nome" required class="form-control" autocomplete="off" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Contato (opcional):</label>
+                <input type="text" name="contato" [(ngModel)]="novoCliente.contato" class="form-control" autocomplete="off" />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary" [disabled]="formCliente.invalid">Salvar</button>
+              <button type="button" class="btn btn-secondary" (click)="fecharModalCliente()">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    

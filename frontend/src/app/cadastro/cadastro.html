@@ -1,0 +1,105 @@
+<div class="cadastro-page">
+  <div class="container">   
+
+    @if (sucessoMsg) {
+      <div class="alert alert-success fade-in">
+        <div class="alert-icon success-icon"></div>
+        <span>{{ sucessoMsg }}</span>
+      </div>
+    }
+
+    @if (sucessoMsg) {
+      <div class="alert alert-success fade-in">
+        <div class="alert-icon success-icon"></div>
+        <span>{{ sucessoMsg }}</span>
+      </div>
+    }
+
+    <div class="register-header">
+      <p class="register-subtitle">Faça seu cadastro e controle sua produtividade</p>
+    </div>
+
+    @if (erroGeral) {
+      <div class="alert alert-error">
+        <div class="alert-icon error-icon"></div>
+        <span>{{ erroGeral }}</span>
+      </div>
+    }
+
+    <form (ngSubmit)="onSubmit()" class="register-form">
+      <fieldset class="fieldset">
+        <legend>Dados Pessoais</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstName" class="form-label">Nome *</label>
+            <input id="firstName" type="text" placeholder="Seu nome" [(ngModel)]="dadosCadastro.firstName" name="firstName" autocomplete="given-name" [class]="'form-input ' + (erros['firstName'] ? 'input-error' : '')" />
+            @if (erros['firstName']) { <span class="error-message">{{ erros['firstName'] }}</span> }
+          </div>
+          <div class="form-group">
+            <label for="lastName" class="form-label">Sobrenome *</label>
+            <input id="lastName" type="text" placeholder="Seu sobrenome" [(ngModel)]="dadosCadastro.lastName" name="lastName" autocomplete="family-name" [class]="'form-input ' + (erros['lastName'] ? 'input-error' : '')" />
+            @if (erros['lastName']) { <span class="error-message">{{ erros['lastName'] }}</span> }
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="email" class="form-label">Email *</label>
+          <input id="email" type="email" placeholder="seu@email.com" [(ngModel)]="dadosCadastro.email" name="email" autocomplete="email" [class]="'form-input ' + (erros['email'] ? 'input-error' : '')" />
+          @if (erros['email']) { <span class="error-message">{{ erros['email'] }}</span> }
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="phone" class="form-label">Telefone</label>
+            <input id="phone" type="tel" placeholder="(11) 99999-9999" [(ngModel)]="dadosCadastro.phone" name="phone" autocomplete="tel" [class]="'form-input ' + (erros['phone'] ? 'input-error' : '')" />
+            @if (erros['phone']) { <span class="error-message">{{ erros['phone'] }}</span> }
+          </div>
+          <div class="form-group">
+            <label for="document" class="form-label">CPF</label>
+            <input id="document" type="text" placeholder="000.000.000-00" [(ngModel)]="dadosCadastro.document" name="document" autocomplete="off" [class]="'form-input ' + (erros['document'] ? 'input-error' : '')" />
+            @if (erros['document']) { <span class="error-message">{{ erros['document'] }}</span> }
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend>Dados de Acesso</legend>
+        <div class="form-group">
+          <label for="password" class="form-label">Senha *</label>
+          <div class="password-input-group">
+            <input id="password" [type]="mostrarSenha ? 'text' : 'password'" placeholder="Crie uma senha" [(ngModel)]="dadosCadastro.password" name="password" autocomplete="new-password" [class]="'form-input ' + (erros['password'] ? 'input-error' : '')" />
+            <button type="button" class="password-toggle" (click)="togglePasswordVisibility()" [title]="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'">
+              <div [class]="mostrarSenha ? 'eye-off-icon' : 'eye-icon'"></div>
+            </button>
+          </div>
+          @if (erros['password']) { <span class="error-message">{{ erros['password'] }}</span> }
+        </div>
+        <div class="form-group">
+          <label for="confirmarSenha" class="form-label">Confirmar senha *</label>
+          <div class="password-input-group">
+            <input id="confirmarSenha" [type]="mostrarConfirmarSenha ? 'text' : 'password'" placeholder="Repita a senha" [(ngModel)]="confirmarSenha" name="confirmarSenha" autocomplete="new-password" [class]="'form-input ' + (erros['confirmarSenha'] ? 'input-error' : '')" />
+            <button type="button" class="password-toggle" (click)="toggleConfirmPasswordVisibility()" [title]="mostrarConfirmarSenha ? 'Ocultar senha' : 'Mostrar senha'">
+              <div [class]="mostrarConfirmarSenha ? 'eye-off-icon' : 'eye-icon'"></div>
+            </button>
+          </div>
+          @if (erros['confirmarSenha']) { <span class="error-message">{{ erros['confirmarSenha'] }}</span> }
+        </div>
+      </fieldset>
+
+      <div class="form-group termos">
+        <label>
+          <input type="checkbox" [(ngModel)]="aceitarTermos" name="termos" /> Aceito os <a href="#" target="_blank">Termos de Uso</a>
+        </label>
+      </div>
+
+      <button class="btn-cadastro" type="submit" [disabled]="carregando || !aceitarTermos">
+        {{ carregando ? 'Cadastrando...' : 'Cadastrar' }}
+      </button>
+     
+      <button class="btn-create" type="button" (click)="onSwitchToLogin()">Já tenho conta</button>
+    </form>
+
+    <div class="footer">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Flag_of_Brazil.svg" alt="Bandeira Brasil" />
+      <span class="lang">Português | English</span>
+    </div>
+  </div>
+</div>

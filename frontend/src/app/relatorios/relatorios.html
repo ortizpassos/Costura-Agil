@@ -1,0 +1,145 @@
+<div class="relatorios-layout">
+  <app-sidebar></app-sidebar>
+  <div class="relatorios-content">
+    <div class="relatorios-header-title">
+      <h2>Relatórios de Produção</h2>
+      <p class="subtitle">Acompanhe a produção por funcionário e artigo</p>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="estatisticas-cards">
+      <div class="stat-card primary">
+        <div class="stat-icon">
+          <i class="bi bi-box-seam"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Total Produzido</span>
+          <span class="stat-value">{{ estatisticas.totalProducao }}</span>
+        </div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-icon">
+          <i class="bi bi-people-fill"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Funcionários Ativos</span>
+          <span class="stat-value">{{ estatisticas.funcionariosAtivos }}</span>
+        </div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-icon">
+          <i class="bi bi-stack"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Artigos em Produção</span>
+          <span class="stat-value">{{ estatisticas.artigosEmProducao }}</span>
+        </div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-icon">
+          <i class="bi bi-graph-up"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">% Atingida</span>
+          <span class="stat-value">{{ estatisticas.percentualAtingido }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <form class="relatorios-filtros" (ngSubmit)="aplicarFiltros()">
+      <div class="filtro-group">
+        <label>Data Início:</label>
+        <input type="date" [(ngModel)]="filtroDataInicio" name="dataInicio">
+      </div>
+      <div class="filtro-group">
+        <label>Data Fim:</label>
+        <input type="date" [(ngModel)]="filtroDataFim" name="dataFim">
+      </div>
+      <div class="filtro-group">
+        <label>Funcionário:</label>
+        <input type="text" [(ngModel)]="filtroFuncionario" name="funcionario" placeholder="Nome do funcionário">
+      </div>
+      <div class="filtro-group">
+        <label>Artigo:</label>
+        <input type="text" [(ngModel)]="filtroArtigo" name="artigo" placeholder="Nome ou código do artigo">
+      </div>
+      <button type="submit" class="btn-filtrar">
+        <i class="bi bi-search"></i>
+        Buscar
+      </button>
+    </form>
+
+    <!-- Resultados -->
+    <div class="relatorios-lista">
+      <div class="relatorios-header">
+        <div *ngIf="relatorios.length > 0 && totalProducao > 0" class="total-producao">
+          <i class="bi bi-bar-chart-fill"></i>
+          <strong>Total do Período:</strong>
+          <span class="total-value">{{ totalProducao }}</span>
+          <span class="total-label">unidades</span>
+        </div>
+        <button *ngIf="relatorios.length > 0" class="btn-exportar-pdf" (click)="exportarPDF()">
+          <i class="bi bi-filetype-pdf"></i>
+          Exportar PDF
+        </button>
+      </div>
+
+      <div *ngIf="relatorios.length === 0" class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>Nenhum relatório encontrado para os filtros selecionados.</p>
+        <small>Ajuste os filtros e tente novamente</small>
+      </div>
+
+      <div *ngIf="relatorios.length > 0" class="table-container">
+        <table class="relatorios-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Funcionário</th>
+              <th>Artigo</th>
+              <th>Código</th>
+              <th>Produção</th>
+              <th>Tempo Total</th>
+              <th>Tempo Médio/Peça</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of relatorios">
+              <td>
+                <span class="data-badge">{{ r.data | date:'dd/MM/yyyy' }}</span>
+              </td>
+              <td>
+                <div class="funcionario-cell">
+                  <i class="bi bi-person-badge"></i>
+                  <span>{{ r.funcionario }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="artigo-cell">
+                  <i class="bi bi-box"></i>
+                  <span>{{ r.artigo }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="codigo-badge">{{ r.artigoCodigo }}</span>
+              </td>
+              <td>
+                <span class="producao-value">{{ r.producao }}</span>
+              </td>
+              <td>
+                <span class="tempo-badge">{{ r.tempoReal }}</span>
+              </td>
+              <td>
+                <span class="tempo-media-badge">{{ r.tempoMedio }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+

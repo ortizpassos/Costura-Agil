@@ -1,0 +1,5 @@
+// ADICIONAR NO TOPO DO backend/app.js, JUNTO AOS OUTROS requires:
+const deviceActivationRoutes = require('./routes/deviceActivationRoutes');
+
+// ADICIONAR JUNTO AOS OUTROS app.use(...):
+app.use('/api/device/activation', deviceActivationRoutes);

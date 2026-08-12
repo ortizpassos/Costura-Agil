@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TrustPay - Pagamentos Online Seguros</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .hero {
+      background: linear-gradient(to right, #0d6efd, #0a58ca);
+      color: white;
+      padding: 100px 20px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-weight: 700;
+    }
+
+    .features {
+      padding: 60px 20px;
+    }
+
+    .feature-card {
+      transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+    }
+
+    footer {
+      background-color: #f8f9fa;
+      text-align: center;
+      padding: 10px;
+      margin-top: auto;
+    }
+
+    
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm fixed-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold text-primary" href="#">
+        <img src="https://cdn-icons-png.flaticon.com/512/891/891462.png" alt="logo" width="30" class="me-2">
+        TrustPay
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item"><a class="nav-link" href="#">Início</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Sobre</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Recursos</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Contato</a></li>
+          <li class="nav-item ms-3"><a class="btn btn-outline-primary" href="#">Entrar</a></li>
+          <li class="nav-item ms-2"><a class="btn btn-primary" href="#">Criar Conta</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero mt-5">
+    <div class="container">
+      <h1 class="display-5">Envie e Receba Pagamentos com Segurança</h1>
+      <p class="lead mt-3">Com o TrustPay, você pode transferir dinheiro, pagar serviços e receber pagamentos online com rapidez e confiança.</p>
+      <a href="#" class="btn btn-light btn-lg mt-3 text-primary fw-semibold">Crie sua Conta Grátis</a>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features text-center">
+    <div class="container">
+      <h2 class="mb-5 fw-bold text-primary">Por que escolher o TrustPay?</h2>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card feature-card shadow-sm h-100">
+            <div class="card-body">
+              <img src="https://cdn-icons-png.flaticon.com/512/3062/3062634.png" width="60" class="mb-3" alt="">
+              <h5 class="card-title fw-semibold">Segurança Total</h5>
+              <p class="card-text">Seus dados e transações são protegidos com criptografia de ponta e autenticação em dois fatores.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card feature-card shadow-sm h-100">
+            <div class="card-body">
+              <img src="https://cdn-icons-png.flaticon.com/512/2089/2089719.png" width="60" class="mb-3" alt="">
+              <h5 class="card-title fw-semibold">Pagamentos Instantâneos</h5>
+              <p class="card-text">Envie e receba dinheiro em segundos com taxas reduzidas e total transparência.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card feature-card shadow-sm h-100">
+            <div class="card-body">
+              <img src="https://cdn-icons-png.flaticon.com/512/190/190411.png" width="60" class="mb-3" alt="">
+              <h5 class="card-title fw-semibold">Suporte 24h</h5>
+              <p class="card-text">Nossa equipe está sempre disponível para te ajudar, 7 dias por semana.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p class="mb-1">© 2025 TrustPay - Todos os direitos reservados</p>
+      <small>
+        <a href="#" class="text-secondary text-decoration-none me-3">Política de Privacidade</a>
+        <a href="#" class="text-secondary text-decoration-none">Termos de Uso</a>
+      </small>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+
+<!-- Hero Section -->
+  <section class="hero mt-5">
+    <div class="container">
+      <h1 class="display-5">Controle sua Produção com Eficiência</h1>
+      <p class="lead mt-3">Monitore sua linha de produção em tempo real e tome decisões rápidas e informadas.</p>
+       <button (click)="irParaCadastro()" class="btn btn-primary btn-lg">Cadastre-se</button>
+    </div>
+  </section>
+
+<!-- Seção principal -->
+  <section class="features text-center">
+    <div class="container">
+  <h2 class="mb-5 fw-bold text-primary">Por que escolher Costura Ágil?</h2>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card feature-card shadow-sm h-100">
+            <div class="card-body">
+              <img src="https://cdn-icons-png.flaticon.com/512/3062/3062634.png" width="60" class="mb-3" alt="">
+              <h5 class="card-title fw-semibold">Segurança Total</h5>
+              <p class="card-text">Sua produção está segura com monitoramento em tempo real e alertas proativos.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card feature-card shadow-sm h-100">
+            <div class="card-body">
+              <img src="https://cdn-icons-png.flaticon.com/512/2089/2089719.png" width="60" class="mb-3" alt="">
+              <h5 class="card-title fw-semibold">Aumento de Produtividade</h5>
+              <p class="card-text">Otimize sua linha de produção com dados em tempo real e análises preditivas.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card feature-card shadow-sm h-100">
+            <div class="card-body">
+              <img src="https://cdn-icons-png.flaticon.com/512/190/190411.png" width="60" class="mb-3" alt="">
+              <h5 class="card-title fw-semibold">Suporte 24h</h5>
+              <p class="card-text">Nossa equipe está sempre disponível para te ajudar, 7 dias por semana.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</section>
+
+<!-- Seção Fale Conosco -->
+<section id="contato" class="container my-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h2 class="mb-4 text-primary">Fale Conosco</h2>
+          <form (submit)="enviarWhatsApp($event)">
+            <div class="mb-3">
+              <label for="nome" class="form-label">Nome</label>
+              <input type="text" class="form-control" id="nome" name="nome" required>
+            </div>
+            <div class="mb-3">
+              <label for="mensagem" class="form-label">Mensagem</label>
+              <textarea class="form-control" id="mensagem" name="mensagem" rows="4" required></textarea>
+            </div>
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary btn-lg">Enviar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+  
+

@@ -1,0 +1,19 @@
+/* Navbar */
+.navbar {
+ background: linear-gradient(135deg, #007bff, #ff7b00 ) !important;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+  color: var(--primary-color) !important;
+  font-weight: 700;
+}
+
+.nav-link {
+  color: #333 !important;
+  transition: 0.3s;
+}
+
+.nav-link:hover {
+  color: var(--secondary-color) !important;
+}

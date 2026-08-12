@@ -1,0 +1,25 @@
+<div class="sidebar-content">
+  
+    <div id="app-logo-wrapper" class="d-flex align-items-center gap-2" style="cursor:pointer;" (click)="goToOverview()">
+     <img src="/assets/REGISTRA.png" alt="Registra Lucro" height="70" />
+     <span class="logo-text">Registra Lucro</span>
+    </div>
+
+  <div class="saldo-section">
+    <div class="saldo-container">
+      <div class="saldo-icon">$</div>
+      <div class="saldo-info">
+        <div class="saldo-label">RESUMO</div>
+        <div class="saldo-value">R$ 0,00</div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav-menu">
+    <a routerLink="/dashboard/expenses" routerLinkActive="active" class="nav-item text-decoration-none"><i class="bi bi-receipt"></i><span>LANÇAMENTO<br>DESPESAS</span></a>
+    <a routerLink="/dashboard/receipts" routerLinkActive="active" class="nav-item text-decoration-none"><i class="bi bi-receipt"></i><span>LANÇAMENTO<br>RECEBIMENTOS</span></a>
+    <a routerLink="/dashboard/sales"    routerLinkActive="active" class="nav-item text-decoration-none"><i class="bi bi-receipt"></i><span>LANÇAMENTO<br>DE VENDAS</span></a>
+    <a routerLink="/dashboard/balance"  routerLinkActive="active" class="nav-item text-decoration-none"><i class="bi bi-wallet2"></i><span>SALDO EM<br>CONTAS</span></a>
+    <a routerLink="/dashboard/reports"  routerLinkActive="active" class="nav-item text-decoration-none"><i class="bi bi-bar-chart"></i><span>RELATÓRIOS</span></a>
+    <a (click)="logout()" class="nav-item text-decoration-none" style="cursor:pointer;"><i class="bi bi-box-arrow-right"></i><span>SAIR</span></a>
+  </nav>
+</div>

@@ -1,0 +1,104 @@
+<div class="d-flex bg-light min-vh-100">
+  <app-sidebar></app-sidebar>
+  <div class="flex-grow-1" style="margin-left:220px;">
+    <div class="container py-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary mb-0">Dispositivos Cadastrados</h2>
+        <button (click)="abrirCadastro()" class="btn btn-primary btn-lg">
+          <i class="bi bi-plus-lg"></i> Novo Dispositivo
+        </button>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-lg-10">
+          <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+              <table class="table table-bordered table-striped table-hover align-middle mb-0 rounded shadow-sm overflow-hidden" style="background:#fff;">
+                <thead class="bg-gradient bg-primary text-white">
+                  <tr>
+                    <th class="rounded-top-start">Dispositivo</th>
+                    <th>Status</th>
+                    <th class="text-center rounded-top-end">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (dispositivos.length === 0) {
+                    <tr>
+                      <td colspan="3" class="text-center text-muted">Nenhum dispositivo cadastrado</td>
+                    </tr>
+                  }
+                  @for (dispositivo of dispositivos; track dispositivo._id) {
+                    <tr>
+                      <td class="fw-semibold text-dark">{{ dispositivo.nome }}</td>
+                      <td>
+                        <span class="badge px-3 py-2" [ngClass]="{
+                          'bg-success': dispositivo.status === 'online',
+                          'bg-primary': dispositivo.status === 'em_producao',
+                          'bg-danger': dispositivo.status === 'offline',
+                          'bg-secondary': dispositivo.status === 'ocioso'
+                        }">
+                          {{ dispositivo.status === 'em_producao' ? 'Produzindo' : dispositivo.status }}
+                        </span>
+                      </td>
+                      <td class="text-center">
+                        <button (click)="abrirEdicao(dispositivo)" class="btn btn-sm btn-outline-warning me-2">
+                          <i class="bi bi-pencil"></i> Editar
+                        </button>
+                        <button (click)="excluirDispositivo(dispositivo)" class="btn btn-sm btn-outline-danger">
+                          <i class="bi bi-trash"></i> Excluir
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Modal de cadastro/edição -->
+      @if (modalAberto) {
+        <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.3);">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">{{ dispositivoEditando ? 'Editar Dispositivo' : 'Cadastrar Dispositivo' }}</h5>
+                <button type="button" class="btn-close" (click)="fecharModal()"></button>
+              </div>
+              <form (ngSubmit)="salvarDispositivo()" #formRef="ngForm" autocomplete="off">
+                <div class="modal-body">
+                  <div class="mb-3">
+                    <label class="form-label">Nome:</label>
+                    <input [(ngModel)]="form.nome" name="nome" required class="form-control" autocomplete="off" />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Token:</label>
+                    <input [(ngModel)]="form.deviceToken" name="deviceToken" required class="form-control" autocomplete="off" />
+                  </div>
+                  <!-- <div class="mb-3">
+                    <label class="form-label">Operação:</label>
+                    <input [(ngModel)]="form.operacao" name="operacao" required class="form-control" autocomplete="off" />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Setor:</label>
+                    <input [(ngModel)]="form.setor" name="setor" required class="form-control" autocomplete="off" />
+                  </div> -->
+                  <!-- <div class="mb-3">
+                    <label class="form-label">Meta Diária:</label>
+                    <input type="number" [(ngModel)]="form.metaDiaria" name="metaDiaria" required class="form-control" autocomplete="off" />
+                  </div> -->
+                  @if (erroCadastro) {
+                    <div class="alert alert-danger">{{ erroCadastro }}</div>
+                  }
+                </div>
+                <div class="modal-footer">
+                  <button type="submit" class="btn btn-primary" [disabled]="formRef.invalid">Salvar</button>
+                  <button type="button" (click)="fecharModal()" class="btn btn-secondary">Cancelar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

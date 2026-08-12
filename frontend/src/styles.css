@@ -1,0 +1,22 @@
+/* Arquivo de estilos globais. Adicione regras CSS aqui se necessário. */
+
+/* Ocultar sidebar e navbar na página Display */
+body.display-page app-sidebar,
+body.display-page .sidebar,
+body.display-page aside,
+body.display-page .app-header,
+body.display-page app-header {
+  display: none !important;
+}
+
+/* Ajustar layout da página Display para ocupar toda largura */
+body.display-page {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.display-page .display-container {
+  margin-left: 0 !important;
+  width: 100vw !important;
+  margin-top: 80px;
+}

@@ -1,0 +1,12 @@
+Adicionar no Render -> Environment:
+
+MERCADOPAGO_ACCESS_TOKEN=APP_USR-...
+MERCADOPAGO_PAYER_EMAIL=seu-email-valido@dominio.com
+MERCADOPAGO_PAYER_CPF=12345678909
+DEVICE_ACTIVATION_PRICE=1.00
+
+Observações:
+- MERCADOPAGO_ACCESS_TOKEN é privado e fica SOMENTE no backend/Render.
+- MERCADOPAGO_PAYER_CPF deve conter 11 dígitos, sem pontos ou traços.
+- DEVICE_ACTIVATION_PRICE é a fonte de verdade do valor; o ESP32 consulta /config.
+- Não é necessário adicionar SDK do Mercado Pago no package.json: a integração usa o módulo https nativo do Node.js.

@@ -1,0 +1,88 @@
+<div class="d-flex bg-light min-vh-100">
+  <app-sidebar></app-sidebar>
+  <div class="flex-grow-1" style="margin-left:220px;">
+    <div class="container py-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary mb-0">Funcionários</h2>
+        <button (click)="abrirCadastro()" class="btn btn-primary btn-lg">
+          <i class="bi bi-plus-lg"></i> Novo Funcionário
+        </button>
+      </div>
+      <div class="row justify-content-center">
+        <div class="col-lg-10">
+          <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+              <table class="table table-bordered table-striped table-hover align-middle mb-0 rounded shadow-sm overflow-hidden" style="background:#fff;">
+                <thead class="bg-gradient bg-primary text-white">
+                  <tr>
+                    <th class="rounded-top-start">Nome</th>
+                    <th>Código</th>
+                    <th>Função</th>
+                    <th>Status</th>
+                    <th class="text-center rounded-top-end">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngIf="funcionarios.length === 0">
+                    <td colspan="5" class="text-center text-muted">Nenhum funcionário cadastrado</td>
+                  </tr>
+                  <tr *ngFor="let funcionario of funcionarios">
+                    <td class="fw-semibold text-dark">{{ funcionario.nome }}</td>
+                    <td>{{ funcionario.codigo }}</td>
+                    <td>{{ funcionario.funcao }}</td>
+                    <td>
+                      <span class="badge px-3 py-2" [ngClass]="{
+                        'bg-success': funcionario.ativo,
+                        'bg-secondary': !funcionario.ativo
+                      }">{{ funcionario.ativo ? 'Ativo' : 'Inativo' }}</span>
+                    </td>
+                    <td class="text-center">
+                      <button (click)="abrirEdicao(funcionario)" class="btn btn-sm btn-outline-warning me-2">
+                        <i class="bi bi-pencil"></i> Editar
+                      </button>
+                      <button (click)="excluirFuncionario(funcionario)" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i> Excluir
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Modal de cadastro/edição -->
+      <div *ngIf="modalAberto" class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.3);">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">{{ funcionarioEditando ? 'Editar Funcionário' : 'Cadastrar Funcionário' }}</h5>
+              <button type="button" class="btn-close" (click)="fecharModal()"></button>
+            </div>
+            <form (ngSubmit)="salvarFuncionario()" #formRef="ngForm" autocomplete="off">
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="form-label">Nome:</label>
+                  <input [(ngModel)]="form.nome" name="nome" required class="form-control" autocomplete="off" />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Código:</label>
+                  <input [(ngModel)]="form.codigo" name="codigo" required class="form-control" autocomplete="off" />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Função:</label>
+                  <input [(ngModel)]="form.funcao" name="funcao" required class="form-control" autocomplete="off" />
+                </div>
+                <div *ngIf="erroCadastro" class="text-danger mb-2">{{ erroCadastro }}</div>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <button type="button" class="btn btn-secondary" (click)="fecharModal()">Cancelar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

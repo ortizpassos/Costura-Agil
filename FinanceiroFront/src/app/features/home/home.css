@@ -1,0 +1,156 @@
+/* Estilos para barra de rolagem vertical na página home */
+
+/* Garantir que o body tenha altura total da viewport e permita rolagem */
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Container principal da página */
+.home-container {
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Navbar Styles - Garantir que apareça na home */
+.navbar {
+  position: relative !important;
+  z-index: 1000 !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  padding: 16px 32px !important;
+  background: #fff !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+  min-height: 90px !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* Seção Hero - Background personalizado */
+.hero-section {
+  background-color: #CBE0FF !important;
+  padding: 80px 0 !important;
+}
+
+/* Botão Saiba Mais - Estilo Principal */
+.btn-primary-custom {
+  background: linear-gradient(135deg, #092145 0%, #1793d1 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 16px 32px !important;
+  border-radius: 50px !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+  text-decoration: none !important;
+  display: inline-block !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 15px rgba(9, 33, 69, 0.3) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.btn-primary-custom::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: -100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent) !important;
+  transition: left 0.5s !important;
+}
+
+.btn-primary-custom:hover {
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 8px 25px rgba(9, 33, 69, 0.4) !important;
+  background: linear-gradient(135deg, #0a2a4a 0%, #1a8ac7 100%) !important;
+}
+
+.btn-primary-custom:hover::before {
+  left: 100% !important;
+}
+
+.btn-primary-custom:active {
+  transform: translateY(0) scale(0.98) !important;
+  box-shadow: 0 2px 10px rgba(9, 33, 69, 0.3) !important;
+}
+
+/* Efeitos adicionais para o botão */
+.btn-primary-custom:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(23, 147, 209, 0.3) !important;
+}
+
+/* Estilos para personalizar a barra de rolagem - Design moderno */
+::-webkit-scrollbar {
+  width: 14px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 10px;
+  margin: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #092145 0%, #1793d1 100%);
+  border-radius: 10px;
+  border: 3px solid #f8f9fa;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #061a2e 0%, #0d6efd 100%);
+  border-color: #e9ecef;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #041322 0%, #0a58ca 100%);
+}
+
+::-webkit-scrollbar-corner {
+  background: #f8f9fa;
+}
+
+/* Para Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #092145 #f8f9fa;
+}
+
+/* Garantir que as seções tenham largura total e transições suaves */
+section {
+  width: 100%;
+  box-sizing: border-box;
+  scroll-margin-top: 90px; /* Espaço para o navbar fixo */
+  transition: all 0.3s ease;
+}
+
+/* Smooth scrolling para navegação por âncoras */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Estilos para hover nas seções */
+section:hover {
+  transform: translateY(-2px);
+  transition: transform 0.3s ease;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .navbar {
+    padding: 12px 16px !important;
+    min-height: 70px !important;
+  }
+}
