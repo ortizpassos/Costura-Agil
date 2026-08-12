@@ -1,4 +1,5 @@
 C:\Users\Eduardo\Documents\Projetos em andamento\Costura-Agil\java-nfe-service\src\main\java\com\costuraagil\JavaNfeServiceApplication.java
-C:\Users\Eduardo\Documents\Projetos em andamento\Costura-Agil\java-nfe-service\src\main\java\com\costuraagil\service\NfeMessageService.java
-C:\Users\Eduardo\Documents\Projetos em andamento\Costura-Agil\java-nfe-service\src\main\java\com\costuraagil\config\RabbitMQConfig.java
+C:\Users\Eduardo\Documents\Projetos em andamento\Costura-Agil\java-nfe-service\src\main\java\com\costuraagil\nfe\NfeClient.java
+C:\Users\Eduardo\Documents\Projetos em andamento\Costura-Agil\java-nfe-service\src\main\java\com\costuraagil\nfe\NfeProperties.java
+C:\Users\Eduardo\Documents\Projetos em andamento\Costura-Agil\java-nfe-service\src\main\java\com\costuraagil\nfe\SefazNfeClient.java
 C:\Users\Eduardo\Documents\Projetos em andamento\Costura-Agil\java-nfe-service\src\main\java\com\costuraagil\controller\NfeController.java

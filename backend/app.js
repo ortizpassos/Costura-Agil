@@ -518,21 +518,11 @@ socket.on('solicitarArtigosAtualizados', async (data) => {
   });
 });
 
-const nfeMessagingService = require('./services/nfeMessagingService');
-
 // Conexão com MongoDB - iniciar servidor somente após conexão bem-sucedida
 const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/production-monitor';
 
 mongoose.connect(mongoUri, {})
   .then(async () => {
-    // Inicializar serviço de mensageria NFe
-    try {
-      await nfeMessagingService.connect();
-    } catch (error) {
-      console.error('Falha ao conectar ao RabbitMQ:', error.message);
-      console.error('O serviço NFe funcionará apenas com simulação HTTP.');
-    }
-
     const PORT = process.env.PORT || 3001;
     http.listen(PORT, () => {
       console.log(`API + Socket.IO rodando na porta ${PORT}`);

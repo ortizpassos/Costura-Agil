@@ -29,6 +29,16 @@ export interface NfeCceRequest {
   correcao: string;
 }
 
+export interface NfeRecebida {
+  chave: string;
+  numero: string;
+  serie: string;
+  dataEmissao: string;
+  emitente: string;
+  valorTotal: number;
+  status: string;
+}
+
 export interface NfeResponse {
   message?: string;
   result?: string;
@@ -46,7 +56,7 @@ export interface NfeEstatisticas {
   providedIn: 'root'
 })
 export class NfeService {
-  private apiUrl = 'http://localhost:3001/api/nfe';
+  private apiUrl = 'http://localhost:8082/api/nfe';
 
   constructor(private http: HttpClient) { }
 
@@ -73,23 +83,35 @@ export class NfeService {
   }
 
   gerarNfe(xml: string): Observable<NfeResponse> {
-    const request: NfeGerarRequest = { xml };
-    return this.http.post<NfeResponse>(`${this.apiUrl}/gerar`, request);
+    return this.http.post<NfeResponse>(`${this.apiUrl}/gerar`, xml, {
+      headers: { 'Content-Type': 'application/xml' }
+    });
   }
 
   consultarNfe(chave: string): Observable<NfeResponse> {
-    const request: NfeConsultarRequest = { chave };
-    return this.http.post<NfeResponse>(`${this.apiUrl}/consultar`, request);
+    return this.http.post<NfeResponse>(`${this.apiUrl}/consultar`, null, {
+      params: { chave }
+    });
   }
 
   cancelarNfe(chave: string, justificativa: string): Observable<NfeResponse> {
-    const request: NfeCancelarRequest = { chave, justificativa };
-    return this.http.post<NfeResponse>(`${this.apiUrl}/cancelar`, request);
+    return this.http.post<NfeResponse>(`${this.apiUrl}/cancelar`, null, {
+      params: { chave, justificativa }
+    });
   }
 
   enviarCce(chave: string, correcao: string): Observable<NfeResponse> {
-    const request: NfeCceRequest = { chave, correcao };
-    return this.http.post<NfeResponse>(`${this.apiUrl}/cce`, request);
+    return this.http.post<NfeResponse>(`${this.apiUrl}/cce`, null, {
+      params: { chave, correcao }
+    });
+  }
+
+  // Método para consultar notas recebidas
+  consultarNotasRecebidas(cnpj: string, dataInicio?: string, dataFim?: string): Observable<NfeRecebida[]> {
+    let params: any = { cnpj };
+    if (dataInicio) params.dataInicio = dataInicio;
+    if (dataFim) params.dataFim = dataFim;
+    return this.http.get<NfeRecebida[]>(`${this.apiUrl}/recebidas`, { params });
   }
 
   // Método para estatísticas do dashboard

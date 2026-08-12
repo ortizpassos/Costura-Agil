@@ -1,5 +1,6 @@
 {
     "liveServer.settings.port": 5501,
     "idf.portWin": "COM3",
-    "cmake.sourceDirectory": "C:/Users/Eduardo/Documents/Projetos em andamento/Costura-Agil/Frontend-flutter/linux"
+    "cmake.sourceDirectory": "C:/Users/Eduardo/Documents/Projetos em andamento/Costura-Agil/Frontend-flutter/linux",
+    "java.compile.nullAnalysis.mode": "automatic"
 }

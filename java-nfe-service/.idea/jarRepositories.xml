@@ -2,6 +2,11 @@
 <project version="4">
   <component name="RemoteRepositoriesConfiguration">
     <remote-repository>
+      <option name="id" value="local-java-nfe" />
+      <option name="name" value="local-java-nfe" />
+      <option name="url" value="file://C:\Users\Eduardo\Documents\Projetos em andamento\Costura-Agil\java-nfe-service/../Java_NFe" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="central" />
       <option name="name" value="Central Repository" />
       <option name="url" value="https://repo.maven.apache.org/maven2" />

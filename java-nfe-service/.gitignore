@@ -1,0 +1,34 @@
+# Compiled classes
+target/
+*.class
+
+# Log files
+*.log
+logs/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Certificates and sensitive files
+*.pfx
+*.p12
+*.cer
+*.key
+certificado.*
+certificate.*
+*.jks
+
+# Environment specific files
+application-prod.properties
+application-local.properties
+
+# Temporary files
+*.tmp
+*.temp

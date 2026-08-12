@@ -8,7 +8,7 @@
 #include "login.h"
 #include "home.h"
 #include "token.h"
-#include "operacao.h"
+#include "artigo.h"
 #include "config.h"
 
 #include <WiFiManager.h>
@@ -37,15 +37,15 @@ const unsigned long checkInterval = 1000;
 unsigned long lastKeepAliveTime = 0;
 const unsigned long keepAliveInterval = 30000; // 30 segundos
 
-// Controle de atualizações em tempo real da tela de operação
+// Controle de atualizações em tempo real da tela de artigo
 unsigned long lastUpdateCheckTime = 0;
 const unsigned long updateCheckInterval = 10000; // 10 segundos
 String currentScreen = ""; // Rastreia tela atual
 
 // ---- Config servidor ----
-const char* host = "monitor-ellas-backend.onrender.com";   // Host do backend (produção)
-const uint16_t port = 443;             // HTTPS/WSS
-const bool useSSL = true;              // TLS habilitado para servidor online
+const char* host = "192.168.1.174";   // Host do backend (produção)
+const uint16_t port = 3001;             // HTTPS/WSS
+const bool useSSL = false;              // TLS habilitado para servidor online
 const char* socketPath = "/socket.io/?EIO=4";
 
 // ---- Dispositivo ----
@@ -81,7 +81,7 @@ void on_wifi_connected() {
         go_dashboard();
         update_dashboard(artigoNome.c_str(), funcionarioNome.c_str(), metaArtigo, quantidade);
       } else {
-        go_operacao();
+        go_artigo();
       }
     } else {
       go_token();
@@ -173,7 +173,7 @@ String loadArtigos() {
 void loadSavedArtigos() {
   String artigosJson = loadArtigos();
   if (artigosJson == "") {
-    show_operacao_message("Nenhum artigo salvo");
+    show_artigo_message("Nenhum artigo salvo");
     return;
   }
   
@@ -181,7 +181,7 @@ void loadSavedArtigos() {
   DeserializationError err = deserializeJson(doc, artigosJson);
   if (err) {
     Serial.printf("[JSON] Erro ao carregar artigos salvos: %s\n", err.c_str());
-    show_operacao_message("Erro ao carregar artigos");
+    show_artigo_message("Erro ao carregar artigos");
     return;
   }
   
@@ -193,7 +193,7 @@ void loadSavedArtigos() {
     const char* artNome = artigos[i]["nome"];
     int artMeta = artigos[i]["quantidade"];
     
-    add_operacao_to_list(artId, artNome, artMeta);
+    add_artigo_to_list(artId, artNome, artMeta);
   }
 }
 
@@ -326,15 +326,15 @@ void processJsonMessage(const String& msg) {
       go_dashboard();
     } else {
       // Sempre ir para a tela de seleção de artigo
-      go_operacao();
-      clear_operacao_list();
+      go_artigo();
+      clear_artigo_list();
       
       if (doc["data"].containsKey("artigos") && doc["data"]["artigos"].is<JsonArray>()) {
         JsonArray artigos = doc["data"]["artigos"].as<JsonArray>();
         Serial.printf("Artigos disponíveis: %d\n", artigos.size());
 
         if (artigos.size() == 0) {
-          show_operacao_message("Nenhum artigo disponivel");
+          show_artigo_message("Nenhum artigo disponivel");
         }
 
         for (size_t i = 0; i < artigos.size(); i++) {
@@ -343,7 +343,7 @@ void processJsonMessage(const String& msg) {
           int artMeta = artigos[i]["quantidade"].as<int>();
           
           Serial.printf("[%d] %s (meta: %d)\n", (int)(i+1), artNome, artMeta);
-          add_operacao_to_list(artId, artNome, artMeta);
+          add_artigo_to_list(artId, artNome, artMeta);
         }
         
         // Salvar artigos localmente para uso offline
@@ -355,7 +355,7 @@ void processJsonMessage(const String& msg) {
         String jsonStr;
         serializeJson(doc, jsonStr);
         Serial.printf("JSON recebido: %s\n", jsonStr.c_str());
-        show_operacao_message("Erro ao carregar artigos");
+        show_artigo_message("Erro ao carregar artigos");
       }
     }
   } else if (type == "artigoSelecionado") {
@@ -387,16 +387,16 @@ void processJsonMessage(const String& msg) {
     if (token != String(deviceToken)) return;
     Serial.println("[producaoSuccess] Produção registrada!");
     
-    // Atualizar a tela operacao em tempo real se estiver visualizando
-    if (currentScreen == "operacao") {
+    // Atualizar a tela artigo em tempo real se estiver visualizando
+    if (currentScreen == "artigo") {
       int quantidadeAtual = doc["data"]["quantidade"] | 0;
       const char* artigoIdResp = doc["data"]["artigoId"].as<const char*>();
       const char* artigoNomeResp = doc["data"]["artigoNome"].as<const char*>();
       int metaResp = doc["data"]["meta"] | 0;
       
       if (artigoIdResp && artigoNomeResp && metaResp > 0) {
-        update_operacao_quantities(artigoIdResp, quantidadeAtual, metaResp);
-        Serial.printf("🎯 Tela operacao atualizada: %s (%d/%d)\n", artigoNomeResp, quantidadeAtual, metaResp);
+        update_artigo_quantities(artigoIdResp, quantidadeAtual, metaResp);
+        Serial.printf("🎯 Tela artigo atualizada: %s (%d/%d)\n", artigoNomeResp, quantidadeAtual, metaResp);
       }
     }
   } else if (type == "artigosAtualizados") {
@@ -406,14 +406,14 @@ void processJsonMessage(const String& msg) {
 
     Serial.println("[artigosAtualizados] 🔄 Atualizando lista de artigos...");
     
-    clear_operacao_list(); // Limpar lista anterior
+    clear_artigo_list(); // Limpar lista anterior
     
     if (doc["data"].containsKey("artigos") && doc["data"]["artigos"].is<JsonArray>()) {
       JsonArray artigos = doc["data"]["artigos"].as<JsonArray>();
       Serial.printf("Artigos atualizados: %d\n", artigos.size());
 
       if (artigos.size() == 0) {
-        show_operacao_message("Nenhum artigo disponível");
+        show_artigo_message("Nenhum artigo disponível");
       }
 
       for (size_t i = 0; i < artigos.size(); i++) {
@@ -422,7 +422,7 @@ void processJsonMessage(const String& msg) {
         int artMeta = artigos[i]["quantidade"].as<int>();
         
         Serial.printf("[%d] %s (meta: %d)\n", (int)(i+1), artNome, artMeta);
-        add_operacao_to_list(artId, artNome, artMeta);
+        add_artigo_to_list(artId, artNome, artMeta);
       }
       
       // Salvar artigos atualizados localmente
@@ -596,9 +596,9 @@ void sendProductionData() {
     prefs.remove("quantidade");
     prefs.end();
     
-    // Voltar para tela de operação
-    currentScreen = "operacao";
-    go_operacao();
+    // Voltar para tela de artigo
+    currentScreen = "artigo";
+    go_artigo();
     
     // Solicitar lista atualizada de artigos
     if (wsConnected && login_ok) {
@@ -737,8 +737,8 @@ void loop() {
       }
     }
 
-    // Solicita atualização de artigos em tempo real quando na tela de operação
-    if (wsConnected && login_ok && currentScreen == "operacao") {
+    // Solicita atualização de artigos em tempo real quando na tela de artigo
+    if (wsConnected && login_ok && currentScreen == "artigo") {
       if (millis() - lastUpdateCheckTime > updateCheckInterval) {
         lastUpdateCheckTime = millis();
         solicitarArtigosAtualizados();

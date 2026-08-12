@@ -130,4 +130,22 @@ router.post('/cce', async (req, res) => {
   }
 });
 
+// GET /api/nfe/recebidas - Consult received NFe
+router.get('/recebidas', async (req, res) => {
+  try {
+    const { cnpj, dataInicio, dataFim } = req.query;
+    if (!cnpj) {
+      return res.status(400).json({ error: 'CNPJ é obrigatório' });
+    }
+    const response = await nfeMessagingService.consultarNotasRecebidas(cnpj, dataInicio, dataFim);
+    if (response.success) {
+      res.json(response.data);
+    } else {
+      res.status(400).json({ error: response.error });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao consultar notas recebidas: ' + error.message });
+  }
+});
+
 module.exports = router;

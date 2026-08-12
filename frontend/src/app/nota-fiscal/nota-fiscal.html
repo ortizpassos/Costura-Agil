@@ -15,13 +15,13 @@
       <div class="row mb-4">
         <div class="col-12">
           <nav class="nav nav-pills nav-fill">            
-            <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-emitir">
+            <button class="nav-link" (click)="setActiveTab('emitir')" [class.active]="activeTab === 'emitir'" id="nav-emitir">
               ➕ Emitir Nota
             </button>
             <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-emitidas">
               📤 Notas Emitidas
             </button>
-            <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-recebidas">
+            <button class="nav-link" (click)="setActiveTab('recebidas')" [class.active]="activeTab === 'recebidas'" id="nav-recebidas">
               📥 Notas Recebidas
             </button>
             <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-canceladas">
@@ -36,10 +36,7 @@
             <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-inutilizacao">
               🚫 Inutilização
             </button>
-            <!-- <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-manifestacao">
-              📨 Manifestação
-            </button> -->
-            <button class="nav-link" (click)="showDesenvolvimentoModal()" id="nav-config">
+            <button class="nav-link" (click)="setActiveTab('config')" [class.active]="activeTab === 'config'" id="nav-config">
               ⚙️ Configurações
             </button>
           </nav>
@@ -51,7 +48,7 @@
         <main class="col-12">
 
           <!-- DASHBOARD -->
-          <section id="dashboard">            
+          <section id="dashboard" *ngIf="activeTab === 'dashboard'">            
             <div class="row mt-3">
               <div class="col-6 col-md-3">
                 <div class="card text-center">
@@ -139,8 +136,359 @@
             </div>
           </section>
 
-          <!-- EMITIR -->
-          <section id="emitir" class="d-none">
+          <!-- CONFIGURAÇÕES -->
+          <section id="config" *ngIf="activeTab === 'config'">
+            <h3>⚙️ Configurações do Sistema Fiscal</h3>
+            <div class="row">
+              <div class="col-12">
+                <ul class="nav nav-tabs" id="configTabs" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" [class.active]="configTab === 'geral'" (click)="setConfigTab('geral')" id="geral-tab" type="button" role="tab">Geral</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" [class.active]="configTab === 'tributos'" (click)="setConfigTab('tributos')" id="tributos-tab" type="button" role="tab">Tributos</button>
+                  </li>
+                </ul>
+                <div class="tab-content" id="configTabsContent">
+                  <div class="tab-pane fade" [class.show]="configTab === 'geral'" [class.active]="configTab === 'geral'" id="geral" role="tabpanel">
+                    <div class="card">
+                      <div class="card-header">
+                        <h5>Configurações Gerais</h5>
+                      </div>
+                      <div class="card-body">
+                        <form (ngSubmit)="saveGeral()">
+                          <div class="row">
+                            <div class="col-md-6">
+                              <div class="mb-3">
+                                <label for="cnpj" class="form-label">CNPJ da Empresa</label>
+                                <input type="text" class="form-control" id="cnpj" [(ngModel)]="geralData.cnpj" name="cnpj" placeholder="00.000.000/0000-00">
+                              </div>
+                            </div>
+                            <div class="col-md-6">
+                              <div class="mb-3">
+                                <label for="inscricaoEstadual" class="form-label">Inscrição Estadual</label>
+                                <input type="text" class="form-control" id="inscricaoEstadual" [(ngModel)]="geralData.inscricaoEstadual" name="inscricaoEstadual" placeholder="000.000.000.000">
+                              </div>
+                            </div>
+                          </div>
+                          <div class="row">
+                            <div class="col-md-6">
+                              <div class="mb-3">
+                                <label for="ambiente" class="form-label">Ambiente</label>
+                                <select class="form-select" id="ambiente" [(ngModel)]="geralData.ambiente" name="ambiente">
+                                  <option value="homologacao">Homologação</option>
+                                  <option value="producao">Produção</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div class="col-md-6">
+                              <div class="mb-3">
+                                <label for="regimeTributario" class="form-label">Regime Tributário</label>
+                                <select class="form-select" id="regimeTributario" [(ngModel)]="geralData.regimeTributario" name="regimeTributario">
+                                  <option value="simples">Simples Nacional</option>
+                                  <option value="presumido">Lucro Presumido</option>
+                                  <option value="real">Lucro Real</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="mb-3">
+                            <label for="certificado" class="form-label">Certificado Digital</label>
+                            <input type="file" class="form-control" id="certificado" accept=".pfx,.p12">
+                            <div class="form-text">Selecione o arquivo do certificado digital (.pfx ou .p12)</div>
+                          </div>
+                          <div class="mb-3">
+                            <label for="senhaCertificado" class="form-label">Senha do Certificado</label>
+                            <input type="password" class="form-control" id="senhaCertificado" name="senhaCertificado">
+                          </div>
+                          <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+                            <button type="button" 
+                                    class="btn btn-success" 
+                                    (click)="saveGeral(); setActiveTab('recebidas')"
+                                    [disabled]="!geralData.cnpj">
+                              💾 Salvar e Consultar Notas Recebidas
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="tab-pane fade" [class.show]="configTab === 'tributos'" [class.active]="configTab === 'tributos'" id="tributos" role="tabpanel">
+                    <ul class="nav nav-tabs" id="tributosTabs" role="tablist">
+                      <li class="nav-item" role="presentation">
+                        <button class="nav-link" [class.active]="tributosTab === 'icms'" (click)="setTributosTab('icms')" type="button" role="tab">ICMS</button>
+                      </li>
+                      <li class="nav-item" role="presentation">
+                        <button class="nav-link" [class.active]="tributosTab === 'ipi'" (click)="setTributosTab('ipi')" type="button" role="tab">IPI</button>
+                      </li>
+                      <li class="nav-item" role="presentation">
+                        <button class="nav-link" [class.active]="tributosTab === 'pis'" (click)="setTributosTab('pis')" type="button" role="tab">PIS</button>
+                      </li>
+                      <li class="nav-item" role="presentation">
+                        <button class="nav-link" [class.active]="tributosTab === 'cofins'" (click)="setTributosTab('cofins')" type="button" role="tab">COFINS</button>
+                      </li>
+                    </ul>
+                    <div class="tab-content" id="tributosTabsContent">
+                      <div class="tab-pane fade" [class.show]="tributosTab === 'icms'" [class.active]="tributosTab === 'icms'" role="tabpanel">
+                        <div class="card">
+                          <div class="card-header">
+                            <h5>Configurações ICMS</h5>
+                          </div>
+                          <div class="card-body">
+                            <form (ngSubmit)="saveICMS()">
+                              <div class="row">
+                                <div class="col-md-4">
+                                  <div class="mb-3">
+                                    <label for="regimeICMS" class="form-label">* Regime</label>
+                                    <input type="text" class="form-control" id="regimeICMS" [value]="getRegimeFromCNPJ()" readonly>
+                                    <small class="form-text text-muted">Determinado automaticamente pelo CNPJ configurado</small>
+                                  </div>
+                                </div>
+                                <div class="col-md-4">
+                                  <div class="mb-3">
+                                    <label for="origemICMS" class="form-label">* Origem</label>
+                                    <select class="form-select" id="origemICMS" [(ngModel)]="icmsData.origem" name="origem">
+                                      <option value="0">0 - Nacional, exceto as indicadas nos códigos 3, 4, 5 e 8</option>
+                                      <option value="1">1 - Estrangeira - Importação direta, exceto a indicada no código 6</option>
+                                      <option value="2">2 - Estrangeira - Adquirida no mercado interno, exceto a indicada no código 7</option>
+                                      <option value="3">3 - Nacional, mercadoria ou bem com Conteúdo de Importação superior a 40% e inferior ou igual a 70%</option>
+                                      <option value="4">4 - Nacional, cuja produção tenha sido feita em conformidade com os processos produtivos básicos de que tratam as legislações citadas nos Ajustes</option>
+                                      <option value="5">5 - Nacional, mercadoria ou bem com Conteúdo de Importação inferior ou igual a 40%</option>
+                                      <option value="6">6 - Estrangeira - Importação direta, sem similar nacional, constante em lista da CAMEX e gás natural</option>
+                                      <option value="7">7 - Estrangeira - Adquirida no mercado interno, sem similar nacional, constante em lista da CAMEX e gás natural</option>
+                                      <option value="8">8 - Nacional, mercadoria ou bem com Conteúdo de Importação superior a 70%</option>
+                                    </select>
+                                  </div>
+                                </div>
+                                <div class="col-md-4">
+                                  <div class="mb-3">
+                                    <label for="tributacaoICMS" class="form-label">Tributação ICMS (CST/CSOSN)</label>
+                                    <select class="form-select" id="tributacaoICMS" [(ngModel)]="icmsData.tributacao" name="tributacao">
+                                      <option value="101">101 - Tributada pelo Simples Nacional com permissão de crédito</option>
+                                      <option value="102">102 - Tributada pelo Simples Nacional sem permissão de crédito</option>
+                                      <option value="103">103 - Isenção do ICMS no Simples Nacional para faixa de receita bruta</option>
+                                      <option value="201">201 - Tributada pelo Simples Nacional com permissão de crédito e com cobrança do ICMS por substituição tributária</option>
+                                      <option value="202">202 - Tributada pelo Simples Nacional sem permissão de crédito e com cobrança do ICMS por substituição tributária</option>
+                                      <option value="203">203 - Isenção do ICMS no Simples Nacional para faixa de receita bruta e com cobrança do ICMS por substituição tributária</option>
+                                      <option value="300">300 - Imune</option>
+                                      <option value="400">400 - Não tributada pelo Simples Nacional</option>
+                                      <option value="500">500 - ICMS cobrado anteriormente por substituição tributária (substituído) ou por antecipação</option>
+                                      <option value="900">900 - Outros</option>
+                                      <option value="00">00 - Tributada integralmente</option>
+                                      <option value="10">10 - Tributada e com cobrança do ICMS por substituição tributária</option>
+                                      <option value="20">20 - Com redução de base de cálculo</option>
+                                      <option value="30">30 - Isenta ou não tributada e com cobrança do ICMS por substituição tributária</option>
+                                      <option value="40">40 - Isenta</option>
+                                      <option value="41">41 - Não tributada</option>
+                                      <option value="50">50 - Suspensão</option>
+                                      <option value="51">51 - Diferimento</option>
+                                      <option value="60">60 - ICMS cobrado anteriormente por substituição tributária</option>
+                                      <option value="70">70 - Com redução de base de cálculo e cobrança do ICMS por substituição tributária</option>
+                                      <option value="90">90 - Outros</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                              <button type="submit" class="btn btn-primary">Salvar ICMS</button>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="tab-pane fade" [class.show]="tributosTab === 'ipi'" [class.active]="tributosTab === 'ipi'" role="tabpanel">
+                        <div class="card">
+                          <div class="card-header">
+                            <h5>Configurações IPI</h5>
+                          </div>
+                          <div class="card-body">
+                            <form (ngSubmit)="saveIPI()">
+                              <div class="row">
+                                <div class="col-md-4">
+                                  <div class="mb-3">
+                                    <label for="cstIPI" class="form-label">* CST IPI</label>
+                                    <select class="form-select" id="cstIPI" [(ngModel)]="ipiData.cst" name="cst">
+                                      <option value="00">00 - Entrada com recuperação de crédito</option>
+                                      <option value="01">01 - Entrada tributada com alíquota zero</option>
+                                      <option value="02">02 - Entrada isenta</option>
+                                      <option value="03">03 - Entrada não-tributada</option>
+                                      <option value="04">04 - Entrada imune</option>
+                                      <option value="05">05 - Entrada com suspensão</option>
+                                      <option value="49">49 - Outras entradas</option>
+                                      <option value="50">50 - Saída tributada</option>
+                                      <option value="51">51 - Saída tributada com alíquota zero</option>
+                                      <option value="52">52 - Saída isenta</option>
+                                      <option value="53">53 - Saída não-tributada</option>
+                                      <option value="54">54 - Saída imune</option>
+                                      <option value="55">55 - Saída com suspensão</option>
+                                      <option value="99">99 - Outras saídas</option>
+                                    </select>
+                                  </div>
+                                </div>
+                                <div class="col-md-4">
+                                  <div class="mb-3">
+                                    <label for="aliquotaIPI" class="form-label">* Alíquota IPI (%)</label>
+                                    <input type="number" step="0.01" class="form-control" id="aliquotaIPI" [(ngModel)]="ipiData.aliquota" name="aliquota" placeholder="5.00">
+                                  </div>
+                                </div>
+                                <div class="col-md-4">
+                                  <div class="mb-3">
+                                    <label for="enquadramentoIPI" class="form-label">Código de Enquadramento Legal do IPI</label>
+                                    <input type="text" class="form-control" id="enquadramentoIPI" [(ngModel)]="ipiData.enquadramento" name="enquadramento" placeholder="999">
+                                  </div>
+                                </div>
+                              </div>
+                              <button type="submit" class="btn btn-primary">Salvar IPI</button>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="tab-pane fade" [class.show]="tributosTab === 'pis'" [class.active]="tributosTab === 'pis'" role="tabpanel">
+                        <div class="card">
+                          <div class="card-header">
+                            <h5>Configurações PIS</h5>
+                          </div>
+                          <div class="card-body">
+                            <form (ngSubmit)="savePIS()">
+                              <div class="row">
+                                <div class="col-md-4">
+                                  <div class="mb-3">
+                                    <label for="cstPIS" class="form-label">* CST PIS</label>
+                                    <select class="form-select" id="cstPIS" [(ngModel)]="pisData.cst" name="cst">
+                                      <option value="01">01 - Operação Tributável com Alíquota Básica</option>
+                                      <option value="02">02 - Operação Tributável com Alíquota Diferenciada</option>
+                                      <option value="03">03 - Operação Tributável com Alíquota por Unidade de Medida de Produto</option>
+                                      <option value="04">04 - Operação Tributável Monofásica - Revenda a Alíquota Zero</option>
+                                      <option value="05">05 - Operação Tributável por Substituição Tributária</option>
+                                      <option value="06">06 - Operação Tributável a Alíquota Zero</option>
+                                      <option value="07">07 - Operação Isenta da Contribuição</option>
+                                      <option value="08">08 - Operação sem Incidência da Contribuição</option>
+                                      <option value="09">09 - Operação com Suspensão da Contribuição</option>
+                                      <option value="49">49 - Outras Operações de Saída</option>
+                                      <option value="50">50 - Operação com Direito a Crédito - Vinculada Exclusivamente a Receita Tributada no Mercado Interno</option>
+                                      <option value="51">51 - Operação com Direito a Crédito – Vinculada Exclusivamente a Receita Não Tributada no Mercado Interno</option>
+                                      <option value="52">52 - Operação com Direito a Crédito - Vinculada Exclusivamente a Receita de Exportação</option>
+                                      <option value="53">53 - Operação com Direito a Crédito - Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno</option>
+                                      <option value="54">54 - Operação com Direito a Crédito - Vinculada a Receitas Tributadas no Mercado Interno e de Exportação</option>
+                                      <option value="55">55 - Operação com Direito a Crédito - Vinculada a Receitas Não-Tributadas no Mercado Interno e de Exportação</option>
+                                      <option value="56">56 - Operação com Direito a Crédito - Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno, e de Exportação</option>
+                                      <option value="60">60 - Crédito Presumido - Operação de Aquisição Vinculada Exclusivamente a Receita Tributada no Mercado Interno</option>
+                                      <option value="61">61 - Crédito Presumido - Operação de Aquisição Vinculada Exclusivamente a Receita Não-Tributada no Mercado Interno</option>
+                                      <option value="62">62 - Crédito Presumido - Operação de Aquisição Vinculada Exclusivamente a Receita de Exportação</option>
+                                      <option value="63">63 - Crédito Presumido - Operação de Aquisição Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno</option>
+                                      <option value="64">64 - Crédito Presumido - Operação de Aquisição Vinculada a Receitas Tributadas no Mercado Interno e de Exportação</option>
+                                      <option value="65">65 - Crédito Presumido - Operação de Aquisição Vinculada a Receitas Não-Tributadas no Mercado Interno e de Exportação</option>
+                                      <option value="66">66 - Crédito Presumido - Operação de Aquisição Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno, e de Exportação</option>
+                                      <option value="67">67 - Crédito Presumido - Outras Operações</option>
+                                      <option value="70">70 - Operação de Aquisição sem Direito a Crédito</option>
+                                      <option value="71">71 - Operação de Aquisição com Isenção</option>
+                                      <option value="72">72 - Operação de Aquisição com Suspensão</option>
+                                      <option value="73">73 - Operação de Aquisição a Alíquota Zero</option>
+                                      <option value="74">74 - Operação de Aquisição sem Incidência da Contribuição</option>
+                                      <option value="75">75 - Operação de Aquisição por Substituição Tributária</option>
+                                      <option value="98">98 - Outras Operações de Entrada</option>
+                                      <option value="99">99 - Outras Operações</option>
+                                    </select>
+                                  </div>
+                                </div>
+                                <div class="col-md-4">
+                                  <div class="mb-3">
+                                    <label for="aliquotaPIS" class="form-label">* Alíquota PIS (%)</label>
+                                    <input type="number" step="0.01" class="form-control" id="aliquotaPIS" [(ngModel)]="pisData.aliquota" name="aliquota" placeholder="0.65">
+                                  </div>
+                                </div>
+                                <div class="col-md-4">
+                                  <div class="mb-3">
+                                    <label for="tipoCalculoPIS" class="form-label">Tipo de Cálculo</label>
+                                    <select class="form-select" id="tipoCalculoPIS" [(ngModel)]="pisData.tipoCalculo" name="tipoCalculo">
+                                      <option value="percentual">Percentual</option>
+                                      <option value="valor">Valor Fixo</option>
+                                      <option value="unidade">Por Unidade</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                              <button type="submit" class="btn btn-primary">Salvar PIS</button>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="tab-pane fade" [class.show]="tributosTab === 'cofins'" [class.active]="tributosTab === 'cofins'" role="tabpanel">
+                        <div class="card">
+                          <div class="card-header">
+                            <h5>Configurações COFINS</h5>
+                          </div>
+                          <div class="card-body">
+                            <form (ngSubmit)="saveCOFINS()">
+                              <div class="row">
+                                <div class="col-md-4">
+                                  <div class="mb-3">
+                                    <label for="cstCOFINS" class="form-label">* CST COFINS</label>
+                                    <select class="form-select" id="cstCOFINS" [(ngModel)]="cofinsData.cst" name="cst">
+                                      <option value="01">01 - Operação Tributável com Alíquota Básica</option>
+                                      <option value="02">02 - Operação Tributável com Alíquota Diferenciada</option>
+                                      <option value="03">03 - Operação Tributável com Alíquota por Unidade de Medida de Produto</option>
+                                      <option value="04">04 - Operação Tributável Monofásica - Revenda a Alíquota Zero</option>
+                                      <option value="05">05 - Operação Tributável por Substituição Tributária</option>
+                                      <option value="06">06 - Operação Tributável a Alíquota Zero</option>
+                                      <option value="07">07 - Operação Isenta da Contribuição</option>
+                                      <option value="08">08 - Operação sem Incidência da Contribuição</option>
+                                      <option value="09">09 - Operação com Suspensão da Contribuição</option>
+                                      <option value="49">49 - Outras Operações de Saída</option>
+                                      <option value="50">50 - Operação com Direito a Crédito - Vinculada Exclusivamente a Receita Tributada no Mercado Interno</option>
+                                      <option value="51">51 - Operação com Direito a Crédito – Vinculada Exclusivamente a Receita Não Tributada no Mercado Interno</option>
+                                      <option value="52">52 - Operação com Direito a Crédito - Vinculada Exclusivamente a Receita de Exportação</option>
+                                      <option value="53">53 - Operação com Direito a Crédito - Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno</option>
+                                      <option value="54">54 - Operação com Direito a Crédito - Vinculada a Receitas Tributadas no Mercado Interno e de Exportação</option>
+                                      <option value="55">55 - Operação com Direito a Crédito - Vinculada a Receitas Não-Tributadas no Mercado Interno e de Exportação</option>
+                                      <option value="56">56 - Operação com Direito a Crédito - Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno, e de Exportação</option>
+                                      <option value="60">60 - Crédito Presumido - Operação de Aquisição Vinculada Exclusivamente a Receita Tributada no Mercado Interno</option>
+                                      <option value="61">61 - Crédito Presumido - Operação de Aquisição Vinculada Exclusivamente a Receita Não-Tributada no Mercado Interno</option>
+                                      <option value="62">62 - Crédito Presumido - Operação de Aquisição Vinculada Exclusivamente a Receita de Exportação</option>
+                                      <option value="63">63 - Crédito Presumido - Operação de Aquisição Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno</option>
+                                      <option value="64">64 - Crédito Presumido - Operação de Aquisição Vinculada a Receitas Tributadas no Mercado Interno e de Exportação</option>
+                                      <option value="65">65 - Crédito Presumido - Operação de Aquisição Vinculada a Receitas Não-Tributadas no Mercado Interno e de Exportação</option>
+                                      <option value="66">66 - Crédito Presumido - Operação de Aquisição Vinculada a Receitas Tributadas e Não-Tributadas no Mercado Interno, e de Exportação</option>
+                                      <option value="67">67 - Crédito Presumido - Outras Operações</option>
+                                      <option value="70">70 - Operação de Aquisição sem Direito a Crédito</option>
+                                      <option value="71">71 - Operação de Aquisição com Isenção</option>
+                                      <option value="72">72 - Operação de Aquisição com Suspensão</option>
+                                      <option value="73">73 - Operação de Aquisição a Alíquota Zero</option>
+                                      <option value="74">74 - Operação de Aquisição sem Incidência da Contribuição</option>
+                                      <option value="75">75 - Operação de Aquisição por Substituição Tributária</option>
+                                      <option value="98">98 - Outras Operações de Entrada</option>
+                                      <option value="99">99 - Outras Operações</option>
+                                    </select>
+                                  </div>
+                                </div>
+                                <div class="col-md-4">
+                                  <div class="mb-3">
+                                    <label for="aliquotaCOFINS" class="form-label">* Alíquota COFINS (%)</label>
+                                    <input type="number" step="0.01" class="form-control" id="aliquotaCOFINS" [(ngModel)]="cofinsData.aliquota" name="aliquota" placeholder="3.00">
+                                  </div>
+                                </div>
+                                <div class="col-md-4">
+                                  <div class="mb-3">
+                                    <label for="tipoCalculoCOFINS" class="form-label">Tipo de Cálculo</label>
+                                    <select class="form-select" id="tipoCalculoCOFINS" [(ngModel)]="cofinsData.tipoCalculo" name="tipoCalculo">
+                                      <option value="percentual">Percentual</option>
+                                      <option value="valor">Valor Fixo</option>
+                                      <option value="unidade">Por Unidade</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                              <button type="submit" class="btn btn-primary">Salvar COFINS</button>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="emitir" *ngIf="activeTab === 'emitir'">
             <h3>Emissão de NF-e / NFC-e</h3>
             <app-gerar-nfe></app-gerar-nfe>
           </section>
@@ -152,10 +500,108 @@
           </section>
 
           <!-- RECEBIDAS -->
-          <section id="recebidas" class="d-none">
-            <h3>Notas Recebidas</h3>
-            <div class="alert alert-info">
-              <p>Funcionalidade em desenvolvimento.</p>
+          <!-- NOTAS RECEBIDAS -->
+          <section id="recebidas" *ngIf="activeTab === 'recebidas'">
+            <div class="row mb-4">
+              <div class="col-12">
+                <h3>📥 Notas Fiscais Recebidas</h3>
+                <p class="text-muted">Notas fiscais emitidas para sua empresa ({{ geralData.cnpj || 'CNPJ não configurado' }})</p>
+              </div>
+            </div>
+
+            <!-- Botão de consulta -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="d-flex align-items-end gap-3">
+                    <div>
+                      <label for="dataInicio" class="form-label">Data Início</label>
+                      <input type="date" class="form-control" id="dataInicio" [(ngModel)]="dataInicio" name="dataInicio">
+                    </div>
+                    <div>
+                      <label for="dataFim" class="form-label">Data Fim</label>
+                      <input type="date" class="form-control" id="dataFim" [(ngModel)]="dataFim" name="dataFim">
+                    </div>
+                    <button type="button"
+                            class="btn btn-primary"
+                            (click)="consultarNotasRecebidas()"
+                            [disabled]="loadingRecebidas || !geralData.cnpj">
+                      <span *ngIf="loadingRecebidas" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                      {{ loadingRecebidas ? 'Consultando...' : '🔍 Consultar Notas Recebidas' }}
+                    </button>
+                    <small *ngIf="!geralData.cnpj" class="text-danger ms-2">
+                      Configure o CNPJ nas configurações primeiro
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Resultados da consulta -->
+            <div class="row" *ngIf="notasRecebidas.length > 0 || loadingRecebidas">
+              <div class="col-12">
+                <div class="card">
+                  <div class="card-header">
+                    <h5>📋 Resultados da Consulta</h5>
+                  </div>
+                  <div class="card-body">
+                    <div *ngIf="loadingRecebidas" class="text-center">
+                      <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                      </div>
+                      <p class="mt-2">Consultando notas fiscais...</p>
+                    </div>
+
+                    <div *ngIf="!loadingRecebidas && notasRecebidas.length > 0">
+                      <div class="table-responsive">
+                        <table class="table table-striped">
+                          <thead>
+                            <tr>
+                              <th>Número</th>
+                              <th>Série</th>
+                              <th>Data Emissão</th>
+                              <th>Emitente</th>
+                              <th>Valor Total</th>
+                              <th>Status</th>
+                              <th>Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr *ngFor="let nota of notasRecebidas">
+                              <td>{{ nota.numero }}</td>
+                              <td>{{ nota.serie }}</td>
+                              <td>{{ nota.dataEmissao | date:'dd/MM/yyyy' }}</td>
+                              <td>{{ nota.emitente }}</td>
+                              <td>R$ {{ nota.valorTotal | number:'1.2-2' }}</td>
+                              <td>
+                                <span class="badge" [class]="getStatusBadgeClass(nota.status)">
+                                  {{ nota.status }}
+                                </span>
+                              </td>
+                              <td>
+                                <button class="btn btn-sm btn-outline-primary me-1"
+                                        (click)="consultarNfePorChave(nota.chave)"
+                                        title="Consultar NFe">
+                                  🔍
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        (click)="downloadXml(nota.chave)"
+                                        title="Download XML">
+                                  📄
+                                </button>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div *ngIf="!loadingRecebidas && notasRecebidas.length === 0" class="text-center">
+                      <p class="text-muted">Nenhuma nota fiscal encontrada para o CNPJ informado.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 
