@@ -6,7 +6,6 @@ import { Subscription, interval } from 'rxjs';
 
 import { SidebarComponent } from '../shared/sidebar/sidebar';
 import { SocketService } from '../services/socket.service';
-import { AuthService } from '../services/auth.service';
 import {
   DispositivosService,
   Dispositivo
@@ -99,15 +98,14 @@ export class ProducaoComponent
   rfidEtiquetasCadastradas = 0;
   rfidEtiquetasRevisadas = 0;
   rfidQuantidade = 0;
+
   rfidScanStatus: RFIDScanStatus =
     'nao_aplicavel';
 
   private subscriptions: Subscription[] = [];
-  private userId: string | null = null;
 
   constructor(
     private socketService: SocketService,
-    private authService: AuthService,
     private router: Router,
     private dispositivosService: DispositivosService,
     private operacoesService: OperacoesService,
@@ -116,18 +114,11 @@ export class ProducaoComponent
   ) {}
 
   ngOnInit(): void {
-    const usuario: any =
-      this.authService.getUsuario?.();
-
-    this.userId =
-      usuario?._id ||
-      usuario?.id ||
-      null;
-
     this.carregarTudo();
     this.configurarSocket();
 
-    // Atualiza o modal RFID automaticamente enquanto estiver aberto.
+    // Atualiza automaticamente o status RFID enquanto
+    // o modal estiver aberto e a leitura estiver ativa.
     const poll = interval(2000).subscribe(() => {
       if (
         this.modalRFIDAberto &&
@@ -168,6 +159,7 @@ export class ProducaoComponent
             'Erro ao buscar artigos',
             err
           );
+
           this.artigos = [];
         }
       });
@@ -180,11 +172,12 @@ export class ProducaoComponent
         next: (ops) => {
           this.operacoes = ops || [];
         },
-        error: (err) =>
+        error: (err) => {
           console.error(
             'Erro ao buscar operações',
             err
-          )
+          );
+        }
       });
   }
 
@@ -195,11 +188,12 @@ export class ProducaoComponent
         next: (clientes) => {
           this.clientes = clientes || [];
         },
-        error: (err) =>
+        error: (err) => {
           console.error(
             'Erro ao buscar clientes',
             err
-          )
+          );
+        }
       });
   }
 
@@ -226,125 +220,138 @@ export class ProducaoComponent
           this.calcularEstatisticas();
           this.aplicarFiltros();
         },
-        error: (err) =>
+        error: (err) => {
           console.error(
             'Erro ao carregar dispositivos',
             err
-          )
+          );
+        }
       });
   }
 
   configurarSocket(): void {
-    const statusSub =
+    const statusObservable =
       this.socketService
-        .onDeviceStatusUpdate?.()
-        .subscribe?.((updated: any) => {
-          if (!updated?._id) return;
+        .onDeviceStatusUpdate?.();
 
-          const idx =
-            this.producao.findIndex(
-              (p: any) =>
-                p._id === updated._id
-            );
+    if (statusObservable?.subscribe) {
+      const statusSub =
+        statusObservable.subscribe(
+          (updated: any) => {
+            if (!updated?._id) {
+              return;
+            }
 
-          if (idx >= 0) {
-            this.producao[idx] = {
-              ...this.producao[idx],
-              ...updated,
-              progresso:
-                updated.producaoAtual ||
-                this.producao[idx].progresso ||
-                0,
-              funcionario:
-                updated.funcionarioLogado?.nome ||
-                this.producao[idx].funcionario ||
-                '-',
-              meta:
-                updated.artigo?.quantidade ||
-                this.producao[idx].meta ||
-                0
-            };
-          } else {
-            this.producao.push({
-              ...updated,
-              progresso:
-                updated.producaoAtual || 0,
-              funcionario:
-                updated.funcionarioLogado?.nome ||
-                '-',
-              meta:
-                updated.artigo?.quantidade ||
-                0
-            });
+            const idx =
+              this.producao.findIndex(
+                (p: any) =>
+                  p._id === updated._id
+              );
+
+            if (idx >= 0) {
+              this.producao[idx] = {
+                ...this.producao[idx],
+                ...updated,
+                progresso:
+                  updated.producaoAtual ??
+                  this.producao[idx].progresso ??
+                  0,
+                funcionario:
+                  updated.funcionarioLogado?.nome ||
+                  this.producao[idx].funcionario ||
+                  '-',
+                meta:
+                  updated.artigo?.quantidade ||
+                  this.producao[idx].meta ||
+                  0
+              };
+            } else {
+              this.producao.push({
+                ...updated,
+                progresso:
+                  updated.producaoAtual || 0,
+                funcionario:
+                  updated.funcionarioLogado?.nome ||
+                  '-',
+                meta:
+                  updated.artigo?.quantidade ||
+                  0
+              });
+            }
+
+            this.calcularEstatisticas();
+            this.aplicarFiltros();
           }
+        );
 
-          this.calcularEstatisticas();
-          this.aplicarFiltros();
-        });
-
-    if (statusSub) {
       this.subscriptions.push(statusSub);
     }
 
-    const prodSub =
+    const productionObservable =
       this.socketService
-        .onProductionUpdate?.()
-        .subscribe?.((payload: any) => {
-          const dispositivo =
-            payload?.dispositivo;
+        .onProductionUpdate?.();
 
-          if (!dispositivo?._id) return;
+    if (productionObservable?.subscribe) {
+      const prodSub =
+        productionObservable.subscribe(
+          (payload: any) => {
+            const dispositivo =
+              payload?.dispositivo;
 
-          const idx =
-            this.producao.findIndex(
-              (p: any) =>
-                p._id === dispositivo._id
-            );
+            if (!dispositivo?._id) {
+              return;
+            }
 
-          if (idx >= 0) {
-            this.producao[idx] = {
-              ...this.producao[idx],
-              ...dispositivo,
-              progresso:
-                dispositivo.producaoAtual ||
-                0,
-              funcionario:
-                dispositivo
-                  .funcionarioLogado
-                  ?.nome || '-',
-              meta:
-                dispositivo.artigo
-                  ?.quantidade || 0
-            };
-          }
-
-          if (dispositivo.artigo?._id) {
-            const artigoIndex =
-              this.artigos.findIndex(
-                (a) =>
-                  a._id ===
-                  dispositivo.artigo._id
+            const idx =
+              this.producao.findIndex(
+                (p: any) =>
+                  p._id === dispositivo._id
               );
 
-            if (artigoIndex >= 0) {
-              this.artigos[artigoIndex] = {
-                ...this.artigos[artigoIndex],
-                quantidadeAtual:
+            if (idx >= 0) {
+              this.producao[idx] = {
+                ...this.producao[idx],
+                ...dispositivo,
+                progresso:
+                  dispositivo.producaoAtual ||
+                  0,
+                funcionario:
+                  dispositivo
+                    .funcionarioLogado
+                    ?.nome || '-',
+                meta:
                   dispositivo.artigo
-                    .quantidadeAtual || 0,
-                status:
-                  dispositivo.artigo.status ||
-                  this.artigos[artigoIndex]
-                    .status
+                    ?.quantidade || 0
               };
             }
+
+            if (dispositivo.artigo?._id) {
+              const artigoIndex =
+                this.artigos.findIndex(
+                  (a) =>
+                    a._id ===
+                    dispositivo.artigo._id
+                );
+
+              if (artigoIndex >= 0) {
+                this.artigos[artigoIndex] = {
+                  ...this.artigos[artigoIndex],
+                  quantidadeAtual:
+                    dispositivo.artigo
+                      .quantidadeAtual || 0,
+                  status:
+                    dispositivo.artigo.status ||
+                    this.artigos[artigoIndex]
+                      .status
+                };
+              }
+            }
+
+            this.calcularEstatisticas();
+            this.aplicarFiltros();
           }
+        );
 
-          this.calcularEstatisticas();
-          this.aplicarFiltros();
-        });
-
-    if (prodSub) {
       this.subscriptions.push(prodSub);
     }
   }
@@ -409,9 +416,10 @@ export class ProducaoComponent
     this.percentualMeta =
       this.metaTotal > 0
         ? Math.round(
-            (this.totalProducaoHoje /
-              this.metaTotal) *
-              100
+            (
+              this.totalProducaoHoje /
+              this.metaTotal
+            ) * 100
           )
         : 0;
   }
@@ -420,6 +428,7 @@ export class ProducaoComponent
     this.artigoEditando = null;
     this.novoArtigo =
       this.criarArtigoPadrao();
+
     this.modalArtigoAberto = true;
   }
 
@@ -428,7 +437,9 @@ export class ProducaoComponent
     this.artigoEditando = null;
   }
 
-  editarArtigo(artigo: Artigo): void {
+  editarArtigo(
+    artigo: Artigo
+  ): void {
     this.artigoEditando = artigo;
 
     this.novoArtigo = {
@@ -461,26 +472,34 @@ export class ProducaoComponent
     const payload: Partial<Artigo> = {
       codigo:
         this.novoArtigo.codigo.trim(),
+
       nome:
         this.novoArtigo.nome.trim(),
+
       operacao:
         this.novoArtigo.operacao.trim(),
+
       cliente:
         this.novoArtigo.cliente.trim(),
+
       dataInclusao:
         this.novoArtigo.dataInclusao,
+
       valor:
         Number(
           this.novoArtigo.valor || 0
         ),
+
       quantidade:
         Number(
           this.novoArtigo.quantidade || 0
         ),
+
       status:
         this.artigoEditando?.status ||
         this.novoArtigo.status ||
         'pendente',
+
       rfidEnabled:
         this.novoArtigo.rfidEnabled === true
     };
@@ -498,20 +517,25 @@ export class ProducaoComponent
 
     request.subscribe({
       next: (artigoSalvo) => {
-        const novoCadastro = !editando;
+        const novoCadastro =
+          !editando;
+
         const abrirRFID =
           novoCadastro &&
           artigoSalvo.rfidEnabled === true;
 
         this.fecharModalArtigo();
+
         this.novoArtigo =
           this.criarArtigoPadrao();
+
         this.carregarArtigos();
 
         if (abrirRFID) {
           this.abrirModalRFID(
             artigoSalvo
           );
+
           return;
         }
 
@@ -540,23 +564,33 @@ export class ProducaoComponent
     });
   }
 
-  excluirArtigo(artigo: Artigo): void {
-    if (!artigo._id) return;
+  excluirArtigo(
+    artigo: Artigo
+  ): void {
+    if (!artigo._id) {
+      return;
+    }
 
     const ok =
       window.confirm(
         `Excluir o artigo "${artigo.nome}"?`
       );
 
-    if (!ok) return;
+    if (!ok) {
+      return;
+    }
 
     this.artigosService
-      .excluirArtigo(artigo._id)
+      .excluirArtigo(
+        artigo._id
+      )
       .subscribe({
-        next: () =>
-          this.carregarArtigos(),
+        next: () => {
+          this.carregarArtigos();
+        },
         error: (err) => {
           console.error(err);
+
           alert(
             err?.error?.message ||
             'Erro ao excluir artigo.'
@@ -568,18 +602,24 @@ export class ProducaoComponent
   iniciarProducaoArtigo(
     artigo: Artigo
   ): void {
-    if (!artigo._id) return;
+    if (!artigo._id) {
+      return;
+    }
 
     this.artigosService
       .atualizarArtigo(
         artigo._id,
-        { status: 'em_producao' }
+        {
+          status: 'em_producao'
+        }
       )
       .subscribe({
-        next: () =>
-          this.carregarArtigos(),
+        next: () => {
+          this.carregarArtigos();
+        },
         error: (err) => {
           console.error(err);
+
           alert(
             'Erro ao iniciar produção.'
           );
@@ -587,19 +627,27 @@ export class ProducaoComponent
       });
   }
 
-  pausarArtigo(artigo: Artigo): void {
-    if (!artigo._id) return;
+  pausarArtigo(
+    artigo: Artigo
+  ): void {
+    if (!artigo._id) {
+      return;
+    }
 
     this.artigosService
       .atualizarArtigo(
         artigo._id,
-        { status: 'pausado' }
+        {
+          status: 'pausado'
+        }
       )
       .subscribe({
-        next: () =>
-          this.carregarArtigos(),
-        error: (err) =>
-          console.error(err)
+        next: () => {
+          this.carregarArtigos();
+        },
+        error: (err) => {
+          console.error(err);
+        }
       });
   }
 
@@ -614,7 +662,9 @@ export class ProducaoComponent
   abrirModalRFID(
     artigo: Artigo
   ): void {
-    if (!artigo._id) return;
+    if (!artigo._id) {
+      return;
+    }
 
     this.artigoRFIDSelecionado =
       artigo;
@@ -626,10 +676,19 @@ export class ProducaoComponent
 
   fecharModalRFID(): void {
     this.modalRFIDAberto = false;
-    this.artigoRFIDSelecionado = null;
-    this.rfidEtiquetasCadastradas = 0;
-    this.rfidEtiquetasRevisadas = 0;
-    this.rfidQuantidade = 0;
+
+    this.artigoRFIDSelecionado =
+      null;
+
+    this.rfidEtiquetasCadastradas =
+      0;
+
+    this.rfidEtiquetasRevisadas =
+      0;
+
+    this.rfidQuantidade =
+      0;
+
     this.rfidScanStatus =
       'nao_aplicavel';
 
@@ -643,7 +702,9 @@ export class ProducaoComponent
       this.artigoRFIDSelecionado
         ?._id;
 
-    if (!id) return;
+    if (!id) {
+      return;
+    }
 
     this.rfidCarregando = true;
 
@@ -651,7 +712,8 @@ export class ProducaoComponent
       .obterStatusRFID(id)
       .subscribe({
         next: (status) => {
-          this.rfidCarregando = false;
+          this.rfidCarregando =
+            false;
 
           this.rfidEtiquetasCadastradas =
             status.etiquetasCadastradas ||
@@ -669,7 +731,9 @@ export class ProducaoComponent
             'aguardando';
         },
         error: (err) => {
-          this.rfidCarregando = false;
+          this.rfidCarregando =
+            false;
+
           console.error(err);
 
           if (mostrarErro) {
@@ -687,7 +751,9 @@ export class ProducaoComponent
       this.artigoRFIDSelecionado
         ?._id;
 
-    if (!id) return;
+    if (!id) {
+      return;
+    }
 
     let preservar = false;
 
@@ -735,7 +801,9 @@ export class ProducaoComponent
       this.artigoRFIDSelecionado
         ?._id;
 
-    if (!id) return;
+    if (!id) {
+      return;
+    }
 
     this.artigosService
       .finalizarLeituraRFID(id)
@@ -744,6 +812,7 @@ export class ProducaoComponent
           this.carregarStatusRFID(
             false
           );
+
           this.carregarArtigos();
 
           alert(
@@ -776,8 +845,7 @@ export class ProducaoComponent
         (
           this.rfidEtiquetasCadastradas /
           this.rfidQuantidade
-        ) *
-          100
+        ) * 100
       )
     );
   }
@@ -793,8 +861,7 @@ export class ProducaoComponent
         (
           this.rfidEtiquetasRevisadas /
           this.rfidQuantidade
-        ) *
-          100
+        ) * 100
       )
     );
   }
@@ -806,12 +873,17 @@ export class ProducaoComponent
       RFIDScanStatus,
       string
     > = {
-      nao_aplicavel: 'Não aplicável',
+      nao_aplicavel:
+        'Não aplicável',
+
       aguardando:
         'Aguardando etiquetas',
+
       em_leitura:
         'Escaneando etiquetas',
-      concluido: 'Pronto para revisão'
+
+      concluido:
+        'Pronto para revisão'
     };
 
     return mapa[
@@ -826,11 +898,14 @@ export class ProducaoComponent
       cortesPorPeca: 0,
       descricao: ''
     };
-    this.modalOperacaoAberto = true;
+
+    this.modalOperacaoAberto =
+      true;
   }
 
   fecharModalOperacao(): void {
-    this.modalOperacaoAberto = false;
+    this.modalOperacaoAberto =
+      false;
   }
 
   cadastrarOperacao(): void {
@@ -845,6 +920,7 @@ export class ProducaoComponent
         },
         error: (err) => {
           console.error(err);
+
           alert(
             'Erro ao cadastrar operação.'
           );
@@ -857,11 +933,14 @@ export class ProducaoComponent
       nome: '',
       contato: ''
     };
-    this.modalClienteAberto = true;
+
+    this.modalClienteAberto =
+      true;
   }
 
   fecharModalCliente(): void {
-    this.modalClienteAberto = false;
+    this.modalClienteAberto =
+      false;
   }
 
   cadastrarCliente(): void {
@@ -876,6 +955,7 @@ export class ProducaoComponent
         },
         error: (err) => {
           console.error(err);
+
           alert(
             'Erro ao cadastrar cliente.'
           );
@@ -892,7 +972,9 @@ export class ProducaoComponent
     const file =
       input.files?.[0];
 
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     const reader =
       new FileReader();
@@ -900,7 +982,9 @@ export class ProducaoComponent
     reader.onload = () => {
       try {
         const xml =
-          String(reader.result || '');
+          String(
+            reader.result || ''
+          );
 
         const doc =
           new DOMParser()
@@ -910,27 +994,37 @@ export class ProducaoComponent
             );
 
         const codigo =
-          doc.querySelector('prod > cProd')
+          doc.querySelector(
+            'prod > cProd'
+          )
             ?.textContent
             ?.trim();
 
         const nome =
-          doc.querySelector('prod > xProd')
+          doc.querySelector(
+            'prod > xProd'
+          )
             ?.textContent
             ?.trim();
 
         const quantidade =
-          doc.querySelector('prod > qCom')
+          doc.querySelector(
+            'prod > qCom'
+          )
             ?.textContent
             ?.trim();
 
         const valor =
-          doc.querySelector('prod > vUnCom')
+          doc.querySelector(
+            'prod > vUnCom'
+          )
             ?.textContent
             ?.trim();
 
         const cliente =
-          doc.querySelector('dest > xNome')
+          doc.querySelector(
+            'dest > xNome'
+          )
             ?.textContent
             ?.trim();
 
