@@ -1,5 +1,33 @@
-// ADICIONAR NO TOPO DO backend/app.js, JUNTO AOS OUTROS requires:
-const deviceActivationRoutes = require('./routes/deviceActivationRoutes');
+BACKEND/app.js - ALTERAÇÕES NECESSÁRIAS
+========================================
 
-// ADICIONAR JUNTO AOS OUTROS app.use(...):
-app.use('/api/device/activation', deviceActivationRoutes);
+1) Junto aos outros require():
+
+const deviceProvisioningRoutes =
+  require('./routes/deviceProvisioningRoutes');
+
+const configurarSocketProvisioning =
+  require('./socket/deviceProvisioningSocket');
+
+
+2) Junto às rotas Express, depois de deviceActivationRoutes:
+
+app.use(
+  '/api/device-provisioning',
+  deviceProvisioningRoutes
+);
+
+
+3) Depois de criar o Socket.IO e depois de:
+
+setArtigoSocketIO(io);
+configurarSocketRevisaoRFID(io);
+
+adicione:
+
+configurarSocketProvisioning(io);
+
+
+O fluxo antigo:
+  /api/device/activation
+continua funcionando normalmente para não quebrar o dispositivo do arco.

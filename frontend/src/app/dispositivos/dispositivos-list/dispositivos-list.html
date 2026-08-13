@@ -1,104 +1,852 @@
 <div class="d-flex bg-light min-vh-100">
   <app-sidebar></app-sidebar>
-  <div class="flex-grow-1" style="margin-left:220px;">
+
+  <div
+    class="flex-grow-1"
+    style="margin-left:220px;">
+
     <div class="container py-4">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold text-primary mb-0">Dispositivos Cadastrados</h2>
-        <button (click)="abrirCadastro()" class="btn btn-primary btn-lg">
-          <i class="bi bi-plus-lg"></i> Novo Dispositivo
-        </button>
-      </div>
-      <div class="row justify-content-center">
-        <div class="col-lg-10">
-          <div class="card shadow-sm border-0">
-            <div class="card-body p-0">
-              <table class="table table-bordered table-striped table-hover align-middle mb-0 rounded shadow-sm overflow-hidden" style="background:#fff;">
-                <thead class="bg-gradient bg-primary text-white">
-                  <tr>
-                    <th class="rounded-top-start">Dispositivo</th>
-                    <th>Status</th>
-                    <th class="text-center rounded-top-end">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @if (dispositivos.length === 0) {
-                    <tr>
-                      <td colspan="3" class="text-center text-muted">Nenhum dispositivo cadastrado</td>
-                    </tr>
-                  }
-                  @for (dispositivo of dispositivos; track dispositivo._id) {
-                    <tr>
-                      <td class="fw-semibold text-dark">{{ dispositivo.nome }}</td>
-                      <td>
-                        <span class="badge px-3 py-2" [ngClass]="{
-                          'bg-success': dispositivo.status === 'online',
-                          'bg-primary': dispositivo.status === 'em_producao',
-                          'bg-danger': dispositivo.status === 'offline',
-                          'bg-secondary': dispositivo.status === 'ocioso'
-                        }">
-                          {{ dispositivo.status === 'em_producao' ? 'Produzindo' : dispositivo.status }}
-                        </span>
-                      </td>
-                      <td class="text-center">
-                        <button (click)="abrirEdicao(dispositivo)" class="btn btn-sm btn-outline-warning me-2">
-                          <i class="bi bi-pencil"></i> Editar
-                        </button>
-                        <button (click)="excluirDispositivo(dispositivo)" class="btn btn-sm btn-outline-danger">
-                          <i class="bi bi-trash"></i> Excluir
-                        </button>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
+
+      <div
+        class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+
+        <h2
+          class="fw-bold text-primary mb-0">
+          Dispositivos
+        </h2>
+
+        <div class="d-flex flex-wrap gap-2">
+
+          <button
+            type="button"
+            class="btn btn-success btn-lg"
+            (click)="abrirAtivacao()">
+
+            <i class="bi bi-credit-card"></i>
+            Ativar dispositivo
+
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline-primary btn-lg"
+            (click)="abrirSubstituir()">
+
+            <i class="bi bi-arrow-repeat"></i>
+            Substituir hardware
+
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-lg"
+            (click)="abrirCadastro()">
+
+            <i class="bi bi-key"></i>
+            Adicionar token existente
+
+          </button>
+
         </div>
       </div>
-      <!-- Modal de cadastro/edição -->
-      @if (modalAberto) {
-        <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.3);">
-          <div class="modal-dialog modal-dialog-centered">
+
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+
+          <div class="table-responsive">
+
+            <table
+              class="table table-bordered table-striped table-hover align-middle mb-0"
+              style="background:#fff;">
+
+              <thead
+                class="bg-gradient bg-primary text-white">
+
+                <tr>
+                  <th>Dispositivo</th>
+                  <th>Tipo</th>
+                  <th>Token / Licença</th>
+                  <th>Hardware atual</th>
+                  <th>Status</th>
+                  <th class="text-center">
+                    Ações
+                  </th>
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                @if (
+                  dispositivos.length === 0
+                ) {
+                  <tr>
+                    <td
+                      colspan="6"
+                      class="text-center text-muted py-4">
+
+                      Nenhum dispositivo cadastrado
+
+                    </td>
+                  </tr>
+                }
+
+                @for (
+                  dispositivo of dispositivos;
+                  track dispositivo._id
+                ) {
+                  <tr>
+
+                    <td class="fw-semibold">
+                      {{ dispositivo.nome }}
+                    </td>
+
+                    <td>
+                      {{ tipoDispositivo(dispositivo) }}
+                    </td>
+
+                    <td>
+                      <code>
+                        {{ tokenMascarado(dispositivo.deviceToken) }}
+                      </code>
+
+                      @if (
+                        dispositivo.activationPaid
+                      ) {
+                        <span
+                          class="badge bg-success ms-2">
+                          Licença ativa
+                        </span>
+                      }
+                    </td>
+
+                    <td>
+                      @if (
+                        dispositivo.hardwareDeviceId
+                      ) {
+                        <code>
+                          {{ dispositivo.hardwareDeviceId }}
+                        </code>
+                      } @else {
+                        <span class="text-muted">
+                          Sem hardware vinculado
+                        </span>
+                      }
+                    </td>
+
+                    <td>
+                      <span
+                        class="badge px-3 py-2"
+                        [ngClass]="{
+                          'bg-success':
+                            dispositivo.status === 'online',
+
+                          'bg-primary':
+                            dispositivo.status === 'em_producao',
+
+                          'bg-danger':
+                            dispositivo.status === 'offline',
+
+                          'bg-secondary':
+                            dispositivo.status === 'ocioso'
+                        }">
+
+                        {{
+                          dispositivo.status ===
+                          'em_producao'
+                            ? 'Produzindo'
+                            : dispositivo.status
+                        }}
+
+                      </span>
+                    </td>
+
+                    <td class="text-center text-nowrap">
+
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary me-2"
+                        (click)="abrirSubstituir(dispositivo)">
+
+                        <i class="bi bi-arrow-repeat"></i>
+                        Hardware
+
+                      </button>
+
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-warning me-2"
+                        (click)="abrirEdicao(dispositivo)">
+
+                        <i class="bi bi-pencil"></i>
+                        Editar
+
+                      </button>
+
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        (click)="excluirDispositivo(dispositivo)">
+
+                        <i class="bi bi-trash"></i>
+                        Excluir
+
+                      </button>
+
+                    </td>
+
+                  </tr>
+                }
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+      </div>
+
+
+      <!-- ==================================================
+           MODAL ATIVAÇÃO NOVA VIA PIX
+           ================================================== -->
+      @if (modalAtivacao) {
+
+        <div
+          class="modal fade show d-block"
+          tabindex="-1"
+          style="background:rgba(0,0,0,.45);">
+
+          <div
+            class="modal-dialog modal-dialog-centered modal-lg">
+
             <div class="modal-content">
+
               <div class="modal-header">
-                <h5 class="modal-title">{{ dispositivoEditando ? 'Editar Dispositivo' : 'Cadastrar Dispositivo' }}</h5>
-                <button type="button" class="btn-close" (click)="fecharModal()"></button>
+
+                <h5 class="modal-title">
+                  Ativar novo dispositivo
+                </h5>
+
+                <button
+                  type="button"
+                  class="btn-close"
+                  (click)="fecharAtivacao()">
+                </button>
+
               </div>
-              <form (ngSubmit)="salvarDispositivo()" #formRef="ngForm" autocomplete="off">
-                <div class="modal-body">
-                  <div class="mb-3">
-                    <label class="form-label">Nome:</label>
-                    <input [(ngModel)]="form.nome" name="nome" required class="form-control" autocomplete="off" />
+
+
+              <div class="modal-body">
+
+                @if (
+                  activationStep ===
+                  'device'
+                ) {
+
+                  <div class="alert alert-info">
+                    Conecte o novo equipamento à internet.
+                    O Device ID será mostrado durante a configuração
+                    de Wi-Fi do equipamento. Informe esse ID abaixo.
                   </div>
+
                   <div class="mb-3">
-                    <label class="form-label">Token:</label>
-                    <input [(ngModel)]="form.deviceToken" name="deviceToken" required class="form-control" autocomplete="off" />
+                    <label class="form-label">
+                      Device ID
+                    </label>
+
+                    <div class="input-group">
+
+                      <input
+                        class="form-control form-control-lg"
+                        [(ngModel)]="activationDeviceId"
+                        name="activationDeviceId"
+                        placeholder="Ex.: RFID-A4C138"
+                        autocomplete="off" />
+
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        [disabled]="activationLoading"
+                        (click)="buscarHardwareAtivacao()">
+
+                        Buscar
+
+                      </button>
+
+                    </div>
                   </div>
-                  <!-- <div class="mb-3">
-                    <label class="form-label">Operação:</label>
-                    <input [(ngModel)]="form.operacao" name="operacao" required class="form-control" autocomplete="off" />
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Setor:</label>
-                    <input [(ngModel)]="form.setor" name="setor" required class="form-control" autocomplete="off" />
-                  </div> -->
-                  <!-- <div class="mb-3">
-                    <label class="form-label">Meta Diária:</label>
-                    <input type="number" [(ngModel)]="form.metaDiaria" name="metaDiaria" required class="form-control" autocomplete="off" />
-                  </div> -->
-                  @if (erroCadastro) {
-                    <div class="alert alert-danger">{{ erroCadastro }}</div>
+
+
+                  @if (
+                    activationHardware
+                  ) {
+
+                    <div class="card border-success mb-3">
+
+                      <div class="card-body">
+
+                        <div class="row g-3">
+
+                          <div class="col-md-4">
+                            <small class="text-muted">
+                              Device ID
+                            </small>
+
+                            <div class="fw-bold">
+                              {{
+                                activationHardware
+                                  .hardware.deviceId
+                              }}
+                            </div>
+                          </div>
+
+                          <div class="col-md-4">
+                            <small class="text-muted">
+                              Tipo
+                            </small>
+
+                            <div class="fw-bold">
+                              {{
+                                tipoHardware(
+                                  activationHardware
+                                    .hardware.deviceType
+                                )
+                              }}
+                            </div>
+                          </div>
+
+                          <div class="col-md-4">
+                            <small class="text-muted">
+                              Status
+                            </small>
+
+                            <div>
+                              <span
+                                class="badge"
+                                [ngClass]="{
+                                  'bg-success':
+                                    activationHardware
+                                      .hardware.status ===
+                                      'online',
+
+                                  'bg-danger':
+                                    activationHardware
+                                      .hardware.status !==
+                                      'online'
+                                }">
+
+                                {{
+                                  activationHardware
+                                    .hardware.status
+                                }}
+
+                              </span>
+                            </div>
+                          </div>
+
+                        </div>
+
+                      </div>
+                    </div>
+
+
+                    @if (
+                      !activationHardware
+                        .hardware.linked
+                    ) {
+
+                      <div class="mb-3">
+
+                        <label class="form-label">
+                          Nome do dispositivo
+                          <span class="text-muted">
+                            (opcional)
+                          </span>
+                        </label>
+
+                        <input
+                          class="form-control"
+                          [(ngModel)]="activationNome"
+                          name="activationNome"
+                          placeholder="Ex.: Leitor RFID Expedição" />
+
+                      </div>
+
+
+                      <div
+                        class="d-flex justify-content-between align-items-center border rounded p-3">
+
+                        <div>
+                          <div class="text-muted">
+                            Nova licença
+                          </div>
+
+                          <div class="fs-4 fw-bold">
+                            R$ {{
+                              activationAmount
+                                | number:'1.2-2'
+                            }}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          class="btn btn-success btn-lg"
+                          [disabled]="
+                            activationLoading ||
+                            activationHardware
+                              .hardware.status !==
+                              'online'
+                          "
+                          (click)="gerarPixAtivacao()">
+
+                          Gerar PIX
+
+                        </button>
+
+                      </div>
+
+                    }
+
                   }
-                </div>
-                <div class="modal-footer">
-                  <button type="submit" class="btn btn-primary" [disabled]="formRef.invalid">Salvar</button>
-                  <button type="button" (click)="fecharModal()" class="btn btn-secondary">Cancelar</button>
-                </div>
-              </form>
+
+                }
+
+
+                @if (
+                  activationStep ===
+                  'payment'
+                ) {
+
+                  <div class="text-center">
+
+                    <h4 class="mb-1">
+                      Ativação via PIX
+                    </h4>
+
+                    <div class="text-muted mb-3">
+                      Device ID:
+                      <strong>
+                        {{ activationDeviceId }}
+                      </strong>
+                    </div>
+
+                    <div class="fs-3 fw-bold mb-3">
+                      R$ {{
+                        activationAmount
+                          | number:'1.2-2'
+                      }}
+                    </div>
+
+
+                    @if (
+                      activationQrCodeBase64
+                    ) {
+                      <img
+                        [src]="
+                          'data:image/png;base64,' +
+                          activationQrCodeBase64
+                        "
+                        alt="QR Code PIX"
+                        class="img-fluid border rounded p-2 bg-white"
+                        style="width:280px; height:280px; object-fit:contain;" />
+                    } @else {
+                      <div class="alert alert-warning">
+                        O Mercado Pago não retornou imagem base64.
+                        Use o PIX copia e cola abaixo.
+                      </div>
+                    }
+
+
+                    <div class="mt-3">
+
+                      <label class="form-label fw-semibold">
+                        PIX copia e cola
+                      </label>
+
+                      <textarea
+                        class="form-control"
+                        rows="3"
+                        readonly
+                        [value]="activationQrCode">
+                      </textarea>
+
+                      <button
+                        type="button"
+                        class="btn btn-outline-primary mt-2"
+                        (click)="copiarPix()">
+
+                        <i class="bi bi-copy"></i>
+                        Copiar PIX
+
+                      </button>
+
+                    </div>
+
+
+                    <div class="alert alert-info mt-4">
+                      <span
+                        class="spinner-border spinner-border-sm me-2">
+                      </span>
+
+                      Aguardando confirmação do pagamento...
+                    </div>
+
+                  </div>
+
+                }
+
+
+                @if (
+                  activationStep ===
+                  'success'
+                ) {
+
+                  <div class="text-center py-4">
+
+                    <div
+                      class="display-4 text-success mb-3">
+                      <i class="bi bi-check-circle-fill"></i>
+                    </div>
+
+                    <h3>
+                      Dispositivo ativado
+                    </h3>
+
+                    <p class="text-muted">
+                      A licença foi criada e pertence à sua conta.
+                    </p>
+
+
+                    <div class="card mx-auto"
+                         style="max-width:520px;">
+
+                      <div class="card-body">
+
+                        <div class="mb-2">
+                          <small class="text-muted">
+                            Device ID
+                          </small>
+
+                          <div class="fw-bold">
+                            {{ activationDeviceId }}
+                          </div>
+                        </div>
+
+                        <div class="mb-2">
+                          <small class="text-muted">
+                            Token da licença
+                          </small>
+
+                          <div>
+                            <code class="fs-5">
+                              {{ activationToken }}
+                            </code>
+                          </div>
+                        </div>
+
+                        <div>
+                          @if (
+                            activationHardwareLinked
+                          ) {
+                            <span class="badge bg-success">
+                              Hardware vinculado
+                            </span>
+                          } @else {
+                            <span class="badge bg-warning text-dark">
+                              Licença criada, hardware ainda não vinculado
+                            </span>
+                          }
+                        </div>
+
+                      </div>
+                    </div>
+
+                  </div>
+
+                }
+
+
+                @if (
+                  activationError
+                ) {
+                  <div class="alert alert-danger mt-3">
+                    {{ activationError }}
+                  </div>
+                }
+
+              </div>
+
+
+              <div class="modal-footer">
+
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  (click)="fecharAtivacao()">
+
+                  Fechar
+
+                </button>
+
+              </div>
+
             </div>
           </div>
         </div>
       }
+
+
+      <!-- ==================================================
+           MODAL SUBSTITUIR HARDWARE
+           ================================================== -->
+      @if (modalSubstituir) {
+
+        <div
+          class="modal fade show d-block"
+          tabindex="-1"
+          style="background:rgba(0,0,0,.45);">
+
+          <div class="modal-dialog modal-dialog-centered">
+
+            <div class="modal-content">
+
+              <div class="modal-header">
+
+                <h5 class="modal-title">
+                  Substituir hardware
+                </h5>
+
+                <button
+                  type="button"
+                  class="btn-close"
+                  (click)="fecharSubstituir()">
+                </button>
+
+              </div>
+
+
+              <div class="modal-body">
+
+                <div class="alert alert-info">
+                  Use uma licença já paga em um novo hardware.
+                  <strong>Não haverá nova cobrança.</strong>
+                </div>
+
+
+                <div class="mb-3">
+
+                  <label class="form-label">
+                    Licença / dispositivo
+                  </label>
+
+                  <select
+                    class="form-select"
+                    [(ngModel)]="replaceToken"
+                    name="replaceToken">
+
+                    <option value="">
+                      Selecione
+                    </option>
+
+                    @for (
+                      dispositivo of dispositivos;
+                      track dispositivo._id
+                    ) {
+                      <option
+                        [value]="dispositivo.deviceToken">
+
+                        {{ dispositivo.nome }}
+                        -
+                        {{ tipoDispositivo(dispositivo) }}
+                        -
+                        {{
+                          tokenMascarado(
+                            dispositivo.deviceToken
+                          )
+                        }}
+
+                      </option>
+                    }
+
+                  </select>
+
+                </div>
+
+
+                <div class="mb-3">
+
+                  <label class="form-label">
+                    Device ID do novo hardware
+                  </label>
+
+                  <input
+                    class="form-control form-control-lg"
+                    [(ngModel)]="replaceDeviceId"
+                    name="replaceDeviceId"
+                    placeholder="Ex.: RFID-F92B71"
+                    autocomplete="off" />
+
+                </div>
+
+
+                @if (replaceError) {
+                  <div class="alert alert-danger">
+                    {{ replaceError }}
+                  </div>
+                }
+
+                @if (replaceSuccess) {
+                  <div class="alert alert-success">
+                    {{ replaceSuccess }}
+                  </div>
+                }
+
+              </div>
+
+
+              <div class="modal-footer">
+
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  [disabled]="replaceLoading"
+                  (click)="substituirHardware()">
+
+                  Vincular novo hardware
+
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  (click)="fecharSubstituir()">
+
+                  Fechar
+
+                </button>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      }
+
+
+      <!-- ==================================================
+           MODAL LEGADO - ADICIONAR TOKEN EXISTENTE
+           ================================================== -->
+      @if (modalAberto) {
+
+        <div
+          class="modal fade show d-block"
+          tabindex="-1"
+          style="background:rgba(0,0,0,.3);">
+
+          <div class="modal-dialog modal-dialog-centered">
+
+            <div class="modal-content">
+
+              <div class="modal-header">
+
+                <h5 class="modal-title">
+                  {{
+                    dispositivoEditando
+                      ? 'Editar Dispositivo'
+                      : 'Adicionar token existente'
+                  }}
+                </h5>
+
+                <button
+                  type="button"
+                  class="btn-close"
+                  (click)="fecharModal()">
+                </button>
+
+              </div>
+
+
+              <form
+                (ngSubmit)="salvarDispositivo()"
+                #formRef="ngForm"
+                autocomplete="off">
+
+                <div class="modal-body">
+
+                  <div class="mb-3">
+
+                    <label class="form-label">
+                      Nome
+                    </label>
+
+                    <input
+                      [(ngModel)]="form.nome"
+                      name="nome"
+                      required
+                      class="form-control"
+                      autocomplete="off" />
+
+                  </div>
+
+
+                  <div class="mb-3">
+
+                    <label class="form-label">
+                      Token
+                    </label>
+
+                    <input
+                      [(ngModel)]="form.deviceToken"
+                      name="deviceToken"
+                      required
+                      class="form-control"
+                      autocomplete="off" />
+
+                  </div>
+
+
+                  @if (erroCadastro) {
+                    <div class="alert alert-danger">
+                      {{ erroCadastro }}
+                    </div>
+                  }
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    [disabled]="formRef.invalid">
+
+                    Salvar
+
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    (click)="fecharModal()">
+
+                    Cancelar
+
+                  </button>
+
+                </div>
+
+              </form>
+
+            </div>
+          </div>
+        </div>
+      }
+
     </div>
   </div>
 </div>

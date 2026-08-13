@@ -1,49 +1,82 @@
-COSTURA AGIL - BACKEND RFID FINAL
-=================================
+COSTURA ÁGIL - LICENÇA SEPARADA DO HARDWARE
+================================================
 
-ARQUIVOS PARA SUBSTITUIR:
-- backend/app.js
-- backend/models/Artigo.js
-- backend/routes/artigoRoutes.js
+OBJETIVO
+--------
+deviceToken        = licença permanente do usuário.
+hardwareDeviceId   = hardware físico atual.
+deviceType         = função da licença/hardware.
 
-ARQUIVOS NOVOS:
-- backend/models/RFIDTag.js
-- backend/routes/rfidRoutes.js
-- backend/socket/revisaoRFIDSocket.js
+O mesmo token continua único globalmente.
+O mesmo Device ID também passa a ser único globalmente.
 
-FRONTEND:
-- frontend/src/app/services/artigos.ts pode substituir o atual.
-- PATCH_PRODUCAO contém os blocos a incorporar em producao.ts e producao.html.
+FLUXO NOVO
+----------
+1. Hardware novo conecta à internet.
+2. Hardware emite Socket.IO:
+   registerHardware
+   {
+     deviceId,
+     deviceType,
+     firmwareVersion,
+     deviceToken (opcional)
+   }
 
-REGRAS:
-1. Artigo sem RFID: continua funcionando como antes.
-2. Artigo com RFID: rfidEnabled=true.
-3. Quantidade de EPCs deve ser EXATAMENTE igual a quantidade de pecas.
-4. O artigo so aparece no arco quando:
-   status=em_producao
-   rfidEnabled=true
-   rfidScanStatus=concluido
-   rfidTagsCount=quantidade
-5. Esp32-Dispositivo antigo continua recebendo TODOS os artigos em producao.
-6. Arco usa eventos exclusivos RFID.
+3. Backend registra o Device ID como online.
 
-ROTAS CADASTRO RFID:
-GET    /api/artigos/:id/rfid
-POST   /api/artigos/:id/rfid/start
-POST   /api/artigos/:id/rfid/tag
-DELETE /api/artigos/:id/rfid/tag/:epc
-POST   /api/artigos/:id/rfid/finish
+4. Usuário entra em:
+   Dispositivos > Ativar dispositivo
 
-EVENTOS ARCO:
-solicitarArtigosRFID -> artigosRFIDAtualizados
-selecionarArtigoRFID -> artigoRFIDSelecionado
-validarEpcRFID       -> epcRFIDValidado
-confirmarRevisaoRFID -> revisaoRFIDConfirmada
+5. Informa o Device ID.
 
-VALIDACAO:
-validarEpcRFID apenas consulta.
-A etiqueta so recebe revisada=true quando confirmarRevisaoRFID for chamado APOS a peca sair do arco.
+6. Backend localiza o hardware e o frontend gera PIX.
 
-IMPORTANTE:
-A rota POST /api/artigos/:id/rfid/tag foi deixada preparada para o futuro dispositivo de cadastro RFID.
-Antes de producao final, recomendamos autenticar esse dispositivo com um token proprio.
+7. Pagamento aprovado:
+   - cria uma nova licença/deviceToken;
+   - associa a licença ao usuário autenticado;
+   - vincula hardwareDeviceId quando possível;
+   - envia hardwareLinked ao ESP32.
+
+8. ESP32 salva deviceToken na NVS.
+
+SUBSTITUIÇÃO
+------------
+Se o hardware quebrar:
+
+Dispositivos
+> Substituir hardware
+> selecionar licença existente
+> informar Device ID do novo equipamento
+
+Não gera PIX.
+Não cria novo token.
+O token continua pertencendo ao mesmo usuário.
+O hardware antigo é removido do vínculo e registrado no histórico.
+
+ARQUIVOS NOVOS
+--------------
+backend/models/HardwareDevice.js
+backend/models/ProvisioningActivation.js
+backend/services/provisioningHub.js
+backend/routes/deviceProvisioningRoutes.js
+backend/socket/deviceProvisioningSocket.js
+
+ARQUIVOS PARA SUBSTITUIR
+------------------------
+backend/models/Dispositivo.js
+backend/services/mercadoPagoService.js
+frontend/src/app/services/dispositivos.ts
+frontend/src/app/dispositivos/dispositivos-list/dispositivos-list.ts
+frontend/src/app/dispositivos/dispositivos-list/dispositivos-list.html
+
+APP.JS
+------
+Aplicar as 3 inclusões descritas em PATCH-app.js.txt.
+
+IMPORTANTE
+----------
+O fluxo antigo /api/device/activation foi preservado.
+Não remova deviceActivationRoutes neste momento.
+
+O novo fluxo foi criado em paralelo para permitir migração gradual dos
+dispositivos atuais para o novo padrão.
