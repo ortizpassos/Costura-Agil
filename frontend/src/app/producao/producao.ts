@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription, interval } from 'rxjs';
+import { jsPDF } from 'jspdf';
 
 import { SidebarComponent } from '../shared/sidebar/sidebar';
 import { SocketService } from '../services/socket.service';
@@ -1080,6 +1081,55 @@ export class ProducaoComponent
       status: 'pendente',
       rfidEnabled: false
     };
+  }
+
+
+  gerarPdfArtigo(artigo: Artigo): void {
+    const doc = new jsPDF();
+
+    let y = 20;
+    const x = 15;
+
+    doc.setFontSize(18);
+    doc.text('Ficha do Artigo', x, y);
+
+    y += 12;
+    doc.setFontSize(11);
+
+    const linhas = [
+      `Código: ${artigo.codigo || '-'}`,
+      `Artigo: ${artigo.nome || '-'}`,
+      `Operação: ${artigo.operacao || '-'}`,
+      `Cliente: ${artigo.cliente || '-'}`,
+      `Data de Inclusão: ${
+        artigo.dataInclusao
+          ? new Date(artigo.dataInclusao).toLocaleDateString('pt-BR')
+          : '-'
+      }`,
+      `Valor: R$ ${Number(artigo.valor || 0)
+        .toFixed(2)
+        .replace('.', ',')}`,
+      `Quantidade: ${artigo.quantidade || 0}`,
+      `Produzido: ${artigo.quantidadeAtual || 0}`,
+      `RFID: ${artigo.rfidEnabled ? 'Com RFID' : 'Sem RFID'}`
+    ];
+
+    if (artigo.rfidEnabled) {
+      linhas.push(
+        `Etiquetas RFID: ${artigo.rfidTagsCount || 0} / ${artigo.quantidade || 0}`
+      );
+    }
+
+    for (const linha of linhas) {
+      doc.text(linha, x, y);
+      y += 8;
+    }
+
+    const codigoSeguro =
+      String(artigo.codigo || 'artigo')
+        .replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    doc.save(`artigo_${codigoSeguro}.pdf`);
   }
 
   voltar(): void {
