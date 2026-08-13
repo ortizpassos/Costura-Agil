@@ -63,50 +63,87 @@
           <div class="card-body p-0">
 
             <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
+              <table
+              class="table table-bordered table-striped table-hover align-middle mb-0 rounded shadow-sm overflow-hidden w-100"
+              style="background:#fff;">
 
-                <thead>
-                  <tr>
-                    <th>Código</th>
-                    <th>Artigo</th>
-                    <th>Cliente</th>
-                    <th>Operação</th>
-                    <th>Produzido</th>
-                    <th>RFID</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
+              <thead class="bg-gradient bg-primary text-white">
+                <tr>
+                  <th class="rounded-top-start">Código</th>
+                  <th>Nome</th>
+                  <th>Operação</th>
+                  <th>Cliente</th>
+                  <th>Data de Inclusão</th>
+                  <th>Valor (R$)</th>
+                  <th>% Concluída</th>
+                  <th class="text-center">RFID</th>
+                  <th class="rounded-top-end text-center">Ações</th>
+                </tr>
+              </thead>
 
-                <tbody>
+              <tbody>
 
-                  <tr *ngIf="artigos.length === 0">
-                    <td
-                      colspan="7"
-                      class="text-center py-4 text-muted">
-                      Nenhum artigo cadastrado.
-                    </td>
-                  </tr>
+                <tr *ngIf="artigos.length === 0">
+                  <td colspan="9" class="text-center text-muted">
+                    Nenhum artigo cadastrado
+                  </td>
+                </tr>
 
-                  <tr *ngFor="let artigo of artigos">
+                <tr *ngFor="let artigo of artigos">
 
-                    <td>{{ artigo.codigo }}</td>
+                  <td class="fw-semibold text-dark">
+                    {{ artigo.codigo }}
+                  </td>
 
-                    <td>
-                      <strong>{{ artigo.nome }}</strong>
-                    </td>
+                  <td>
+                    {{ artigo.nome }}
+                  </td>
 
-                    <td>{{ artigo.cliente }}</td>
+                  <td>
+                    {{ artigo.operacao }}
+                  </td>
 
-                    <td>{{ artigo.operacao }}</td>
+                  <td>
+                    {{ artigo.cliente }}
+                  </td>
 
-                    <td>
-                      {{ artigo.quantidadeAtual || 0 }}
-                      /
-                      {{ artigo.quantidade }}
-                    </td>
+                  <td>
+                    {{ artigo.dataInclusao | date:'shortDate' }}
+                  </td>
 
-                    <td>
-                      <ng-container *ngIf="artigo.rfidEnabled; else semRfid">
+                  <td>
+                    {{ artigo.valor | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                  </td>
+
+                  <td>
+                    <div class="progress-wrapper">
+                      <div
+                        class="progress"
+                        style="height:25px; position:relative;">
+
+                        <div
+                          class="progress-bar"
+                          [ngClass]="getProgressBarClass(calcularPercentualArtigo(artigo))"
+                          role="progressbar"
+                          [style.width.%]="calcularPercentualArtigo(artigo)"
+                          [attr.aria-valuenow]="calcularPercentualArtigo(artigo)"
+                          aria-valuemin="0"
+                          aria-valuemax="100">
+                        </div>
+
+                        <div class="progress-text">
+                          {{ calcularPercentualArtigo(artigo) }}%
+                        </div>
+
+                      </div>
+                    </div>
+                  </td>
+
+                  <td class="text-center">
+
+                    <ng-container *ngIf="artigo.rfidEnabled; else semRfid">
+
+                      <div class="d-flex flex-column align-items-center gap-1">
 
                         <span
                           class="badge"
@@ -117,66 +154,119 @@
                               artigo.rfidScanStatus === 'aguardando' ||
                               artigo.rfidScanStatus === 'em_leitura'
                           }">
+
                           RFID
                           {{ artigo.rfidTagsCount || 0 }}
                           /
                           {{ artigo.quantidade }}
+
                         </span>
 
                         <button
                           type="button"
-                          class="btn btn-sm btn-outline-primary ms-2"
-                          (click)="abrirModalRFID(artigo)">
+                          class="btn btn-sm btn-outline-primary"
+                          (click)="abrirModalRFID(artigo)"
+                          title="Gerenciar etiquetas RFID">
+
                           <i class="bi bi-upc-scan"></i>
                           Etiquetas
-                        </button>
 
-                      </ng-container>
-
-                      <ng-template #semRfid>
-                        <span class="badge bg-secondary">
-                          Sem RFID
-                        </span>
-                      </ng-template>
-                    </td>
-
-                    <td>
-                      <div class="d-flex flex-wrap gap-1">
-
-                        <button
-                          *ngIf="artigo.status !== 'em_producao'"
-                          class="btn btn-sm btn-success"
-                          (click)="iniciarProducaoArtigo(artigo)">
-                          Produção
-                        </button>
-
-                        <button
-                          *ngIf="artigo.status === 'em_producao'"
-                          class="btn btn-sm btn-warning"
-                          (click)="pausarArtigo(artigo)">
-                          Pausar
-                        </button>
-
-                        <button
-                          class="btn btn-sm btn-outline-primary"
-                          (click)="editarArtigo(artigo)">
-                          Editar
-                        </button>
-
-                        <button
-                          class="btn btn-sm btn-outline-danger"
-                          (click)="excluirArtigo(artigo)">
-                          Excluir
                         </button>
 
                       </div>
-                    </td>
 
-                  </tr>
+                    </ng-container>
 
-                </tbody>
+                    <ng-template #semRfid>
+                      <span class="badge bg-secondary">
+                        Sem RFID
+                      </span>
+                    </ng-template>
 
-              </table>
+                  </td>
+
+                  <td class="text-center">
+
+                    <div class="artigo-actions d-inline-flex gap-2">
+
+                      <button
+                        *ngIf="artigo.status === 'pendente' || artigo.status === 'pausado'"
+                        type="button"
+                        class="btn btn-outline-success btn-acao"
+                        (click)="iniciarProducaoArtigo(artigo)"
+                        title="Colocar em produção">
+
+                        <i class="bi bi-play-circle"></i>
+                        <span>Iniciar</span>
+
+                      </button>
+
+                      <button
+                        *ngIf="artigo.status === 'em_producao'"
+                        type="button"
+                        class="btn btn-outline-warning btn-acao"
+                        (click)="pausarProducaoArtigo(artigo)"
+                        title="Pausar produção">
+
+                        <i class="bi bi-pause-circle"></i>
+                        <span>Pausar</span>
+
+                      </button>
+
+                      <button
+                        *ngIf="artigo.status === 'finalizado'"
+                        type="button"
+                        class="btn btn-outline-info btn-acao"
+                        (click)="reabrirProducaoArtigo(artigo)"
+                        title="Reabrir como novo artigo">
+
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        <span>Reabrir</span>
+
+                      </button>
+
+                      <button
+                        type="button"
+                        class="btn btn-outline-primary btn-acao"
+                        (click)="editarArtigo(artigo)"
+                        title="Editar artigo">
+
+                        <i class="bi bi-pencil"></i>
+                        <span>Editar</span>
+
+                      </button>
+
+                      <button
+                        type="button"
+                        class="btn btn-outline-danger btn-acao"
+                        (click)="excluirArtigo(artigo)"
+                        title="Excluir artigo">
+
+                        <i class="bi bi-trash"></i>
+                        <span>Excluir</span>
+
+                      </button>
+
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary btn-acao"
+                        (click)="gerarPdfArtigo(artigo)"
+                        title="Exportar PDF">
+
+                        <i class="bi bi-filetype-pdf"></i>
+                        <span>PDF</span>
+
+                      </button>
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+
+            </table>
             </div>
 
           </div>
@@ -227,6 +317,7 @@
                 <th>Funcionário</th>
                 <th>Artigo</th>
                 <th>Produção</th>
+                <th>Status</th>
               </tr>
             </thead>
 
