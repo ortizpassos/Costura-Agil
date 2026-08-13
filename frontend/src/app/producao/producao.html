@@ -65,7 +65,7 @@
             <div class="table-responsive">
               <table
               class="table table-bordered table-striped table-hover align-middle mb-0 rounded shadow-sm overflow-hidden w-100"
-              style="background:#fff;">
+              style="background:#fff; min-width:1080px;">
 
               <thead class="bg-gradient bg-primary text-white">
                 <tr>
@@ -77,7 +77,7 @@
                   <th>Valor (R$)</th>
                   <th>% Concluída</th>
                   <th class="text-center">RFID</th>
-                  <th class="rounded-top-end text-center">Ações</th>
+                  <th class="rounded-top-end text-center" style="min-width:230px; width:230px;">Ações</th>
                 </tr>
               </thead>
 
@@ -188,14 +188,14 @@
 
                   </td>
 
-                  <td class="text-center">
+                  <td class="text-center text-nowrap" style="min-width:230px; width:230px;">
 
-                    <div class="artigo-actions d-inline-flex gap-2">
+                    <div class="artigo-actions d-inline-flex align-items-center justify-content-center gap-1 flex-nowrap">
 
                       <button
                         *ngIf="artigo.status === 'pendente' || artigo.status === 'pausado'"
                         type="button"
-                        class="btn btn-outline-success btn-acao"
+                        class="btn btn-sm btn-outline-success btn-acao px-2"
                         (click)="iniciarProducaoArtigo(artigo)"
                         title="Colocar em produção">
 
@@ -207,7 +207,7 @@
                       <button
                         *ngIf="artigo.status === 'em_producao'"
                         type="button"
-                        class="btn btn-outline-warning btn-acao"
+                        class="btn btn-sm btn-outline-warning btn-acao px-2"
                         (click)="pausarArtigo(artigo)"
                         title="Pausar produção">
 
@@ -219,7 +219,7 @@
                       <button
                         *ngIf="artigo.status === 'finalizado'"
                         type="button"
-                        class="btn btn-outline-info btn-acao"
+                        class="btn btn-sm btn-outline-info btn-acao px-2"
                         (click)="reabrirProducaoArtigo(artigo)"
                         title="Reabrir como novo artigo">
 
@@ -230,7 +230,7 @@
 
                       <button
                         type="button"
-                        class="btn btn-outline-primary btn-acao"
+                        class="btn btn-sm btn-outline-primary btn-acao px-2"
                         (click)="editarArtigo(artigo)"
                         title="Editar artigo">
 
@@ -241,7 +241,7 @@
 
                       <button
                         type="button"
-                        class="btn btn-outline-danger btn-acao"
+                        class="btn btn-sm btn-outline-danger btn-acao px-2"
                         (click)="excluirArtigo(artigo)"
                         title="Excluir artigo">
 
