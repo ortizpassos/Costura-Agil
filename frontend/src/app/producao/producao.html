@@ -123,16 +123,19 @@
 
                         <div
                           class="progress-bar"
-                          [ngClass]="getProgressBarClass(calcularPercentualArtigo(artigo))"
                           role="progressbar"
-                          [style.width.%]="calcularPercentualArtigo(artigo)"
-                          [attr.aria-valuenow]="calcularPercentualArtigo(artigo)"
+                          [style.width.%]="artigo.quantidade > 0 ? ((artigo.quantidadeAtual || 0) * 100 / artigo.quantidade) : 0"
+                          [attr.aria-valuenow]="artigo.quantidade > 0 ? ((artigo.quantidadeAtual || 0) * 100 / artigo.quantidade) : 0"
                           aria-valuemin="0"
                           aria-valuemax="100">
                         </div>
 
                         <div class="progress-text">
-                          {{ calcularPercentualArtigo(artigo) }}%
+                          {{
+                            artigo.quantidade > 0
+                              ? (((artigo.quantidadeAtual || 0) * 100 / artigo.quantidade) | number:'1.0-0')
+                              : 0
+                          }}%
                         </div>
 
                       </div>
@@ -205,7 +208,7 @@
                         *ngIf="artigo.status === 'em_producao'"
                         type="button"
                         class="btn btn-outline-warning btn-acao"
-                        (click)="pausarProducaoArtigo(artigo)"
+                        (click)="pausarArtigo(artigo)"
                         title="Pausar produção">
 
                         <i class="bi bi-pause-circle"></i>
@@ -244,17 +247,6 @@
 
                         <i class="bi bi-trash"></i>
                         <span>Excluir</span>
-
-                      </button>
-
-                      <button
-                        type="button"
-                        class="btn btn-outline-secondary btn-acao"
-                        (click)="gerarPdfArtigo(artigo)"
-                        title="Exportar PDF">
-
-                        <i class="bi bi-filetype-pdf"></i>
-                        <span>PDF</span>
 
                       </button>
 
