@@ -71,10 +71,8 @@
                     <th>Artigo</th>
                     <th>Cliente</th>
                     <th>Operação</th>
-                    <th>Qtd.</th>
                     <th>Produzido</th>
                     <th>RFID</th>
-                    <th>Status</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
@@ -83,7 +81,7 @@
 
                   <tr *ngIf="artigos.length === 0">
                     <td
-                      colspan="9"
+                      colspan="7"
                       class="text-center py-4 text-muted">
                       Nenhum artigo cadastrado.
                     </td>
@@ -100,8 +98,6 @@
                     <td>{{ artigo.cliente }}</td>
 
                     <td>{{ artigo.operacao }}</td>
-
-                    <td>{{ artigo.quantidade }}</td>
 
                     <td>
                       {{ artigo.quantidadeAtual || 0 }}
@@ -142,12 +138,6 @@
                           Sem RFID
                         </span>
                       </ng-template>
-                    </td>
-
-                    <td>
-                      <span class="badge bg-light text-dark">
-                        {{ artigo.status || 'pendente' }}
-                      </span>
                     </td>
 
                     <td>
@@ -237,7 +227,6 @@
                 <th>Funcionário</th>
                 <th>Artigo</th>
                 <th>Produção</th>
-                <th>Status</th>
               </tr>
             </thead>
 
