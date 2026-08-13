@@ -1,30 +1,54 @@
 const express = require('express');
 const router = express.Router();
 const Artigo = require('../models/Artigo');
+const RFIDTag = require('../models/RFIDTag');
 const Dispositivo = require('../models/Dispositivo');
 const { autenticar } = require('./authRoutes');
 
-// Variável para armazenar a instância do Socket.IO
 let io = null;
+function setSocketIO(socketIO) { io = socketIO; }
 
-// Função para configurar o Socket.IO
-function setSocketIO(socketIO) {
-  io = socketIO;
+async function notificarArtigosNormais(usuarioId) {
+  if (!io) return;
+
+  const dispositivos = await Dispositivo.find({ usuario: usuarioId });
+  const artigos = await Artigo.find({
+    criadoPor: usuarioId,
+    status: 'em_producao'
+  }).sort({ nome: 1 });
+
+  // IMPORTANTE: sem filtro RFID. Mantém o Esp32-Dispositivo antigo.
+  dispositivos.forEach(dispositivo => {
+    io.emit('artigosAtualizados', {
+      data: {
+        deviceToken: dispositivo.deviceToken,
+        artigos: artigos.map(art => ({
+          _id: art._id,
+          nome: art.nome,
+          codigo: art.codigo,
+          quantidade: art.quantidade,
+          quantidadeAtual: art.quantidadeAtual || 0,
+          status: art.status
+        }))
+      }
+    });
+  });
 }
 
-// GET /api/artigos - lista todos os artigos
 router.get('/', autenticar, async (req, res) => {
   try {
-    const artigos = await Artigo.find({ criadoPor: req.usuario.id }).sort({ dataInclusao: -1 });
+    const artigos = await Artigo.find({ criadoPor: req.usuario.id })
+      .sort({ dataInclusao: -1 });
     res.json(artigos);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// POST /api/artigos - cadastra novo artigo
 router.post('/', autenticar, async (req, res) => {
   try {
+    const rfidEnabled = req.body.rfidEnabled === true;
+
     const artigo = new Artigo({
       codigo: req.body.codigo,
       nome: req.body.nome,
@@ -34,125 +58,85 @@ router.post('/', autenticar, async (req, res) => {
       valor: req.body.valor,
       quantidade: req.body.quantidade,
       status: req.body.status || 'pendente',
+      rfidEnabled,
+      rfidScanStatus: rfidEnabled ? 'aguardando' : 'nao_aplicavel',
+      rfidTagsCount: 0,
       criadoPor: req.usuario.id
     });
+
     await artigo.save();
-    
-    // Se o novo artigo foi criado com status 'em_producao', notificar dispositivos
-    if (artigo.status === 'em_producao' && io) {
-      console.log(`🆕 Novo artigo em produção criado: ${artigo.nome}`);
-      
-      // Buscar dispositivos vinculados ao usuário
-      const dispositivos = await Dispositivo.find({ usuario: req.usuario.id });
-      
-      // Buscar todos os artigos em produção deste usuário
-      const artigosEmProducao = await Artigo.find({ 
-        criadoPor: req.usuario.id, 
-        status: 'em_producao'
-      }).sort({ nome: 1 });
-      
-      // Notificar cada dispositivo do usuário
-      dispositivos.forEach(dispositivo => {
-        io.emit('artigosAtualizados', {
-          data: {
-            deviceToken: dispositivo.deviceToken,
-            artigos: artigosEmProducao.map(art => ({
-              _id: art._id,
-              nome: art.nome,
-              codigo: art.codigo,
-              quantidade: art.quantidade,
-              quantidadeAtual: art.quantidadeAtual || 0,
-              status: art.status
-            }))
-          }
-        });
-        
-        console.log(`📡 Notificado dispositivo ${dispositivo.deviceToken} sobre novo artigo`);
-      });
+
+    if (artigo.status === 'em_producao') {
+      await notificarArtigosNormais(req.usuario.id);
     }
-    
+
     res.status(201).json(artigo);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// PUT /api/artigos/:id - atualiza um artigo existente
 router.put('/:id', autenticar, async (req, res) => {
   try {
-    const artigoAnterior = await Artigo.findOne({ _id: req.params.id, criadoPor: req.usuario.id });
-    
-    if (!artigoAnterior) {
-      return res.status(404).json({ message: 'Artigo não encontrado' });
-    }
-    
-    const statusAnterior = artigoAnterior.status;
-    const novoStatus = req.body.status || statusAnterior;
-    
-    const artigoAtualizado = await Artigo.findOneAndUpdate(
-      { _id: req.params.id, criadoPor: req.usuario.id },
-      {
-        $set: {
-          codigo: req.body.codigo,
-          nome: req.body.nome,
-          operacao: req.body.operacao,
-          cliente: req.body.cliente,
-          dataInclusao: req.body.dataInclusao,
-          valor: req.body.valor,
-          quantidade: req.body.quantidade,
-          quantidadeAtual: req.body.quantidadeAtual,
-          status: novoStatus
-        }
-      },
-      { new: true, runValidators: true }
-    );
+    const artigo = await Artigo.findOne({
+      _id: req.params.id,
+      criadoPor: req.usuario.id
+    });
 
-    // Se o status mudou, notificar dispositivos em tempo real
-    if (statusAnterior !== novoStatus && io) {
-      console.log(`🔄 Status do artigo ${artigoAtualizado.nome} mudou de ${statusAnterior} → ${novoStatus}`);
-      
-      // Buscar dispositivos vinculados ao usuário deste artigo
-      const dispositivos = await Dispositivo.find({ usuario: artigoAnterior.criadoPor });
-      
-      // Buscar artigos em produção deste usuário
-      const artigosEmProducao = await Artigo.find({ 
-        criadoPor: artigoAnterior.criadoPor, 
-        status: 'em_producao'
-      }).sort({ nome: 1 });
-      
-      // Notificar cada dispositivo do usuário
-      dispositivos.forEach(dispositivo => {
-        io.emit('artigosAtualizados', {
-          data: {
-            deviceToken: dispositivo.deviceToken,
-            artigos: artigosEmProducao.map(art => ({
-              _id: art._id,
-              nome: art.nome,
-              codigo: art.codigo,
-              quantidade: art.quantidade,
-              quantidadeAtual: art.quantidadeAtual || 0,
-              status: art.status
-            }))
-          }
-        });
-        
-        console.log(`📡 Notificado dispositivo ${dispositivo.deviceToken} sobre mudança de status`);
-      });
+    if (!artigo) return res.status(404).json({ message: 'Artigo não encontrado' });
+
+    const statusAnterior = artigo.status;
+    const rfidAnterior = artigo.rfidEnabled === true;
+
+    const campos = [
+      'codigo', 'nome', 'operacao', 'cliente', 'dataInclusao',
+      'valor', 'quantidade', 'quantidadeAtual', 'status'
+    ];
+
+    for (const campo of campos) {
+      if (req.body[campo] !== undefined) artigo[campo] = req.body[campo];
     }
 
-    res.json(artigoAtualizado);
+    if (req.body.rfidEnabled !== undefined) {
+      artigo.rfidEnabled = req.body.rfidEnabled === true;
+
+      if (!artigo.rfidEnabled) {
+        await RFIDTag.deleteMany({ artigo: artigo._id });
+        artigo.rfidTagsCount = 0;
+        artigo.rfidScanStatus = 'nao_aplicavel';
+        artigo.rfidScanStartedAt = null;
+        artigo.rfidScanFinishedAt = null;
+      } else if (!rfidAnterior) {
+        artigo.rfidScanStatus = 'aguardando';
+      }
+    }
+
+    if (artigo.rfidEnabled && artigo.rfidTagsCount !== artigo.quantidade) {
+      artigo.rfidScanStatus = 'aguardando';
+    }
+
+    await artigo.save();
+
+    if (statusAnterior !== artigo.status || rfidAnterior !== artigo.rfidEnabled) {
+      await notificarArtigosNormais(artigo.criadoPor);
+    }
+
+    res.json(artigo);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// DELETE /api/artigos/:id - remove um artigo
 router.delete('/:id', autenticar, async (req, res) => {
   try {
-    const artigo = await Artigo.findOneAndDelete({ _id: req.params.id, criadoPor: req.usuario.id });
-    if (!artigo) {
-      return res.status(404).json({ message: 'Artigo não encontrado' });
-    }
+    const artigo = await Artigo.findOneAndDelete({
+      _id: req.params.id,
+      criadoPor: req.usuario.id
+    });
+
+    if (!artigo) return res.status(404).json({ message: 'Artigo não encontrado' });
+
+    await RFIDTag.deleteMany({ artigo: artigo._id });
     res.json({ message: 'Artigo removido com sucesso' });
   } catch (err) {
     res.status(500).json({ message: err.message });

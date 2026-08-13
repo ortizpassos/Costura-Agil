@@ -1,11 +1,13 @@
 #include "font/lv_font.h"
 #include "token.h"
 
-extern const char* deviceToken;
+extern String deviceToken;
+extern String currentScreen;
 
 lv_obj_t * scr_token = nullptr;
 
 void go_token() {
+    currentScreen = "token";
     if (!scr_token) {
         scr_token = new_screen(NULL, true); // degrade de fundo
         lv_scr_load(scr_token);
@@ -47,7 +49,7 @@ void go_token() {
 
         lv_obj_t * lbl_token_value = lv_label_create(card);
         lv_obj_set_style_text_font(lbl_token_value, &lv_font_montserrat_20, 0);
-        lv_label_set_text(lbl_token_value, deviceToken);
+        lv_label_set_text(lbl_token_value, deviceToken.c_str());
         lv_obj_set_style_text_color(lbl_token_value, lv_color_hex(0x008000), 0); // verde
         lv_obj_set_style_text_align(lbl_token_value, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_set_width(lbl_token_value, lv_pct(90));

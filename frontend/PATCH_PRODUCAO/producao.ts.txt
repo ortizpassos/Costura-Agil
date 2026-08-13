@@ -1,0 +1,86 @@
+ALTERACOES EM frontend/src/app/producao/producao.ts
+
+1) ArtigoForm: adicionar
+  rfidEnabled: boolean;
+
+2) criarArtigoPadrao(): adicionar
+  rfidEnabled: false
+
+3) cadastrarArtigo(): no objeto enviado ao backend adicionar
+  rfidEnabled: this.novoArtigo.rfidEnabled === true
+
+4) editarArtigo() e reabrirProducaoArtigo(): adicionar
+  rfidEnabled: artigo.rfidEnabled === true
+
+5) Propriedades do modal RFID:
+  modalRFIDAberto = false;
+  artigoRFIDSelecionado: Artigo | null = null;
+  rfidEtiquetasCadastradas = 0;
+  rfidEtiquetasRevisadas = 0;
+  rfidQuantidade = 0;
+  rfidScanStatus = 'nao_aplicavel';
+
+6) Apos salvar um artigo novo com rfidEnabled=true, abrir a tela RFID:
+
+  if (!this.artigoEditando && artigoSalvo.rfidEnabled) {
+    this.abrirModalRFID(artigoSalvo);
+  }
+
+7) Adicionar metodos:
+
+abrirModalRFID(artigo: Artigo) {
+  this.artigoRFIDSelecionado = artigo;
+  this.modalRFIDAberto = true;
+  this.carregarStatusRFID();
+}
+
+fecharModalRFID() {
+  this.modalRFIDAberto = false;
+  this.artigoRFIDSelecionado = null;
+  this.carregarArtigos();
+}
+
+carregarStatusRFID() {
+  const id = this.artigoRFIDSelecionado?._id;
+  if (!id) return;
+
+  this.artigosService.obterStatusRFID(id).subscribe({
+    next: status => {
+      this.rfidEtiquetasCadastradas = status.etiquetasCadastradas;
+      this.rfidEtiquetasRevisadas = status.etiquetasRevisadas;
+      this.rfidQuantidade = status.quantidade;
+      this.rfidScanStatus = status.rfidScanStatus;
+    },
+    error: err => console.error('Erro RFID:', err)
+  });
+}
+
+iniciarEscaneamentoRFID() {
+  const id = this.artigoRFIDSelecionado?._id;
+  if (!id) return;
+
+  const preservar = this.rfidEtiquetasCadastradas > 0
+    ? window.confirm('OK = continuar leituras existentes. Cancelar = apagar e iniciar novamente.')
+    : false;
+
+  this.artigosService.iniciarLeituraRFID(id, preservar).subscribe({
+    next: () => {
+      this.carregarStatusRFID();
+      alert('Sessao RFID iniciada. O dispositivo de cadastro podera enviar EPCs.');
+    },
+    error: err => alert(err?.error?.message || 'Erro ao iniciar RFID')
+  });
+}
+
+finalizarEscaneamentoRFID() {
+  const id = this.artigoRFIDSelecionado?._id;
+  if (!id) return;
+
+  this.artigosService.finalizarLeituraRFID(id).subscribe({
+    next: () => {
+      this.carregarStatusRFID();
+      alert('Cadastro RFID concluido.');
+    },
+    error: err => alert(err?.error?.message || 'Ainda faltam etiquetas RFID.')
+  });
+}

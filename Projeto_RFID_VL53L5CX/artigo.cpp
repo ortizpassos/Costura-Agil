@@ -4,7 +4,7 @@
 #include <map>
 
 
-extern void enviarSelecaoArtigo(const char* id);
+extern void enviarSelecaoArtigoRFID(const char* id);
 extern String currentScreen; // Variável global para rastrear tela atual
 
 
@@ -20,7 +20,7 @@ static void event_handler_btn(lv_event_t * e) {
     
     if(code == LV_EVENT_CLICKED) {
         if (id) {
-            enviarSelecaoArtigo(id);
+            enviarSelecaoArtigoRFID(id);
         }
     }
     else if(code == LV_EVENT_DELETE) {
@@ -64,7 +64,7 @@ void add_artigo_to_list(const char* id, const char* nome, int meta) {
     int quantidade = artigoQuantidades[id_str]; // Pega quantidade armazenada ou 0
     
     // Formata com quantidade em tempo real (como na dashboard)
-    String labelText = String(nome) + " • " + String(quantidade) + "/" + String(meta);
+    String labelText = String(nome) + " • " + String(quantidade) + "/" + String(meta) + " revisadas";
     lv_obj_t * btn = lv_list_add_btn(list_artigos, NULL, labelText.c_str());
     
     char * id_copy = strdup(id);

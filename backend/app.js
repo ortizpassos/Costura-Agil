@@ -16,6 +16,8 @@ const nfeRoutes = require('./routes/nfeRoutes');
 
 // Ativação de dispositivo via PIX / Mercado Pago
 const deviceActivationRoutes = require('./routes/deviceActivationRoutes');
+const rfidRoutes = require('./routes/rfidRoutes');
+const configurarSocketRevisaoRFID = require('./socket/revisaoRFIDSocket');
 
 const ProducaoDetalhada = require('./models/ProducaoDetalhada');
 const Artigo = require('./models/Artigo');
@@ -48,6 +50,7 @@ app.use('/api/dispositivos', dispositivoRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/producao', producaoRoutes);
 app.use('/api/artigos', artigoRoutes);
+app.use('/api/artigos', rfidRoutes);
 app.use('/api/clientes', clienteRoutes);
 app.use('/api/relatorios', relatorioRoutes);
 app.use('/api/operacoes', operacaoRoutes);
@@ -65,6 +68,7 @@ const io = require('socket.io')(http, {
 
 // Configurar Socket.IO nas rotas de artigos para notificações em tempo real
 setArtigoSocketIO(io);
+configurarSocketRevisaoRFID(io);
 
 io.on('connection', (socket) => {
   const buildDeviceStatusPayload = async (dispositivo) => {

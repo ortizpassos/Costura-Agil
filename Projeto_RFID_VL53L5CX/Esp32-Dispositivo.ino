@@ -11,7 +11,9 @@
 #include "artigo.h"
 #include "config.h"
 #include "calibracao.h"
+#include "ativacao.h"
 #include "IntegracaoSensorRFID.h"
+#include "revisao_rfid.h"
 
 #include <WiFiManager.h>
 #include <SocketIOclient.h>
@@ -32,6 +34,9 @@ bool artigo_selecionado = false;
 bool hasPendingSync = false; // Flag para indicar se há dados pendentes para sincronizar
 bool calibracaoConcluida = false;
 bool sensorToFInicializado = false;
+// true apenas durante o boot quando ja existe um token salvo.
+// Nesse caso nao mostramos a tela de token antes da API confirmar o vinculo.
+bool aguardandoValidacaoTokenBoot = false;
 
 // Controle de tentativas de registro
 unsigned long lastCheckTime = 0;
@@ -47,13 +52,13 @@ const unsigned long updateCheckInterval = 10000; // 10 segundos
 String currentScreen = ""; // Rastreia tela atual
 
 // ---- Config servidor ----
-const char* host = "192.168.1.174";   // Host do backend (produção)
-const uint16_t port = 3001;             // HTTPS/WSS
-const bool useSSL = false;              // TLS habilitado para servidor online
+const char* host = "monitor-ellas-backend.onrender.com"; // mesmo backend do dispositivo funcional
+uint16_t port = 443;                                  // HTTPS/WSS em producao
+bool useSSL = true;                                   // TLS habilitado
 const char* socketPath = "/socket.io/?EIO=4";
 
 // ---- Dispositivo ----
-const char* deviceToken = "461545616614165";
+String deviceToken = ""; // gerado apos ativacao PIX e salvo em Preferences
 
 SocketIOclient socketIO;
 bool wsConnected = false;
@@ -79,23 +84,21 @@ void on_wifi_connected() {
 
     wifi_connected = true;
     
-    // NOVO FLUXO: toda conexão de uma nova inicialização passa primeiro
-    // pela calibração do VL53L5CX. A navegação para Token/Login/Artigo
-    // só ocorre depois que a calibração terminar com sucesso.
-    go_calibracao();
-    lv_timer_handler();
-
-    // Inicializa o ToF somente depois que a interface já está criada.
-    // No CYD o I2C usa SDA=27 / SCL=22. GPIO21 é o backlight do LCD.
-    if (!sensorToFInicializado) {
-      sensorToFInicializado = IntegracaoSensorRFID::iniciar(beepSensor, servicoDuranteCalibracao);
-      if (!sensorToFInicializado) {
-        Serial.println("[VL53L5CX] ERRO: sensor nao inicializado.");
-        atualizar_calibracao_status("Sensor VL53L5CX nao encontrado.\nVerifique SDA=27 e SCL=22.", false);
-      } else {
-        atualizar_calibracao_status("Sensor pronto para calibracao.", true);
-      }
+    // FLUXO DE INICIALIZACAO:
+    // 1) Sem token: abre ativacao PIX.
+    // 2) Com token salvo: NAO mostra a tela do token no boot. Mantem a tela
+    //    inicial enquanto conecta ao Socket.IO e valida o token na API.
+    //    Se a API confirmar o vinculo, vai direto para calibracao.
+    //    Se ainda nao estiver vinculado, ai sim mostra o token para cadastro.
+    if (ativacao_token_salvo()) {
+      ativacao_carregar_token();
+      aguardandoValidacaoTokenBoot = true;
+      Serial.printf("[BOOT] Token salvo encontrado: %s. Validando na API...\n", deviceToken.c_str());
+    } else {
+      aguardandoValidacaoTokenBoot = false;
+      go_ativacao();
     }
+    lv_timer_handler();
 
     if (useSSL) {
       socketIO.beginSSL(host, port, socketPath);
@@ -112,28 +115,40 @@ void on_wifi_connected() {
 void continuarFluxoAposCalibracao() {
   if (!calibracaoConcluida) return;
 
-  if (login_ok) {
-    if (artigo_selecionado) {
-      go_dashboard();
-      update_dashboard(artigoNome.c_str(), funcionarioNome.c_str(), metaArtigo, quantidade);
-    } else {
-      go_artigo();
-    }
+  if (login_ok && funcionarioSenha.length() > 0) {
+    // Refaz o login no backend somente depois da calibracao. A resposta
+    // loginSuccess restaura Artigo/Dashboard corretamente.
+    go_login();
+    if (wsConnected) loginFuncionario(funcionarioSenha.c_str());
     return;
   }
 
   if (token_registrado) {
     go_login();
-  } else {
+  } else if (deviceToken.length() == 15) {
     go_token();
+  } else {
+    go_ativacao();
   }
 }
 
 // Simulação: chamar esta função quando backend responder que token foi registrado
 void on_token_registrado() {
     token_registrado = true;
-    if (calibracaoConcluida) {
-      go_login();
+
+    // O dispositivo ja foi ativado e vinculado na API. Agora a calibracao
+    // e obrigatoria antes do login/operacao.
+    go_calibracao();
+    lv_timer_handler();
+
+    if (!sensorToFInicializado) {
+      sensorToFInicializado = IntegracaoSensorRFID::iniciar(beepSensor, servicoDuranteCalibracao);
+      if (!sensorToFInicializado) {
+        Serial.println("[VL53L5CX] ERRO: sensor nao inicializado.");
+        atualizar_calibracao_status("Sensor VL53L5CX nao encontrado.\nVerifique SDA=27 e SCL=22.", false);
+      } else {
+        atualizar_calibracao_status("Sensor pronto para calibracao.", true);
+      }
     }
 }
 
@@ -263,9 +278,8 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t * payload, size_t length)
       // socketIO.send(sIOtype_CONNECT, "/"); 
       wsConnected = true;
       registerDevice();
-      if (login_ok && funcionarioSenha != "") {
-        loginFuncionario(funcionarioSenha.c_str()); // Re-logar se estava logado
-      }
+      // O re-login acontece somente apos ativacao/vinculo e calibracao.
+      // Nao enviar login aqui para evitar pular o novo fluxo inicial.
       syncPendingProduction(); // Sincronizar dados pendentes após conectar
       break;
     case sIOtype_EVENT: {
@@ -325,7 +339,7 @@ void processJsonMessage(const String& msg) {
   String type = doc["type"] | "";
   if (type == "deviceRegistered") {
     String token = doc["data"]["deviceToken"] | "";
-    if (token != String(deviceToken)) {
+    if (token != deviceToken) {
       Serial.printf("Ignorando deviceRegistered para outro token: %s\n", token.c_str());
       return;
     }
@@ -337,14 +351,25 @@ void processJsonMessage(const String& msg) {
     Serial.printf("[deviceRegistered] Success: %d, Vinculado: %d, Message: %s\n", success, usuarioVinculado, message.c_str());
     
     if (success && usuarioVinculado) {
+      // Tanto no primeiro vinculo quanto nos proximos boots, uma confirmacao
+      // positiva da API libera imediatamente a calibracao.
+      aguardandoValidacaoTokenBoot = false;
       on_token_registrado();
     } else {
-      Serial.println("Dispositivo conectado, mas sem usuário vinculado. Aguardando...");
-      // Opcional: Mostrar mensagem na tela de token
+      Serial.println("Dispositivo possui token, mas ainda nao esta vinculado a um usuario.");
+
+      // Durante o boot evitamos mostrar o token antes de consultar a API.
+      // Se a consulta confirmar que ainda falta o vinculo, mostramos a tela
+      // com o token para que o usuario possa cadastra-lo no sistema web.
+      aguardandoValidacaoTokenBoot = false;
+      if (deviceToken.length() == 15 && currentScreen != "token") {
+        go_token();
+        lv_timer_handler();
+      }
     }
   } else if (type == "loginSuccess") {
     String token = doc["data"]["deviceToken"] | "";
-    if (token != String(deviceToken)) return;
+    if (token != deviceToken) return;
 
     String nome = doc["data"]["funcionario"]["nome"];
     funcionarioNome = nome;
@@ -353,47 +378,18 @@ void processJsonMessage(const String& msg) {
     login_ok = true;
     saveLoginState();
     
-    // Verificar se já há artigo selecionado (reconnect)
-    if (artigo_selecionado) {
-      go_dashboard();
-    } else {
-      // Sempre ir para a tela de seleção de artigo
-      go_artigo();
-      clear_artigo_list();
-      
-      if (doc["data"].containsKey("artigos") && doc["data"]["artigos"].is<JsonArray>()) {
-        JsonArray artigos = doc["data"]["artigos"].as<JsonArray>();
-        Serial.printf("Artigos disponíveis: %d\n", artigos.size());
-
-        if (artigos.size() == 0) {
-          show_artigo_message("Nenhum artigo disponivel");
-        }
-
-        for (size_t i = 0; i < artigos.size(); i++) {
-          const char* artId = artigos[i]["_id"].as<const char*>();
-          const char* artNome = artigos[i]["nome"].as<const char*>();
-          int artMeta = artigos[i]["quantidade"].as<int>();
-          
-          Serial.printf("[%d] %s (meta: %d)\n", (int)(i+1), artNome, artMeta);
-          add_artigo_to_list(artId, artNome, artMeta);
-        }
-        
-        // Salvar artigos localmente para uso offline
-        String artigosJson;
-        serializeJson(artigos, artigosJson);
-        saveArtigos(artigosJson);
-      } else {
-        Serial.println("⚠️ Erro: Campo 'artigos' não encontrado ou inválido no JSON!");
-        String jsonStr;
-        serializeJson(doc, jsonStr);
-        Serial.printf("JSON recebido: %s\n", jsonStr.c_str());
-        show_artigo_message("Erro ao carregar artigos");
-      }
-    }
+    // O arco nao usa a lista generica retornada pelo loginSuccess.
+    // Solicita exclusivamente artigos RFID prontos para revisao.
+    artigo_selecionado = false;
+    revisaoRFID_limparArtigo();
+    go_artigo();
+    clear_artigo_list();
+    show_artigo_message("Carregando artigos RFID...");
+    solicitarArtigosRFID();
   } else if (type == "artigoSelecionado") {
     String token = doc["data"]["deviceToken"] | "";
-    if (token != String(deviceToken)) {
-      Serial.printf("⚠️ Token inválido em artigoSelecionado. Recebido: '%s', Esperado: '%s'\n", token.c_str(), deviceToken);
+    if (token != deviceToken) {
+      Serial.printf("⚠️ Token inválido em artigoSelecionado. Recebido: '%s', Esperado: '%s'\n", token.c_str(), deviceToken.c_str());
       // return; // Comentado para teste, mas o ideal é manter
     }
 
@@ -416,7 +412,7 @@ void processJsonMessage(const String& msg) {
     update_dashboard(artigoNome.c_str(), funcionarioNome.c_str(), metaArtigo, quantidade);
   } else if (type == "producaoSuccess") {
     String token = doc["data"]["deviceToken"] | "";
-    if (token != String(deviceToken)) return;
+    if (token != deviceToken) return;
     Serial.println("[producaoSuccess] Produção registrada!");
     
     // Atualizar a tela artigo em tempo real se estiver visualizando
@@ -434,7 +430,7 @@ void processJsonMessage(const String& msg) {
   } else if (type == "artigosAtualizados") {
     // Atualização em tempo real da lista de artigos na tela de operação
     String token = doc["data"]["deviceToken"] | "";
-    if (token != String(deviceToken)) return;
+    if (token != deviceToken) return;
 
     Serial.println("[artigosAtualizados] 🔄 Atualizando lista de artigos...");
     
@@ -464,6 +460,66 @@ void processJsonMessage(const String& msg) {
     } else {
       Serial.println("⚠️ Erro: Campo 'artigos' não encontrado em artigosAtualizados!");
     }
+  } else if (type == "artigosRFIDAtualizados") {
+    clear_artigo_list();
+
+    bool success = doc["success"] | false;
+    if (!success) {
+      show_artigo_message("Nenhum artigo RFID disponivel");
+      return;
+    }
+
+    JsonArray artigos = doc["data"]["artigos"].as<JsonArray>();
+    Serial.printf("[RFID] Artigos prontos para revisao: %u\n", (unsigned)artigos.size());
+
+    if (artigos.size() == 0) {
+      show_artigo_message("Nenhum artigo RFID pronto");
+    }
+
+    for (JsonObject art : artigos) {
+      String id = art["_id"].as<String>();
+      String nome = art["nome"].as<String>();
+      int total = art["quantidade"] | 0;
+      int revisadas = art["revisadas"] | 0;
+
+      update_artigo_quantities(id.c_str(), revisadas, total);
+      add_artigo_to_list(id.c_str(), nome.c_str(), total);
+    }
+  } else if (type == "artigoRFIDSelecionado") {
+    bool success = doc["success"] | false;
+    if (!success) {
+      show_artigo_message(doc["message"] | "Artigo RFID invalido");
+      return;
+    }
+
+    JsonObject art = doc["data"]["artigo"];
+
+    artigoId = art["_id"].as<String>();
+    artigoNome = art["nome"].as<String>();
+    metaArtigo = art["quantidade"] | 0;
+    quantidade = doc["data"]["revisadas"] | 0;
+    artigo_selecionado = true;
+
+    revisaoRFID_definirArtigo(
+      artigoId,
+      art["codigo"].as<String>(),
+      artigoNome,
+      metaArtigo,
+      quantidade
+    );
+  } else if (type == "epcRFIDValidado") {
+    revisaoRFID_onValidacao(doc["resultado"].as<String>());
+  } else if (type == "revisaoRFIDConfirmada") {
+    revisaoRFID_onConfirmacao(
+      doc["success"] | false,
+      doc["resultado"].as<String>(),
+      doc["revisadas"] | quantidade,
+      doc["total"] | metaArtigo
+    );
+
+    if ((doc["success"] | false) && doc["resultado"].as<String>() == "aprovada") {
+      quantidade = doc["revisadas"] | quantidade;
+    }
   } else if (type == "loginFailed" || type == "error") {
     String message = doc["message"];
     Serial.printf("[Erro] ❌ %s\n", message.c_str());
@@ -472,7 +528,7 @@ void processJsonMessage(const String& msg) {
     show_login_error(message.c_str());
   } else if (type == "sensorData") {
     String token = doc["data"]["deviceToken"] | "";
-    if (token != String(deviceToken)) return;
+    if (token != deviceToken) return;
 
     int nivel = doc["data"]["nivel"] | -1;
     Serial.printf("[sensorData] Nível recebido: %d\n", nivel);
@@ -499,15 +555,20 @@ void processJsonMessage(const String& msg) {
 
 
 void registerDevice() {
+  if (deviceToken.length() != 15) {
+    Serial.println("[DEVICE] Token ainda nao gerado; registro adiado.");
+    return;
+  }
   DynamicJsonDocument doc(1024);
   JsonArray array = doc.to<JsonArray>();
   array.add("registerDevice");
   JsonObject param = array.createNestedObject();
   param["deviceToken"] = deviceToken;
+  param["deviceType"] = "revisao_rfid";
   
   String json; serializeJson(doc, json);
   socketIO.sendEVENT(json);
-  Serial.printf("➡️ Registrando dispositivo: %s\n", deviceToken);
+  Serial.printf("➡️ Registrando dispositivo de revisao RFID: %s\n", deviceToken.c_str());
 }
 
 void loginFuncionario(const char* senha) {
@@ -536,6 +597,63 @@ void enviarSelecaoArtigo(const char* id) {
   String json; serializeJson(doc, json);
   socketIO.sendEVENT(json);
   Serial.printf("➡️ Selecionando artigo ID: %s\n", id);
+}
+
+void solicitarArtigosRFID() {
+  DynamicJsonDocument doc(256);
+  JsonArray array = doc.to<JsonArray>();
+  array.add("solicitarArtigosRFID");
+  JsonObject param = array.createNestedObject();
+  param["deviceToken"] = deviceToken;
+
+  String json;
+  serializeJson(doc, json);
+  socketIO.sendEVENT(json);
+  Serial.println("➡️ Solicitando artigos RFID prontos");
+}
+
+void enviarSelecaoArtigoRFID(const char* id) {
+  DynamicJsonDocument doc(256);
+  JsonArray array = doc.to<JsonArray>();
+  array.add("selecionarArtigoRFID");
+  JsonObject param = array.createNestedObject();
+  param["deviceToken"] = deviceToken;
+  param["artigoId"] = id;
+
+  String json;
+  serializeJson(doc, json);
+  socketIO.sendEVENT(json);
+  Serial.printf("➡️ Selecionando artigo RFID: %s\n", id);
+}
+
+void enviarValidacaoEpcRFID(const String& id, const String& epc) {
+  DynamicJsonDocument doc(384);
+  JsonArray array = doc.to<JsonArray>();
+  array.add("validarEpcRFID");
+  JsonObject param = array.createNestedObject();
+  param["deviceToken"] = deviceToken;
+  param["artigoId"] = id;
+  param["epc"] = epc;
+
+  String json;
+  serializeJson(doc, json);
+  socketIO.sendEVENT(json);
+  Serial.printf("➡️ Validando EPC %s\n", epc.c_str());
+}
+
+void confirmarRevisaoEpcRFID(const String& id, const String& epc) {
+  DynamicJsonDocument doc(384);
+  JsonArray array = doc.to<JsonArray>();
+  array.add("confirmarRevisaoRFID");
+  JsonObject param = array.createNestedObject();
+  param["deviceToken"] = deviceToken;
+  param["artigoId"] = id;
+  param["epc"] = epc;
+
+  String json;
+  serializeJson(doc, json);
+  socketIO.sendEVENT(json);
+  Serial.printf("➡️ Confirmando revisao EPC %s\n", epc.c_str());
 }
 
 void sendKeepAlive() {
@@ -645,6 +763,7 @@ void logoutFuncionario() {
   Serial.println("🚪 Deslogando funcionário...");
   
   // Limpar estado de negócio
+  revisaoRFID_limparArtigo();
   funcionarioSenha = "";
   funcionarioNome = "";
   artigoId = "";
@@ -693,7 +812,7 @@ void atualizarInfoConfig() {
   // Atualizar token do dispositivo
   extern lv_obj_t * lbl_device_token;
   if (lbl_device_token) {
-    lv_label_set_text_fmt(lbl_device_token, "Token: %s", deviceToken);
+    lv_label_set_text_fmt(lbl_device_token, "Token: %s", deviceToken.c_str());
   }
   
   // Atualizar uptime
@@ -720,6 +839,7 @@ void servicoDuranteCalibracao() {
   lv_timer_handler();
   if (wifi_connected) {
     socketIO.loop();
+    ativacao_loop();
   }
 }
 
@@ -734,7 +854,8 @@ void setup() {
   // O VL53L5CX será inicializado somente depois que a interface e o Wi-Fi
   // estiverem ativos. Isso evita interferência na subida do display.
 
-  // Carregar estado persistido
+  // Carregar token permanente de ativacao e demais estados persistidos
+  ativacao_carregar_token();
   loadPersistedState();
 
   // Botão "EXIT" que fica na camada superior
@@ -756,6 +877,9 @@ void setup() {
   lv_obj_align(lbl_exit_symbol, LV_ALIGN_TOP_LEFT, 5, -10);
 
   go_home();
+
+  // RFID UHF: usa o mesmo driver e configuracao validados no projeto base.
+  revisaoRFID_begin();
 }
 
 void loop() {
@@ -771,9 +895,11 @@ void loop() {
   }
   if (wifi_connected) {
     socketIO.loop();
+    ativacao_loop();
 
-    // Se conectado ao WS mas ainda não registrado (sem usuário vinculado), tenta novamente periodicamente
-    if (wsConnected && !token_registrado) {
+    // Se conectado ao WS mas ainda nao registrado/vinculado, tenta novamente periodicamente.
+    // No boot com token salvo isso valida silenciosamente antes de mostrar qualquer tela de token.
+    if (wsConnected && !token_registrado && deviceToken.length() == 15) {
       if (millis() - lastCheckTime > checkInterval) {
         lastCheckTime = millis();
         registerDevice();
@@ -792,7 +918,7 @@ void loop() {
     if (wsConnected && login_ok && currentScreen == "artigo") {
       if (millis() - lastUpdateCheckTime > updateCheckInterval) {
         lastUpdateCheckTime = millis();
-        solicitarArtigosAtualizados();
+        solicitarArtigosRFID();
       }
     }
     
@@ -807,6 +933,9 @@ void loop() {
     }
   }
   
+  // Atualiza continuamente sensor de presenca e leitor UHF.
+  revisaoRFID_atualizar();
+
   lv_timer_handler();
   
   // Leitura do botão com debounce simples
@@ -826,8 +955,7 @@ void loop() {
       if (buttonState == LOW) {
         Serial.println("� Botão pressionado!");
       } else if (buttonState == HIGH && previousButtonState == LOW) {
-        Serial.println("� Botão solto!");
-        sendProductionData();
+        Serial.println("Botao solto - sem acao na revisao RFID.");
       }
       previousButtonState = buttonState;
     }
@@ -840,32 +968,3 @@ void loop() {
 // -----------------------------------------------------------------------------
 // NOVA TELA BASE
 // -----------------------------------------------------------------------------
-lv_obj_t * new_screen(lv_obj_t * base, bool use_gradient = false) {
-  lv_obj_t * obj = lv_obj_create(base);
-
-  if (use_gradient) {
-    lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, LV_PART_MAIN);
-    lv_obj_set_style_bg_color(obj, lv_color_hex(0x1A3D6B), 0);
-    lv_obj_set_style_bg_grad_color(obj, lv_color_hex(0xEA824D), 0);
-    lv_obj_set_style_bg_grad_dir(obj, LV_GRAD_DIR_VER, 0);
-  } else {
-    // Fundo transparente real
-    lv_obj_set_style_bg_grad_color(obj, lv_color_hex(0xFFFFFF), 0);
-  }
-  lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_style_border_width(obj, 0, 0);
-
-  // Layout padrão = coluna centralizada
-  lv_obj_set_layout(obj, LV_LAYOUT_FLEX);
-  lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_flex_align(obj,
-    LV_FLEX_ALIGN_CENTER,
-    LV_FLEX_ALIGN_CENTER,
-    LV_FLEX_ALIGN_CENTER);
-
-  lv_obj_set_style_pad_top(obj,    5, LV_PART_MAIN);
-  lv_obj_set_style_pad_bottom(obj, 5, LV_PART_MAIN);
-  lv_obj_set_style_pad_row(obj,   10, LV_PART_MAIN);
-  return obj;
-}
-

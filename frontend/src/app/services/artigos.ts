@@ -2,6 +2,12 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+export type RFIDScanStatus =
+  | 'nao_aplicavel'
+  | 'aguardando'
+  | 'em_leitura'
+  | 'concluido';
+
 export interface Artigo {
   _id?: string;
   codigo: string;
@@ -12,9 +18,27 @@ export interface Artigo {
   valor: number;
   quantidade: number;
   quantidadeAtual?: number;
-   status?: string;
+  status?: string;
   criadoPor?: string | { _id: string };
   criadoEm?: string;
+
+  rfidEnabled?: boolean;
+  rfidScanStatus?: RFIDScanStatus;
+  rfidTagsCount?: number;
+  rfidScanStartedAt?: string | null;
+  rfidScanFinishedAt?: string | null;
+}
+
+export interface RFIDStatusResponse {
+  artigoId: string;
+  codigo: string;
+  nome: string;
+  quantidade: number;
+  rfidEnabled: boolean;
+  rfidScanStatus: RFIDScanStatus;
+  etiquetasCadastradas: number;
+  etiquetasRevisadas: number;
+  etiquetasPendentes: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -39,5 +63,21 @@ export class ArtigosService {
 
   excluirArtigo(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  obterStatusRFID(artigoId: string): Observable<RFIDStatusResponse> {
+    return this.http.get<RFIDStatusResponse>(`${this.apiUrl}/${artigoId}/rfid`);
+  }
+
+  iniciarLeituraRFID(artigoId: string, preservar = false): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${artigoId}/rfid/start`, { preservar });
+  }
+
+  finalizarLeituraRFID(artigoId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${artigoId}/rfid/finish`, {});
+  }
+
+  removerTagRFID(artigoId: string, epc: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${artigoId}/rfid/tag/${encodeURIComponent(epc)}`);
   }
 }

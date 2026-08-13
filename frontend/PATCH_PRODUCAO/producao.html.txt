@@ -1,0 +1,51 @@
+ALTERACOES EM frontend/src/app/producao/producao.html
+
+No modal de cadastro do artigo, adicionar:
+
+<div class="mt-4">
+  <label class="form-label fw-semibold">Identificacao das pecas:</label>
+
+  <div class="form-check">
+    <input class="form-check-input" type="radio" name="rfidEnabled"
+           id="semRFID" [value]="false" [(ngModel)]="novoArtigo.rfidEnabled">
+    <label class="form-check-label" for="semRFID">Sem RFID</label>
+  </div>
+
+  <div class="form-check">
+    <input class="form-check-input" type="radio" name="rfidEnabled"
+           id="comRFID" [value]="true" [(ngModel)]="novoArtigo.rfidEnabled">
+    <label class="form-check-label" for="comRFID">Com RFID</label>
+  </div>
+
+  <div *ngIf="novoArtigo.rfidEnabled" class="alert alert-info mt-2">
+    Apos salvar, sera aberta a etapa de cadastro das etiquetas RFID.
+    A quantidade de EPCs deve ser exatamente igual a quantidade de pecas.
+  </div>
+</div>
+
+Na tabela de artigos, adicionar uma coluna RFID e um botao para artigos RFID:
+
+<span *ngIf="artigo.rfidEnabled" class="badge bg-primary">RFID</span>
+<span *ngIf="!artigo.rfidEnabled" class="badge bg-secondary">Sem RFID</span>
+<button *ngIf="artigo.rfidEnabled" class="btn btn-sm btn-outline-primary ms-2"
+        (click)="abrirModalRFID(artigo)">Etiquetas</button>
+
+Modal simples de acompanhamento:
+
+<div *ngIf="modalRFIDAberto" class="modal fade show d-block" style="background:rgba(0,0,0,.45)">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Cadastro RFID - {{ artigoRFIDSelecionado?.nome }}</h5>
+        <button class="btn-close" (click)="fecharModalRFID()"></button>
+      </div>
+      <div class="modal-body">
+        <h3>{{ rfidEtiquetasCadastradas }} / {{ rfidQuantidade }}</h3>
+        <p>Status: {{ rfidScanStatus }}</p>
+        <p>Revisadas: {{ rfidEtiquetasRevisadas }}</p>
+        <button class="btn btn-primary me-2" (click)="iniciarEscaneamentoRFID()">Escanear etiquetas</button>
+        <button class="btn btn-success" (click)="finalizarEscaneamentoRFID()">Concluir cadastro</button>
+      </div>
+    </div>
+  </div>
+</div>

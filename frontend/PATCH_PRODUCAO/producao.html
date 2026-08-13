@@ -1,0 +1,346 @@
+<!-- ============================================================
+ALTERAÇÕES EM:
+frontend/src/app/producao/producao.html
+============================================================= -->
+
+<!-- 1) NA TABELA, depois da coluna Quantidade, adicione: -->
+
+<th>RFID</th>
+
+<!-- Na linha do artigo, na mesma posição, adicione: -->
+
+<td>
+  <span
+    *ngIf="artigo.rfidEnabled"
+    class="badge bg-primary">
+    RFID
+  </span>
+
+  <span
+    *ngIf="!artigo.rfidEnabled"
+    class="badge bg-secondary">
+    Sem RFID
+  </span>
+
+  <button
+    *ngIf="artigo.rfidEnabled"
+    type="button"
+    class="btn btn-sm btn-outline-primary ms-2"
+    (click)="abrirModalRFID(artigo)">
+    Etiquetas
+  </button>
+</td>
+
+<!-- Lembre de aumentar o colspan de 10 para 11:
+<td colspan="11" ...>
+-->
+
+
+<!-- 2) DENTRO DO MODAL "Cadastrar Artigo",
+depois dos campos Valor / Quantidade e antes de fechar modal-body,
+adicione: -->
+
+<div class="mt-4">
+  <label class="form-label fw-semibold">
+    Identificação das peças:
+  </label>
+
+  <div class="border rounded p-3">
+    <div class="form-check mb-2">
+      <input
+        class="form-check-input"
+        type="radio"
+        name="rfidEnabled"
+        id="artigoSemRFID"
+        [value]="false"
+        [(ngModel)]="novoArtigo.rfidEnabled" />
+
+      <label
+        class="form-check-label"
+        for="artigoSemRFID">
+        Sem RFID
+      </label>
+    </div>
+
+    <div class="form-check">
+      <input
+        class="form-check-input"
+        type="radio"
+        name="rfidEnabled"
+        id="artigoComRFID"
+        [value]="true"
+        [(ngModel)]="novoArtigo.rfidEnabled" />
+
+      <label
+        class="form-check-label"
+        for="artigoComRFID">
+        Com RFID
+      </label>
+    </div>
+
+    <div
+      *ngIf="novoArtigo.rfidEnabled"
+      class="alert alert-info mt-3 mb-0">
+
+      <strong>Artigo com RFID</strong>
+
+      <div class="small mt-1">
+        Após salvar o artigo será aberta a tela para
+        escaneamento das etiquetas RFID.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 3) ADICIONE ESTE MODAL LOGO APÓS O MODAL DE ARTIGO: -->
+
+<div
+  *ngIf="modalRFIDAberto"
+  class="modal fade show d-block"
+  tabindex="-1"
+  style="background:rgba(0,0,0,0.45);">
+
+  <div
+    class="modal-dialog modal-dialog-centered modal-lg">
+
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title">
+            Etiquetas RFID
+          </h5>
+
+          <small class="text-muted">
+            {{ artigoRFIDSelecionado?.codigo }}
+            -
+            {{ artigoRFIDSelecionado?.nome }}
+          </small>
+        </div>
+
+        <button
+          type="button"
+          class="btn-close"
+          (click)="fecharModalRFID()">
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+        <div
+          *ngIf="rfidCarregando"
+          class="text-center py-3">
+          Carregando...
+        </div>
+
+        <ng-container *ngIf="!rfidCarregando">
+
+          <div class="row g-3 mb-4">
+
+            <div class="col-md-4">
+              <div class="card h-100">
+                <div class="card-body text-center">
+                  <div class="text-muted">
+                    Etiquetas
+                  </div>
+
+                  <div class="fs-3 fw-bold">
+                    {{ rfidEtiquetasLidas }}
+                    /
+                    {{ rfidQuantidade }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="card h-100">
+                <div class="card-body text-center">
+                  <div class="text-muted">
+                    Progresso
+                  </div>
+
+                  <div class="fs-3 fw-bold">
+                    {{ percentualRFID }}%
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="card h-100">
+                <div class="card-body text-center">
+                  <div class="text-muted">
+                    Status
+                  </div>
+
+                  <div class="fw-semibold mt-2">
+                    {{
+                      formatarStatusRFID(
+                        rfidScanStatus
+                      )
+                    }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="progress mb-4"
+               style="height:25px">
+
+            <div
+              class="progress-bar"
+              role="progressbar"
+              [style.width.%]="percentualRFID">
+
+              {{ percentualRFID }}%
+
+            </div>
+          </div>
+
+          <div
+            class="d-flex flex-wrap gap-2 mb-4">
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="iniciarEscaneamentoRFID()">
+
+              <i class="bi bi-upc-scan"></i>
+              Escanear etiquetas
+
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-success"
+              [disabled]="
+                rfidScanStatus !== 'em_leitura'
+              "
+              (click)="finalizarEscaneamentoRFID()">
+
+              Concluir leitura
+
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="carregarStatusRFID()">
+
+              Atualizar
+
+            </button>
+
+          </div>
+
+          <div
+            *ngIf="rfidScanStatus === 'em_leitura'"
+            class="alert alert-warning">
+
+            Aguardando as etiquetas enviadas pelo
+            dispositivo de cadastro RFID.
+
+          </div>
+
+          <div
+            *ngIf="rfidScanStatus === 'concluido'"
+            class="alert alert-success">
+
+            Leitura RFID concluída com sucesso.
+
+          </div>
+
+          <div class="table-responsive">
+
+            <table
+              class="table table-sm table-striped">
+
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>EPC</th>
+                  <th>Data/Hora</th>
+                  <th></th>
+                </tr>
+              </thead>
+
+              <tbody>
+
+                <tr *ngIf="rfidTags.length === 0">
+                  <td
+                    colspan="4"
+                    class="text-center text-muted">
+
+                    Nenhuma etiqueta lida.
+
+                  </td>
+                </tr>
+
+                <tr
+                  *ngFor="
+                    let tag of rfidTags;
+                    let i = index
+                  ">
+
+                  <td>{{ i + 1 }}</td>
+
+                  <td>
+                    <code>
+                      {{ tag.epc }}
+                    </code>
+                  </td>
+
+                  <td>
+                    {{
+                      tag.scannedAt
+                        ? (tag.scannedAt |
+                           date:'dd/MM/yyyy HH:mm:ss')
+                        : '-'
+                    }}
+                  </td>
+
+                  <td class="text-end">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      (click)="
+                        removerTagRFID(tag.epc)
+                      ">
+                      Remover
+                    </button>
+                  </td>
+
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </ng-container>
+
+      </div>
+
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="fecharModalRFID()">
+
+          Fechar
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
