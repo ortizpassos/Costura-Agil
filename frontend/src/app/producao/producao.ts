@@ -1,22 +1,36 @@
-// método carregarXmlNota está implementado dentro da classe ProducaoComponent mais abaixo
-// método carregarXmlNota está implementado dentro da classe ProducaoComponent mais abaixo
-// ...existing code...
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { Subscription, interval } from 'rxjs';
+
 import { SidebarComponent } from '../shared/sidebar/sidebar';
 import { SocketService } from '../services/socket.service';
 import { AuthService } from '../services/auth.service';
-import { Router } from '@angular/router';
-import { DispositivosService, Dispositivo } from '../services/dispositivos';
-import { OperacoesService, Operacao } from '../services/operacoes';
-import { ArtigosService, Artigo } from '../services/artigos';
-import { ClientesService, Cliente } from '../services/clientes';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { Subscription } from 'rxjs';
+import {
+  DispositivosService,
+  Dispositivo
+} from '../services/dispositivos';
+import {
+  OperacoesService,
+  Operacao
+} from '../services/operacoes';
+import {
+  ArtigosService,
+  Artigo,
+  RFIDScanStatus
+} from '../services/artigos';
+import {
+  ClientesService,
+  Cliente
+} from '../services/clientes';
 
-type ProducaoItem = Dispositivo & { progresso: number; funcionario: string; meta: number; };
+type ProducaoItem = Dispositivo & {
+  progresso: number;
+  funcionario: string;
+  meta: number;
+};
+
 type ArtigoForm = {
   codigo: string;
   nome: string;
@@ -26,6 +40,7 @@ type ArtigoForm = {
   valor: number | null;
   quantidade: number | null;
   status: string;
+  rfidEnabled: boolean;
 };
 
 @Component({
@@ -33,675 +48,947 @@ type ArtigoForm = {
   standalone: true,
   templateUrl: './producao.html',
   styleUrls: ['./producao.css'],
-  imports: [CommonModule, FormsModule, SidebarComponent]
+  imports: [
+    CommonModule,
+    FormsModule,
+    SidebarComponent
+  ]
 })
-export class ProducaoComponent implements OnInit, OnDestroy {
+export class ProducaoComponent
+  implements OnInit, OnDestroy {
+
   producao: ProducaoItem[] = [];
   producaoFiltrada: ProducaoItem[] = [];
-  
-  // Subscriptions para limpeza
-  private subscriptions: Subscription[] = [];
-  private userId: string | null = null;
-  
-  // Filtros e ordenação
-  filtroStatus: string = 'todos';
-  ordenacao: string = 'nome';
-  busca: string = '';
-  
-  // Estatísticas
-  totalProducaoHoje: number = 0;
-  dispositivosAtivos: number = 0;
-  metaTotal: number = 0;
-  percentualMeta: number = 0;
 
-  // Artigos, operações e clientes
   artigos: Artigo[] = [];
   operacoes: Operacao[] = [];
   clientes: Cliente[] = [];
 
-  // Modal Artigo
-  modalArtigoAberto: boolean = false;
+  totalProducaoHoje = 0;
+  dispositivosAtivos = 0;
+  metaTotal = 0;
+  percentualMeta = 0;
+
+  filtroStatus = 'todos';
+  busca = '';
+
+  modalArtigoAberto = false;
+  modalOperacaoAberto = false;
+  modalClienteAberto = false;
+  modalRFIDAberto = false;
+
   artigoEditando: Artigo | null = null;
-  novoArtigo: ArtigoForm = this.criarArtigoPadrao();
+  artigoRFIDSelecionado: Artigo | null = null;
 
-  // Modais auxiliares
-  modalOperacaoAberto: boolean = false;
-  modalClienteAberto: boolean = false;
-  operacaoEditando: Operacao | null = null;
-  novaOperacao: any = { nome: '', pecasPorHora: '', cortesPorPeca: '', descricao: '' };
-  novoCliente: any = { nome: '', contato: '' };
+  novoArtigo: ArtigoForm =
+    this.criarArtigoPadrao();
 
-  get producaoEmProducao(): ProducaoItem[] {
-    return this.producao.filter(item => item.status === 'em_producao');
-  }
+  novaOperacao: any = {
+    nome: '',
+    pecasPorHora: 1,
+    cortesPorPeca: 0,
+    descricao: ''
+  };
+
+  novoCliente: any = {
+    nome: '',
+    contato: ''
+  };
+
+  rfidCarregando = false;
+  rfidEtiquetasCadastradas = 0;
+  rfidEtiquetasRevisadas = 0;
+  rfidQuantidade = 0;
+  rfidScanStatus: RFIDScanStatus =
+    'nao_aplicavel';
+
+  private subscriptions: Subscription[] = [];
+  private userId: string | null = null;
 
   constructor(
-    private dispositivosService: DispositivosService,
     private socketService: SocketService,
     private authService: AuthService,
     private router: Router,
-    private artigosService: ArtigosService,
+    private dispositivosService: DispositivosService,
     private operacoesService: OperacoesService,
+    private artigosService: ArtigosService,
     private clientesService: ClientesService
   ) {}
 
-  ngOnInit() {
-    if (!this.authService.isAuthenticated()) {
-      this.router.navigate(['/login']);
-      return;
-    }
-    this.userId = this.authService.getCurrentUserId();
-    this.carregarDispositivos();
-    this.configurarSocketListeners();
+  ngOnInit(): void {
+    const usuario: any =
+      this.authService.getUsuario?.();
+
+    this.userId =
+      usuario?._id ||
+      usuario?.id ||
+      null;
+
+    this.carregarTudo();
+    this.configurarSocket();
+
+    // Atualiza o modal RFID automaticamente enquanto estiver aberto.
+    const poll = interval(2000).subscribe(() => {
+      if (
+        this.modalRFIDAberto &&
+        this.artigoRFIDSelecionado?._id &&
+        this.rfidScanStatus === 'em_leitura'
+      ) {
+        this.carregarStatusRFID(false);
+      }
+    });
+
+    this.subscriptions.push(poll);
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.forEach(
+      (sub) => sub.unsubscribe()
+    );
+  }
+
+  carregarTudo(): void {
     this.carregarArtigos();
     this.carregarOperacoes();
     this.carregarClientes();
+    this.carregarDispositivos();
   }
 
-  carregarArtigos() {
-    this.artigosService.listarArtigos().subscribe({
-      next: (arts: Artigo[]) => {
-        const userId = this.authService.getCurrentUserId();
-        this.artigos = userId
-          ? arts.filter(art => {
-              if (!art.criadoPor) return false;
-              if (typeof art.criadoPor === 'string') return art.criadoPor === userId;
-              // caso backend retorne objeto
-              return (art.criadoPor as any)._id === userId;
-            })
-          : [];
-      },
-      error: (err: any) => { console.error('Erro ao buscar artigos', err); this.artigos = []; }
-    });
-  }
-
-  carregarOperacoes() {
-    this.operacoesService.listarOperacoes().subscribe({
-      next: (ops: Operacao[]) => {
-        this.operacoes = ops;
-      },
-      error: (err: any) => console.error('Erro ao buscar operações', err)
-    });
-  }
-
-  carregarClientes() {
-    this.clientesService.listarClientes().subscribe({
-      next: (cls: Cliente[]) => {
-        this.clientes = cls;
-      },
-      error: (err: any) => console.error('Erro ao buscar clientes', err)
-    });
-  }
-
-  // Permite carregar um XML de nota fiscal e preencher automaticamente o formulário de novo artigo
-  carregarXmlNota(event: Event) {
-    const input = event?.target as HTMLInputElement | undefined;
-    if (!input || !input.files || input.files.length === 0) return;
-    const file = input.files[0];
-    const reader = new FileReader();
-    reader.onload = (e: ProgressEvent<FileReader>) => {
-      const xmlContent = (e.target && (e.target as FileReader).result) as string | null;
-      if (!xmlContent) return;
-      try {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlContent, 'application/xml');
-        const prod = xmlDoc.querySelector('det > prod') || xmlDoc.querySelector('prod');
-        if (prod && this.novoArtigo) {
-          const cProd = prod.querySelector('cProd')?.textContent?.trim() || '';
-          const xProd = prod.querySelector('xProd')?.textContent?.trim() || '';
-          const vUnCom = prod.querySelector('vUnCom')?.textContent?.trim() || '0';
-          const qCom = prod.querySelector('qCom')?.textContent?.trim() || '0';
-          this.novoArtigo.codigo = cProd;
-          this.novoArtigo.nome = xProd;
-          this.novoArtigo.valor = vUnCom ? parseFloat(vUnCom) : null;
-          this.novoArtigo.quantidade = qCom ? parseFloat(qCom) : null;
+  carregarArtigos(): void {
+    this.artigosService
+      .listarArtigos()
+      .subscribe({
+        next: (artigos) => {
+          this.artigos = Array.isArray(artigos)
+            ? artigos
+            : [];
+        },
+        error: (err) => {
+          console.error(
+            'Erro ao buscar artigos',
+            err
+          );
+          this.artigos = [];
         }
-        const dest = xmlDoc.querySelector('dest > xNome') || xmlDoc.querySelector('xNome');
-        if (dest && this.novoArtigo) {
-          this.novoArtigo.cliente = dest.textContent?.trim() || '';
-        }
-        const dhEmi = xmlDoc.querySelector('ide > dhEmi') || xmlDoc.querySelector('dhEmi') || xmlDoc.querySelector('ide > dEmi');
-        if (dhEmi && this.novoArtigo) {
-          const dt = dhEmi.textContent?.trim() || '';
-          this.novoArtigo.dataInclusao = dt ? dt.substring(0, 10) : this.novoArtigo.dataInclusao;
-        }
-        // Abrir o modal caso não esteja aberto
-        this.modalArtigoAberto = true;
-      } catch (err) {
-        console.error('Erro ao processar XML da nota fiscal', err);
-        alert('Erro ao processar XML da nota fiscal. Verifique o arquivo.');
-      }
-    };
-    reader.readAsText(file);
+      });
   }
 
-  abrirModalArtigo() {
-    this.modalArtigoAberto = true;
+  carregarOperacoes(): void {
+    this.operacoesService
+      .listarOperacoes()
+      .subscribe({
+        next: (ops) => {
+          this.operacoes = ops || [];
+        },
+        error: (err) =>
+          console.error(
+            'Erro ao buscar operações',
+            err
+          )
+      });
+  }
+
+  carregarClientes(): void {
+    this.clientesService
+      .listarClientes()
+      .subscribe({
+        next: (clientes) => {
+          this.clientes = clientes || [];
+        },
+        error: (err) =>
+          console.error(
+            'Erro ao buscar clientes',
+            err
+          )
+      });
+  }
+
+  carregarDispositivos(): void {
+    this.dispositivosService
+      .listarDispositivos()
+      .subscribe({
+        next: (dispositivos: Dispositivo[]) => {
+          this.producao =
+            (dispositivos || [])
+              .map((d: any) => ({
+                ...d,
+                progresso:
+                  d.producaoAtual || 0,
+                funcionario:
+                  d.funcionarioLogado?.nome ||
+                  '-',
+                meta:
+                  d.artigo?.quantidade ||
+                  d.meta ||
+                  0
+              }));
+
+          this.calcularEstatisticas();
+          this.aplicarFiltros();
+        },
+        error: (err) =>
+          console.error(
+            'Erro ao carregar dispositivos',
+            err
+          )
+      });
+  }
+
+  configurarSocket(): void {
+    const statusSub =
+      this.socketService
+        .onDeviceStatusUpdate?.()
+        .subscribe?.((updated: any) => {
+          if (!updated?._id) return;
+
+          const idx =
+            this.producao.findIndex(
+              (p: any) =>
+                p._id === updated._id
+            );
+
+          if (idx >= 0) {
+            this.producao[idx] = {
+              ...this.producao[idx],
+              ...updated,
+              progresso:
+                updated.producaoAtual ||
+                this.producao[idx].progresso ||
+                0,
+              funcionario:
+                updated.funcionarioLogado?.nome ||
+                this.producao[idx].funcionario ||
+                '-',
+              meta:
+                updated.artigo?.quantidade ||
+                this.producao[idx].meta ||
+                0
+            };
+          } else {
+            this.producao.push({
+              ...updated,
+              progresso:
+                updated.producaoAtual || 0,
+              funcionario:
+                updated.funcionarioLogado?.nome ||
+                '-',
+              meta:
+                updated.artigo?.quantidade ||
+                0
+            });
+          }
+
+          this.calcularEstatisticas();
+          this.aplicarFiltros();
+        });
+
+    if (statusSub) {
+      this.subscriptions.push(statusSub);
+    }
+
+    const prodSub =
+      this.socketService
+        .onProductionUpdate?.()
+        .subscribe?.((payload: any) => {
+          const dispositivo =
+            payload?.dispositivo;
+
+          if (!dispositivo?._id) return;
+
+          const idx =
+            this.producao.findIndex(
+              (p: any) =>
+                p._id === dispositivo._id
+            );
+
+          if (idx >= 0) {
+            this.producao[idx] = {
+              ...this.producao[idx],
+              ...dispositivo,
+              progresso:
+                dispositivo.producaoAtual ||
+                0,
+              funcionario:
+                dispositivo
+                  .funcionarioLogado
+                  ?.nome || '-',
+              meta:
+                dispositivo.artigo
+                  ?.quantidade || 0
+            };
+          }
+
+          if (dispositivo.artigo?._id) {
+            const artigoIndex =
+              this.artigos.findIndex(
+                (a) =>
+                  a._id ===
+                  dispositivo.artigo._id
+              );
+
+            if (artigoIndex >= 0) {
+              this.artigos[artigoIndex] = {
+                ...this.artigos[artigoIndex],
+                quantidadeAtual:
+                  dispositivo.artigo
+                    .quantidadeAtual || 0,
+                status:
+                  dispositivo.artigo.status ||
+                  this.artigos[artigoIndex]
+                    .status
+              };
+            }
+          }
+
+          this.calcularEstatisticas();
+          this.aplicarFiltros();
+        });
+
+    if (prodSub) {
+      this.subscriptions.push(prodSub);
+    }
+  }
+
+  aplicarFiltros(): void {
+    const termo =
+      this.busca.trim().toLowerCase();
+
+    this.producaoFiltrada =
+      this.producao.filter(
+        (item: any) => {
+          const statusOk =
+            this.filtroStatus === 'todos' ||
+            item.status ===
+              this.filtroStatus;
+
+          const texto =
+            [
+              item.nome,
+              item.deviceToken,
+              item.funcionario,
+              item.artigo?.nome,
+              item.artigo?.codigo
+            ]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase();
+
+          const buscaOk =
+            !termo ||
+            texto.includes(termo);
+
+          return statusOk && buscaOk;
+        }
+      );
+  }
+
+  calcularEstatisticas(): void {
+    this.totalProducaoHoje =
+      this.producao.reduce(
+        (soma, item) =>
+          soma +
+          (item.progresso || 0),
+        0
+      );
+
+    this.dispositivosAtivos =
+      this.producao.filter(
+        (item: any) =>
+          item.status === 'em_producao' ||
+          item.status === 'online'
+      ).length;
+
+    this.metaTotal =
+      this.producao.reduce(
+        (soma, item) =>
+          soma +
+          (item.meta || 0),
+        0
+      );
+
+    this.percentualMeta =
+      this.metaTotal > 0
+        ? Math.round(
+            (this.totalProducaoHoje /
+              this.metaTotal) *
+              100
+          )
+        : 0;
+  }
+
+  abrirModalArtigo(): void {
     this.artigoEditando = null;
-    this.novoArtigo = this.criarArtigoPadrao();
+    this.novoArtigo =
+      this.criarArtigoPadrao();
+    this.modalArtigoAberto = true;
   }
-  fecharModalArtigo() {
+
+  fecharModalArtigo(): void {
     this.modalArtigoAberto = false;
     this.artigoEditando = null;
   }
-  cadastrarArtigo() {
-    const artigo = {
-      codigo: this.novoArtigo.codigo,
-      nome: this.novoArtigo.nome,
-      operacao: this.novoArtigo.operacao,
-      cliente: this.novoArtigo.cliente,
-      dataInclusao: this.novoArtigo.dataInclusao,
-      valor: Number(this.novoArtigo.valor ?? 0),
-      quantidade: Number(this.novoArtigo.quantidade ?? 0),
-      status: this.artigoEditando?.status || this.novoArtigo.status || 'pendente'
-    };
-    const requisicao = this.artigoEditando?._id
-      ? this.artigosService.atualizarArtigo(this.artigoEditando._id, artigo)
-      : this.artigosService.cadastrarArtigo(artigo);
 
-    requisicao.subscribe({
-      next: (artigoSalvo: Artigo) => {
-        this.fecharModalArtigo();
-        this.carregarArtigos();
-        this.novoArtigo = this.criarArtigoPadrao();
-        
-        // Se for novo artigo (não está editando), perguntar se deseja colocar em produção
-        if (!this.artigoEditando) {
-          const colocarEmProducao = window.confirm(
-            `Artigo "${artigoSalvo.nome}" cadastrado com sucesso!\n\nDeseja colocar este artigo em produção agora?`
-          );
-          
-          if (colocarEmProducao && artigoSalvo._id) {
-            this.iniciarProducaoArtigo(artigoSalvo);
-          }
-        }
-        
-        this.artigoEditando = null;
-      },
-      error: (err: any) => {
-        alert('Erro ao salvar artigo!');
-        console.error(err);
-      }
-    });
-  }
-  
-  iniciarProducaoArtigo(artigo: Artigo) {
-    if (!artigo._id) return;
-    
-    // Atualiza o status do artigo para "em_producao"
-    this.artigosService.atualizarArtigo(artigo._id, { status: 'em_producao' }).subscribe({
-      next: () => {
-        this.carregarArtigos();
-        alert(`Artigo "${artigo.nome}" agora está disponível para produção!`);
-      },
-      error: (err: any) => {
-        console.error('Erro ao iniciar produção:', err);
-        alert('Erro ao colocar artigo em produção!');
-      }
-    });
-  }
-  
-  pausarProducaoArtigo(artigo: Artigo) {
-    if (!artigo._id) return;
-    
-    const confirmar = window.confirm(`Deseja pausar a produção do artigo "${artigo.nome}"?\n\nOs funcionários não poderão mais selecionar este artigo.`);
-    if (!confirmar) return;
-    
-    // Atualiza o status do artigo para "pausado"
-    this.artigosService.atualizarArtigo(artigo._id, { status: 'pausado' }).subscribe({
-      next: () => {
-        this.carregarArtigos();
-        alert(`Produção do artigo "${artigo.nome}" foi pausada.`);
-      },
-      error: (err: any) => {
-        console.error('Erro ao pausar produção:', err);
-        alert('Erro ao pausar produção do artigo!');
-      }
-    });
-  }
-  
-  reabrirProducaoArtigo(artigo: Artigo) {
-    // Abrir modal de edição com novo artigo baseado no finalizado
-    this.artigoEditando = null; // Não é edição, é novo artigo
-    this.novoArtigo = {
-      codigo: artigo.codigo + '-R', // Adiciona sufixo -R (Reaberto)
-      nome: artigo.nome,
-      operacao: artigo.operacao,
-      cliente: artigo.cliente,
-      dataInclusao: new Date().toISOString().split('T')[0], // Data de hoje
-      valor: artigo.valor ?? null,
-      quantidade: artigo.quantidade ?? null,
-      status: 'em_producao' // Novo artigo já começa em produção
-    };
-    this.modalArtigoAberto = true;
-  }
-
-  private criarArtigoPadrao(): ArtigoForm {
-    const hoje = new Date().toISOString().split('T')[0];
-    return {
-      codigo: '',
-      nome: '',
-      operacao: '',
-      cliente: '',
-      dataInclusao: hoje,
-      valor: null,
-      quantidade: null,
-      status: 'pendente'
-    };
-  }
-
-  editarArtigo(artigo: Artigo) {
+  editarArtigo(artigo: Artigo): void {
     this.artigoEditando = artigo;
+
     this.novoArtigo = {
       codigo: artigo.codigo,
       nome: artigo.nome,
       operacao: artigo.operacao,
       cliente: artigo.cliente,
-      dataInclusao: artigo.dataInclusao?.substring(0, 10) || new Date().toISOString().split('T')[0],
-      valor: artigo.valor ?? null,
-      quantidade: artigo.quantidade ?? null,
-      status: artigo.status || 'pendente'
+      dataInclusao:
+        artigo.dataInclusao
+          ?.substring(0, 10) ||
+        new Date()
+          .toISOString()
+          .substring(0, 10),
+      valor: artigo.valor,
+      quantidade: artigo.quantidade,
+      status:
+        artigo.status ||
+        'pendente',
+      rfidEnabled:
+        artigo.rfidEnabled === true
     };
+
     this.modalArtigoAberto = true;
   }
 
-  excluirArtigo(artigo: Artigo) {
-    if (!artigo._id) {
-      return;
-    }
-    const confirmar = window.confirm(`Deseja realmente remover o artigo "${artigo.nome}"?`);
-    if (!confirmar) {
-      return;
-    }
-    this.artigosService.excluirArtigo(artigo._id).subscribe({
-      next: () => this.carregarArtigos(),
-      error: (err: any) => {
-        alert('Erro ao excluir artigo!');
+  cadastrarArtigo(): void {
+    const editando =
+      !!this.artigoEditando?._id;
+
+    const payload: Partial<Artigo> = {
+      codigo:
+        this.novoArtigo.codigo.trim(),
+      nome:
+        this.novoArtigo.nome.trim(),
+      operacao:
+        this.novoArtigo.operacao.trim(),
+      cliente:
+        this.novoArtigo.cliente.trim(),
+      dataInclusao:
+        this.novoArtigo.dataInclusao,
+      valor:
+        Number(
+          this.novoArtigo.valor || 0
+        ),
+      quantidade:
+        Number(
+          this.novoArtigo.quantidade || 0
+        ),
+      status:
+        this.artigoEditando?.status ||
+        this.novoArtigo.status ||
+        'pendente',
+      rfidEnabled:
+        this.novoArtigo.rfidEnabled === true
+    };
+
+    const request =
+      editando &&
+      this.artigoEditando?._id
+        ? this.artigosService
+            .atualizarArtigo(
+              this.artigoEditando._id,
+              payload
+            )
+        : this.artigosService
+            .cadastrarArtigo(payload);
+
+    request.subscribe({
+      next: (artigoSalvo) => {
+        const novoCadastro = !editando;
+        const abrirRFID =
+          novoCadastro &&
+          artigoSalvo.rfidEnabled === true;
+
+        this.fecharModalArtigo();
+        this.novoArtigo =
+          this.criarArtigoPadrao();
+        this.carregarArtigos();
+
+        if (abrirRFID) {
+          this.abrirModalRFID(
+            artigoSalvo
+          );
+          return;
+        }
+
+        if (novoCadastro) {
+          const iniciar =
+            window.confirm(
+              `Artigo "${artigoSalvo.nome}" cadastrado com sucesso!\n\n` +
+              `Deseja colocar este artigo em produção agora?`
+            );
+
+          if (iniciar) {
+            this.iniciarProducaoArtigo(
+              artigoSalvo
+            );
+          }
+        }
+      },
+      error: (err) => {
         console.error(err);
+
+        alert(
+          err?.error?.message ||
+          'Erro ao salvar artigo.'
+        );
       }
     });
   }
 
-  gerarPdfArtigo(artigo: Artigo) {
-    const doc = new jsPDF();
-    
-    // Título
-    doc.setFontSize(20);
-    doc.setTextColor(13, 110, 253);
-    doc.text('Informações do Artigo', 14, 22);
-    
-    // Linha separadora
-    doc.setDrawColor(13, 110, 253);
-    doc.setLineWidth(0.5);
-    doc.line(14, 28, 196, 28);
-    
-    let yPos = 40;
-    
-    // Informações gerais
-    doc.setFontSize(14);
-    doc.setTextColor(50, 50, 50);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Dados Gerais', 14, yPos);
-    
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(80, 80, 80);
-    yPos += 10;
-    
-    const dados = [
-      ['Código:', artigo.codigo],
-      ['Nome:', artigo.nome],
-      ['Operação:', artigo.operacao],
-      ['Cliente:', artigo.cliente],
-      ['Data de Inclusão:', artigo.dataInclusao ? new Date(artigo.dataInclusao).toLocaleDateString('pt-BR') : '-'],
-      ['Status:', this.formatarStatus(artigo.status)],
-    ];
-    
-    dados.forEach(([label, value]) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(label, 14, yPos);
-      doc.setFont('helvetica', 'normal');
-      doc.text(String(value), 60, yPos);
-      yPos += 8;
-    });
-    
-    // Informações de produção
-    yPos += 5;
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(50, 50, 50);
-    doc.text('Produção', 14, yPos);
-    
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(80, 80, 80);
-    yPos += 10;
-    
-    const quantidadeAtual = artigo.quantidadeAtual || 0;
-    const quantidade = artigo.quantidade || 0;
-    const percentual = quantidade > 0 ? Math.round((quantidadeAtual / quantidade) * 100) : 0;
-    
-    const producao = [
-      ['Quantidade Meta:', String(quantidade)],
-      ['Quantidade Produzida:', String(quantidadeAtual)],
-      ['Percentual Concluído:', `${percentual}%`],
-      ['Quantidade Restante:', String(Math.max(0, quantidade - quantidadeAtual))],
-    ];
-    
-    producao.forEach(([label, value]) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(label, 14, yPos);
-      doc.setFont('helvetica', 'normal');
-      doc.text(value, 60, yPos);
-      yPos += 8;
-    });
-    
-    // Informações financeiras
-    yPos += 5;
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(50, 50, 50);
-    doc.text('Financeiro', 14, yPos);
-    
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(80, 80, 80);
-    yPos += 10;
-    
-    const valorUnitario = artigo.valor || 0;
-    const valorTotal = valorUnitario * quantidade;
-    const valorProduzido = valorUnitario * quantidadeAtual;
-    const valorPendente = valorTotal - valorProduzido;
-    
-    const financeiro = [
-      ['Valor Unitário:', `R$ ${valorUnitario.toFixed(2)}`],
-      ['Valor Total do Pedido:', `R$ ${valorTotal.toFixed(2)}`],
-      ['Valor Produzido:', `R$ ${valorProduzido.toFixed(2)}`],
-      ['Valor Pendente:', `R$ ${valorPendente.toFixed(2)}`],
-    ];
-    
-    financeiro.forEach(([label, value]) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(label, 14, yPos);
-      doc.setFont('helvetica', 'normal');
-      doc.text(value, 60, yPos);
-      yPos += 8;
-    });
-    
-    // Rodapé
-    const pageHeight = doc.internal.pageSize.height;
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text(
-      `Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
-      14,
-      pageHeight - 10
-    );
-    
-    // Salvar PDF
-    const nomeArquivo = `artigo-${artigo.codigo}-${new Date().toISOString().split('T')[0]}.pdf`;
-    doc.save(nomeArquivo);
+  excluirArtigo(artigo: Artigo): void {
+    if (!artigo._id) return;
+
+    const ok =
+      window.confirm(
+        `Excluir o artigo "${artigo.nome}"?`
+      );
+
+    if (!ok) return;
+
+    this.artigosService
+      .excluirArtigo(artigo._id)
+      .subscribe({
+        next: () =>
+          this.carregarArtigos(),
+        error: (err) => {
+          console.error(err);
+          alert(
+            err?.error?.message ||
+            'Erro ao excluir artigo.'
+          );
+        }
+      });
   }
 
-  abrirModalOperacao() {
-    this.novaOperacao = { nome: '', pecasPorHora: '', cortesPorPeca: '', descricao: '' };
-    this.operacaoEditando = null;
+  iniciarProducaoArtigo(
+    artigo: Artigo
+  ): void {
+    if (!artigo._id) return;
+
+    this.artigosService
+      .atualizarArtigo(
+        artigo._id,
+        { status: 'em_producao' }
+      )
+      .subscribe({
+        next: () =>
+          this.carregarArtigos(),
+        error: (err) => {
+          console.error(err);
+          alert(
+            'Erro ao iniciar produção.'
+          );
+        }
+      });
+  }
+
+  pausarArtigo(artigo: Artigo): void {
+    if (!artigo._id) return;
+
+    this.artigosService
+      .atualizarArtigo(
+        artigo._id,
+        { status: 'pausado' }
+      )
+      .subscribe({
+        next: () =>
+          this.carregarArtigos(),
+        error: (err) =>
+          console.error(err)
+      });
+  }
+
+  reabrirProducaoArtigo(
+    artigo: Artigo
+  ): void {
+    this.iniciarProducaoArtigo(
+      artigo
+    );
+  }
+
+  abrirModalRFID(
+    artigo: Artigo
+  ): void {
+    if (!artigo._id) return;
+
+    this.artigoRFIDSelecionado =
+      artigo;
+
+    this.modalRFIDAberto = true;
+
+    this.carregarStatusRFID(true);
+  }
+
+  fecharModalRFID(): void {
+    this.modalRFIDAberto = false;
+    this.artigoRFIDSelecionado = null;
+    this.rfidEtiquetasCadastradas = 0;
+    this.rfidEtiquetasRevisadas = 0;
+    this.rfidQuantidade = 0;
+    this.rfidScanStatus =
+      'nao_aplicavel';
+
+    this.carregarArtigos();
+  }
+
+  carregarStatusRFID(
+    mostrarErro = true
+  ): void {
+    const id =
+      this.artigoRFIDSelecionado
+        ?._id;
+
+    if (!id) return;
+
+    this.rfidCarregando = true;
+
+    this.artigosService
+      .obterStatusRFID(id)
+      .subscribe({
+        next: (status) => {
+          this.rfidCarregando = false;
+
+          this.rfidEtiquetasCadastradas =
+            status.etiquetasCadastradas ||
+            0;
+
+          this.rfidEtiquetasRevisadas =
+            status.etiquetasRevisadas ||
+            0;
+
+          this.rfidQuantidade =
+            status.quantidade || 0;
+
+          this.rfidScanStatus =
+            status.rfidScanStatus ||
+            'aguardando';
+        },
+        error: (err) => {
+          this.rfidCarregando = false;
+          console.error(err);
+
+          if (mostrarErro) {
+            alert(
+              err?.error?.message ||
+              'Erro ao carregar dados RFID.'
+            );
+          }
+        }
+      });
+  }
+
+  iniciarEscaneamentoRFID(): void {
+    const id =
+      this.artigoRFIDSelecionado
+        ?._id;
+
+    if (!id) return;
+
+    let preservar = false;
+
+    if (
+      this.rfidEtiquetasCadastradas >
+      0
+    ) {
+      preservar =
+        window.confirm(
+          `Já existem ${this.rfidEtiquetasCadastradas} etiqueta(s).\n\n` +
+          `OK = continuar de onde parou.\n` +
+          `Cancelar = apagar as etiquetas e iniciar novamente.`
+        );
+    }
+
+    this.artigosService
+      .iniciarLeituraRFID(
+        id,
+        preservar
+      )
+      .subscribe({
+        next: () => {
+          this.carregarStatusRFID(
+            false
+          );
+
+          alert(
+            'Leitura RFID iniciada.\n\n' +
+            'O dispositivo de cadastro de etiquetas poderá agora enviar os EPCs.'
+          );
+        },
+        error: (err) => {
+          console.error(err);
+
+          alert(
+            err?.error?.message ||
+            'Erro ao iniciar leitura RFID.'
+          );
+        }
+      });
+  }
+
+  finalizarEscaneamentoRFID(): void {
+    const id =
+      this.artigoRFIDSelecionado
+        ?._id;
+
+    if (!id) return;
+
+    this.artigosService
+      .finalizarLeituraRFID(id)
+      .subscribe({
+        next: () => {
+          this.carregarStatusRFID(
+            false
+          );
+          this.carregarArtigos();
+
+          alert(
+            'Cadastro das etiquetas RFID concluído.'
+          );
+        },
+        error: (err) => {
+          console.error(err);
+
+          alert(
+            err?.error?.message ||
+            'Não foi possível concluir o cadastro RFID.'
+          );
+
+          this.carregarStatusRFID(
+            false
+          );
+        }
+      });
+  }
+
+  get percentualRFID(): number {
+    if (!this.rfidQuantidade) {
+      return 0;
+    }
+
+    return Math.min(
+      100,
+      Math.round(
+        (
+          this.rfidEtiquetasCadastradas /
+          this.rfidQuantidade
+        ) *
+          100
+      )
+    );
+  }
+
+  get percentualRevisaoRFID(): number {
+    if (!this.rfidQuantidade) {
+      return 0;
+    }
+
+    return Math.min(
+      100,
+      Math.round(
+        (
+          this.rfidEtiquetasRevisadas /
+          this.rfidQuantidade
+        ) *
+          100
+      )
+    );
+  }
+
+  formatarStatusRFID(
+    status?: RFIDScanStatus
+  ): string {
+    const mapa: Record<
+      RFIDScanStatus,
+      string
+    > = {
+      nao_aplicavel: 'Não aplicável',
+      aguardando:
+        'Aguardando etiquetas',
+      em_leitura:
+        'Escaneando etiquetas',
+      concluido: 'Pronto para revisão'
+    };
+
+    return mapa[
+      status || 'nao_aplicavel'
+    ];
+  }
+
+  abrirModalOperacao(): void {
+    this.novaOperacao = {
+      nome: '',
+      pecasPorHora: 1,
+      cortesPorPeca: 0,
+      descricao: ''
+    };
     this.modalOperacaoAberto = true;
   }
 
-  fecharModalOperacao() {
+  fecharModalOperacao(): void {
     this.modalOperacaoAberto = false;
   }
 
-  cadastrarOperacao() {
-    const op = {
-      nome: this.novaOperacao.nome,
-      pecasPorHora: Number(this.novaOperacao.pecasPorHora),
-      cortesPorPeca: Number(this.novaOperacao.cortesPorPeca),
-      descricao: this.novaOperacao.descricao
-    };
-    this.operacoesService.cadastrarOperacao(op).subscribe({
-      next: () => {
-        this.fecharModalOperacao();
-        this.carregarOperacoes();
-        this.novaOperacao = { nome: '', pecasPorHora: '', cortesPorPeca: '', descricao: '' };
-      },
-      error: (err: any) => {
-        alert('Erro ao cadastrar operação!');
-        console.error(err);
-      }
-    });
+  cadastrarOperacao(): void {
+    this.operacoesService
+      .cadastrarOperacao(
+        this.novaOperacao
+      )
+      .subscribe({
+        next: () => {
+          this.fecharModalOperacao();
+          this.carregarOperacoes();
+        },
+        error: (err) => {
+          console.error(err);
+          alert(
+            'Erro ao cadastrar operação.'
+          );
+        }
+      });
   }
 
-  abrirModalCliente() {
-    this.novoCliente = { nome: '', contato: '' };
+  abrirModalCliente(): void {
+    this.novoCliente = {
+      nome: '',
+      contato: ''
+    };
     this.modalClienteAberto = true;
   }
 
-  fecharModalCliente() {
+  fecharModalCliente(): void {
     this.modalClienteAberto = false;
   }
 
-  cadastrarCliente() {
-    this.clientesService.cadastrarCliente({
-      nome: this.novoCliente.nome,
-      contato: this.novoCliente.contato
-    }).subscribe({
-      next: () => {
-        this.fecharModalCliente();
-        this.carregarClientes();
-        this.novoCliente = { nome: '', contato: '' };
-      },
-      error: (err: any) => {
-        alert('Erro ao cadastrar cliente!');
-        console.error(err);
-      }
-    });
-  }
-
-  private obterUsuarioDoDispositivo(dispositivo: any): string | null {
-    if (!dispositivo) return null;
-    if (typeof dispositivo.usuario === 'string') {
-      return dispositivo.usuario;
-    }
-    if (dispositivo.usuario && typeof dispositivo.usuario === 'object') {
-      const id = dispositivo.usuario._id || dispositivo.usuario.id;
-      if (typeof id === 'string') {
-        return id;
-      }
-      if (id?.toString) {
-        return id.toString();
-      }
-    }
-    return null;
-  }
-
-  private isDispositivoDoUsuario(dispositivo: any): boolean {
-    if (!this.userId) return false;
-    const ownerId = this.obterUsuarioDoDispositivo(dispositivo);
-    return ownerId === this.userId;
-  }
-
-  private deveProcessarDispositivo(dispositivo: any): boolean {
-    return !!dispositivo && this.isDispositivoDoUsuario(dispositivo);
-  }
-
-  carregarDispositivos() {
-    this.dispositivosService.listarDispositivos().subscribe((data: Dispositivo[]) => {
-      const dispositivosUsuario = data.filter(d => this.isDispositivoDoUsuario(d));
-      this.producao = dispositivosUsuario.map((d: Dispositivo) => ({
-        ...d,
-        funcionario: d.funcionarioLogado?.nome || '-',
-        progresso: d.producaoAtual || 0,
-        meta: d.metaDiaria || 0,
-      }));
-      this.calcularEstatisticas();
-      this.aplicarFiltros();
-    });
-  }
-
-  configurarSocketListeners() {
-    const deviceStatusSub = this.socketService.onDeviceStatusUpdate().subscribe((updated: any) => {
-      if (!updated || !updated._id) return;
-      if (!this.deveProcessarDispositivo(updated)) return;
-      const idx = this.producao.findIndex(p => p._id === updated._id);
-      if (idx !== -1) {
-        this.producao[idx] = {
-          ...this.producao[idx],
-          progresso: updated.producaoAtual || 0,
-          funcionario: updated.funcionarioLogado?.nome || '-',
-          status: updated.status || this.producao[idx].status,
-        };
-        this.calcularEstatisticas();
-        this.aplicarFiltros();
-      }
-    });
-    this.subscriptions.push(deviceStatusSub);
-    
-    const productionUpdateSub = this.socketService.onProductionUpdate?.().subscribe?.((payload: any) => {
-      if (!payload?.dispositivo?._id) return;
-      if (!this.deveProcessarDispositivo(payload.dispositivo)) return;
-      
-      // Atualizar dispositivo
-      const idx = this.producao.findIndex(p => p._id === payload.dispositivo._id);
-      if (idx !== -1) {
-        this.producao[idx] = {
-          ...this.producao[idx],
-          progresso: payload.dispositivo.producaoAtual || 0,
-          funcionario: payload.dispositivo.funcionarioLogado?.nome || '-',
-        };
-        this.calcularEstatisticas();
-        this.aplicarFiltros();
-      }
-      
-      // Atualizar artigo em tempo real
-      if (payload.dispositivo?.artigo?._id) {
-        const artigoId = payload.dispositivo.artigo._id;
-        const artigoIdx = this.artigos.findIndex(a => a._id === artigoId);
-        
-        if (artigoIdx !== -1) {
-          // Atualizar quantidadeAtual do artigo
-          this.artigos[artigoIdx] = {
-            ...this.artigos[artigoIdx],
-            quantidadeAtual: payload.dispositivo.artigo.quantidadeAtual || 0,
-            status: payload.dispositivo.artigo.status || this.artigos[artigoIdx].status
-          };
-          
-          console.log(`🔄 Artigo ${this.artigos[artigoIdx].nome} atualizado: ${this.artigos[artigoIdx].quantidadeAtual}/${this.artigos[artigoIdx].quantidade}`);
+  cadastrarCliente(): void {
+    this.clientesService
+      .cadastrarCliente(
+        this.novoCliente
+      )
+      .subscribe({
+        next: () => {
+          this.fecharModalCliente();
+          this.carregarClientes();
+        },
+        error: (err) => {
+          console.error(err);
+          alert(
+            'Erro ao cadastrar cliente.'
+          );
         }
+      });
+  }
+
+  carregarXmlNota(
+    event: Event
+  ): void {
+    const input =
+      event.target as HTMLInputElement;
+
+    const file =
+      input.files?.[0];
+
+    if (!file) return;
+
+    const reader =
+      new FileReader();
+
+    reader.onload = () => {
+      try {
+        const xml =
+          String(reader.result || '');
+
+        const doc =
+          new DOMParser()
+            .parseFromString(
+              xml,
+              'application/xml'
+            );
+
+        const codigo =
+          doc.querySelector('prod > cProd')
+            ?.textContent
+            ?.trim();
+
+        const nome =
+          doc.querySelector('prod > xProd')
+            ?.textContent
+            ?.trim();
+
+        const quantidade =
+          doc.querySelector('prod > qCom')
+            ?.textContent
+            ?.trim();
+
+        const valor =
+          doc.querySelector('prod > vUnCom')
+            ?.textContent
+            ?.trim();
+
+        const cliente =
+          doc.querySelector('dest > xNome')
+            ?.textContent
+            ?.trim();
+
+        if (codigo) {
+          this.novoArtigo.codigo =
+            codigo;
+        }
+
+        if (nome) {
+          this.novoArtigo.nome =
+            nome;
+        }
+
+        if (quantidade) {
+          this.novoArtigo.quantidade =
+            Number(quantidade);
+        }
+
+        if (valor) {
+          this.novoArtigo.valor =
+            Number(valor);
+        }
+
+        if (cliente) {
+          this.novoArtigo.cliente =
+            cliente;
+        }
+      } catch (err) {
+        console.error(err);
+
+        alert(
+          'Erro ao processar XML.'
+        );
       }
-    });
-    if (productionUpdateSub) {
-      this.subscriptions.push(productionUpdateSub);
-    }
-  }
-  
-  ngOnDestroy() {
-    // Limpar todas as subscriptions
-    this.subscriptions.forEach(sub => sub.unsubscribe());
-  }
-
-  calcularEstatisticas() {
-    this.totalProducaoHoje = this.producao.reduce((acc, item) => acc + (item.progresso || 0), 0);
-    this.dispositivosAtivos = this.producao.filter(item => item.status === 'em_producao').length;
-    this.metaTotal = this.producao.reduce((acc, item) => acc + (item.meta || 0), 0);
-    this.percentualMeta = this.metaTotal > 0 ? Math.round((this.totalProducaoHoje / this.metaTotal) * 100) : 0;
-  }
-
-  aplicarFiltros() {
-    let resultado = [...this.producao];
-    
-    // Filtro por status
-    if (this.filtroStatus !== 'todos') {
-      resultado = resultado.filter(item => item.status === this.filtroStatus);
-    }
-    
-    // Filtro por busca
-    if (this.busca.trim()) {
-      const buscaLower = this.busca.toLowerCase();
-      resultado = resultado.filter(item => 
-        item.nome?.toLowerCase().includes(buscaLower) ||
-        item.funcionario?.toLowerCase().includes(buscaLower)
-      );
-    }
-    
-    this.producaoFiltrada = resultado;
-    this.aplicarOrdenacao();
-  }
-
-  aplicarOrdenacao() {
-    switch (this.ordenacao) {
-      case 'nome':
-        this.producaoFiltrada.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
-        break;
-      case 'producao':
-        this.producaoFiltrada.sort((a, b) => (b.progresso || 0) - (a.progresso || 0));
-        break;
-      case 'progresso':
-        this.producaoFiltrada.sort((a, b) => {
-          const percA = this.calcularPercentual(a.progresso, a.meta);
-          const percB = this.calcularPercentual(b.progresso, b.meta);
-          return percB - percA;
-        });
-        break;
-      case 'funcionario':
-        this.producaoFiltrada.sort((a, b) => (a.funcionario || '').localeCompare(b.funcionario || ''));
-        break;
-    }
-  }
-
-  obterClasseStatus(status?: string): string {
-    switch (status) {
-      case 'em_producao':
-        return 'bg-info text-dark';
-      case 'pausado':
-        return 'bg-warning text-dark';
-      case 'finalizado':
-        return 'bg-success';
-      default:
-        return 'bg-secondary';
-    }
-  }
-
-  formatarStatus(status?: string): string {
-    const mapa: Record<string, string> = {
-      pendente: 'Pendente',
-      em_producao: 'Em produção',
-      pausado: 'Pausado',
-      finalizado: 'Finalizado'
     };
-    return mapa[status || 'pendente'] || 'Pendente';
+
+    reader.readAsText(file);
   }
 
-  calcularPercentual(progresso: number, meta: number): number {
-    if (!meta || meta === 0) return 0;
-    return Math.min(Math.round((progresso / meta) * 100), 100);
-  }
-  
-  calcularPercentualArtigo(artigo: Artigo): number {
-    const atual = artigo.quantidadeAtual || 0;
-    const total = artigo.quantidade || 0;
-    if (total === 0) return 0;
-    return Math.min(Math.round((atual / total) * 100), 100);
-  }
-  
-  getProgressBarClass(percentual: number): string {
-    if (percentual === 0) return 'bg-secondary';
-    if (percentual < 30) return 'bg-danger';
-    if (percentual < 70) return 'bg-warning';
-    if (percentual < 100) return 'bg-info';
-    return 'bg-success';
+  private criarArtigoPadrao():
+    ArtigoForm {
+    return {
+      codigo: '',
+      nome: '',
+      operacao: '',
+      cliente: '',
+      dataInclusao:
+        new Date()
+          .toISOString()
+          .substring(0, 10),
+      valor: null,
+      quantidade: null,
+      status: 'pendente',
+      rfidEnabled: false
+    };
   }
 
-  formatarDataHora(data: string | Date | undefined): string {
-    if (!data || data === '-') return '-';
-    const dt = new Date(data);
-    if (isNaN(dt.getTime())) return '-';
-    const dia = dt.getDate().toString().padStart(2, '0');
-    const mes = (dt.getMonth() + 1).toString().padStart(2, '0');
-    const ano = dt.getFullYear().toString().slice(-2);
-    const hora = dt.getHours().toString().padStart(2, '0');
-    const min = dt.getMinutes().toString().padStart(2, '0');
-    return `${dia}/${mes}/${ano} ${hora}:${min}`;
+  voltar(): void {
+    this.router.navigate(['/']);
   }
 }

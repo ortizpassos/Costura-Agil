@@ -1,21 +1,27 @@
 <div class="producao-layout">
   <app-sidebar></app-sidebar>
+
   <div class="producao-content">
+
     <div class="producao-header">
       <h2>Produção em Tempo Real</h2>
+
       <div class="header-stats">
         <div class="stat-card">
           <span class="stat-label">Total Produzido Hoje</span>
           <span class="stat-value">{{ totalProducaoHoje }}</span>
         </div>
+
         <div class="stat-card">
           <span class="stat-label">Dispositivos Ativos</span>
           <span class="stat-value">{{ dispositivosAtivos }}</span>
         </div>
+
         <div class="stat-card">
           <span class="stat-label">Meta do Dia</span>
           <span class="stat-value">{{ metaTotal }}</span>
         </div>
+
         <div class="stat-card">
           <span class="stat-label">% Atingido</span>
           <span class="stat-value">{{ percentualMeta }}%</span>
@@ -23,256 +29,894 @@
       </div>
     </div>
 
-    <!-- Lista de Operações cadastradas -->
     <div class="row mb-4">
       <div class="col-12">
+
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
           <div class="producao-actions d-flex flex-wrap gap-2">
-            <button class="btn btn-outline-primary btn-lg" (click)="abrirModalCliente()">
-              <i class="bi bi-people"></i> Novo Cliente
+
+            <button
+              class="btn btn-outline-primary btn-lg"
+              (click)="abrirModalCliente()">
+              <i class="bi bi-people"></i>
+              Novo Cliente
             </button>
-            <button class="btn btn-outline-primary btn-lg" (click)="abrirModalOperacao()">
-              <i class="bi bi-diagram-3"></i> Nova Operação
+
+            <button
+              class="btn btn-outline-primary btn-lg"
+              (click)="abrirModalOperacao()">
+              <i class="bi bi-diagram-3"></i>
+              Nova Operação
             </button>
-            <button class="btn btn-outline-primary btn-lg" (click)="abrirModalArtigo()">
-              <i class="bi bi-stack"></i> Novo Artigo
+
+            <button
+              class="btn btn-outline-primary btn-lg"
+              (click)="abrirModalArtigo()">
+              <i class="bi bi-stack"></i>
+              Novo Artigo
             </button>
+
           </div>
         </div>
+
         <div class="card shadow-sm border-0 producao-artigo-card">
           <div class="card-body p-0">
+
             <div class="table-responsive">
-            <table class="table table-bordered table-striped table-hover align-middle mb-0 rounded shadow-sm overflow-hidden w-100" style="background:#fff;">
-              <thead class="bg-gradient bg-primary text-white">
-                <tr>
-                  <th class="rounded-top-start">Código</th>
-                  <th>Nome</th>
-                  <th>Operação</th>
-                  <th>Cliente</th>
-                  <th>Data de Inclusão</th>
-                  <th>Status</th>
-                  <th>Valor (R$)</th>
-                  <th>Quantidade</th>
-                  <th>% Concluída</th>
-                  <th class="rounded-top-end text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngIf="artigos.length === 0">
-                  <td colspan="10" class="text-center text-muted">Nenhum artigo cadastrado</td>
-                </tr>
-                <tr *ngFor="let artigo of artigos">
-                  <td class="fw-semibold text-dark">{{ artigo.codigo }}</td>
-                  <td>{{ artigo.nome }}</td>
-                  <td>{{ artigo.operacao }}</td>
-                  <td>{{ artigo.cliente }}</td>
-                  <td>{{ artigo.dataInclusao | date:'shortDate' }}</td>
-                  <td>
-                    <span class="badge" [ngClass]="obterClasseStatus(artigo.status)">
-                      {{ formatarStatus(artigo.status) }}
-                    </span>
-                  </td>
-                  <td>{{ artigo.valor | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
-                  <td>{{ artigo.quantidadeAtual || 0 }} / {{ artigo.quantidade }}</td>
-                  <td>
-                    <div class="progress-wrapper">
-                      <div class="progress" style="height: 25px; position: relative;">
-                        <div 
-                          class="progress-bar" 
-                          [ngClass]="getProgressBarClass(calcularPercentualArtigo(artigo))"
-                          role="progressbar" 
-                          [style.width.%]="calcularPercentualArtigo(artigo)" 
-                          [attr.aria-valuenow]="calcularPercentualArtigo(artigo)" 
-                          aria-valuemin="0" 
-                          aria-valuemax="100">
-                        </div>
-                        <div class="progress-text">{{ calcularPercentualArtigo(artigo) }}%</div>
+              <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Artigo</th>
+                    <th>Cliente</th>
+                    <th>Operação</th>
+                    <th>Qtd.</th>
+                    <th>Produzido</th>
+                    <th>RFID</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+
+                  <tr *ngIf="artigos.length === 0">
+                    <td
+                      colspan="9"
+                      class="text-center py-4 text-muted">
+                      Nenhum artigo cadastrado.
+                    </td>
+                  </tr>
+
+                  <tr *ngFor="let artigo of artigos">
+
+                    <td>{{ artigo.codigo }}</td>
+
+                    <td>
+                      <strong>{{ artigo.nome }}</strong>
+                    </td>
+
+                    <td>{{ artigo.cliente }}</td>
+
+                    <td>{{ artigo.operacao }}</td>
+
+                    <td>{{ artigo.quantidade }}</td>
+
+                    <td>
+                      {{ artigo.quantidadeAtual || 0 }}
+                      /
+                      {{ artigo.quantidade }}
+                    </td>
+
+                    <td>
+                      <ng-container *ngIf="artigo.rfidEnabled; else semRfid">
+
+                        <span
+                          class="badge"
+                          [ngClass]="{
+                            'bg-success':
+                              artigo.rfidScanStatus === 'concluido',
+                            'bg-warning text-dark':
+                              artigo.rfidScanStatus === 'aguardando' ||
+                              artigo.rfidScanStatus === 'em_leitura'
+                          }">
+                          RFID
+                          {{ artigo.rfidTagsCount || 0 }}
+                          /
+                          {{ artigo.quantidade }}
+                        </span>
+
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-primary ms-2"
+                          (click)="abrirModalRFID(artigo)">
+                          <i class="bi bi-upc-scan"></i>
+                          Etiquetas
+                        </button>
+
+                      </ng-container>
+
+                      <ng-template #semRfid>
+                        <span class="badge bg-secondary">
+                          Sem RFID
+                        </span>
+                      </ng-template>
+                    </td>
+
+                    <td>
+                      <span class="badge bg-light text-dark">
+                        {{ artigo.status || 'pendente' }}
+                      </span>
+                    </td>
+
+                    <td>
+                      <div class="d-flex flex-wrap gap-1">
+
+                        <button
+                          *ngIf="artigo.status !== 'em_producao'"
+                          class="btn btn-sm btn-success"
+                          (click)="iniciarProducaoArtigo(artigo)">
+                          Produção
+                        </button>
+
+                        <button
+                          *ngIf="artigo.status === 'em_producao'"
+                          class="btn btn-sm btn-warning"
+                          (click)="pausarArtigo(artigo)">
+                          Pausar
+                        </button>
+
+                        <button
+                          class="btn btn-sm btn-outline-primary"
+                          (click)="editarArtigo(artigo)">
+                          Editar
+                        </button>
+
+                        <button
+                          class="btn btn-sm btn-outline-danger"
+                          (click)="excluirArtigo(artigo)">
+                          Excluir
+                        </button>
+
+                      </div>
+                    </td>
+
+                  </tr>
+
+                </tbody>
+
+              </table>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- DISPOSITIVOS / PRODUÇÃO -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header">
+        <strong>Dispositivos</strong>
+      </div>
+
+      <div class="card-body">
+
+        <div class="row g-2 mb-3">
+
+          <div class="col-md-6">
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Buscar..."
+              [(ngModel)]="busca"
+              (ngModelChange)="aplicarFiltros()" />
+          </div>
+
+          <div class="col-md-3">
+            <select
+              class="form-select"
+              [(ngModel)]="filtroStatus"
+              (ngModelChange)="aplicarFiltros()">
+              <option value="todos">Todos</option>
+              <option value="online">Online</option>
+              <option value="em_producao">Em produção</option>
+              <option value="offline">Offline</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+
+            <thead>
+              <tr>
+                <th>Dispositivo</th>
+                <th>Funcionário</th>
+                <th>Artigo</th>
+                <th>Produção</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              <tr *ngIf="producaoFiltrada.length === 0">
+                <td
+                  colspan="5"
+                  class="text-center text-muted">
+                  Nenhum dispositivo encontrado.
+                </td>
+              </tr>
+
+              <tr *ngFor="let item of producaoFiltrada">
+                <td>{{ item.deviceToken || item._id }}</td>
+                <td>{{ item.funcionario }}</td>
+                <td>{{ item.artigo?.nome || '-' }}</td>
+                <td>{{ item.progresso }} / {{ item.meta }}</td>
+                <td>{{ item.status }}</td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- MODAL ARTIGO -->
+    <div
+      *ngIf="modalArtigoAberto"
+      class="modal fade show d-block"
+      tabindex="-1"
+      style="background:rgba(0,0,0,.35);">
+
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h5 class="modal-title">
+              {{ artigoEditando ? 'Editar Artigo' : 'Cadastrar Artigo' }}
+            </h5>
+
+            <button
+              type="button"
+              class="btn-close"
+              (click)="fecharModalArtigo()">
+            </button>
+          </div>
+
+          <form
+            (ngSubmit)="cadastrarArtigo()"
+            #formArtigo="ngForm"
+            autocomplete="off">
+
+            <div class="modal-body">
+
+              <div class="d-flex justify-content-end mb-3">
+                <label class="btn btn-outline-secondary">
+                  <i class="bi bi-file-earmark-arrow-up"></i>
+                  Carregar XML Nota Fiscal
+
+                  <input
+                    type="file"
+                    accept=".xml"
+                    hidden
+                    (change)="carregarXmlNota($event)" />
+                </label>
+              </div>
+
+              <div class="row g-3">
+
+                <div class="col-md-6">
+                  <label class="form-label">Código</label>
+                  <input
+                    class="form-control"
+                    name="codigo"
+                    [(ngModel)]="novoArtigo.codigo"
+                    required />
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Nome</label>
+                  <input
+                    class="form-control"
+                    name="nome"
+                    [(ngModel)]="novoArtigo.nome"
+                    required />
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Cliente</label>
+
+                  <select
+                    class="form-select"
+                    name="cliente"
+                    [(ngModel)]="novoArtigo.cliente"
+                    required>
+
+                    <option value="">
+                      Selecione
+                    </option>
+
+                    <option
+                      *ngFor="let cliente of clientes"
+                      [value]="cliente.nome">
+                      {{ cliente.nome }}
+                    </option>
+
+                  </select>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Operação</label>
+
+                  <select
+                    class="form-select"
+                    name="operacao"
+                    [(ngModel)]="novoArtigo.operacao"
+                    required>
+
+                    <option value="">
+                      Selecione
+                    </option>
+
+                    <option
+                      *ngFor="let operacao of operacoes"
+                      [value]="operacao.nome">
+                      {{ operacao.nome }}
+                    </option>
+
+                  </select>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Data</label>
+
+                  <input
+                    type="date"
+                    class="form-control"
+                    name="dataInclusao"
+                    [(ngModel)]="novoArtigo.dataInclusao"
+                    required />
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Valor unitário</label>
+
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    class="form-control"
+                    name="valor"
+                    [(ngModel)]="novoArtigo.valor"
+                    required />
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Quantidade de peças</label>
+
+                  <input
+                    type="number"
+                    min="1"
+                    class="form-control"
+                    name="quantidade"
+                    [(ngModel)]="novoArtigo.quantidade"
+                    required />
+                </div>
+
+              </div>
+
+
+              <!-- NOVA OPÇÃO RFID -->
+              <div class="mt-4">
+
+                <label class="form-label fw-semibold">
+                  Identificação das peças
+                </label>
+
+                <div class="border rounded p-3">
+
+                  <div class="form-check mb-2">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      id="semRfid"
+                      name="rfidEnabled"
+                      [value]="false"
+                      [(ngModel)]="novoArtigo.rfidEnabled" />
+
+                    <label
+                      class="form-check-label"
+                      for="semRfid">
+                      Sem RFID
+                    </label>
+                  </div>
+
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      id="comRfid"
+                      name="rfidEnabled"
+                      [value]="true"
+                      [(ngModel)]="novoArtigo.rfidEnabled" />
+
+                    <label
+                      class="form-check-label"
+                      for="comRfid">
+                      Com RFID
+                    </label>
+                  </div>
+
+                  <div
+                    *ngIf="novoArtigo.rfidEnabled"
+                    class="alert alert-info mt-3 mb-0">
+
+                    <strong>Artigo com RFID</strong>
+
+                    <div class="small mt-1">
+                      Será necessária uma etiqueta RFID para cada peça.
+                      Após salvar o artigo, a tela de cadastro das
+                      etiquetas será aberta.
+                    </div>
+
+                    <div
+                      class="small mt-2"
+                      *ngIf="novoArtigo.quantidade">
+
+                      Quantidade esperada:
+                      <strong>
+                        {{ novoArtigo.quantidade }}
+                        etiquetas
+                      </strong>
+
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="fecharModalArtigo()">
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="formArtigo.invalid">
+                Salvar
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+      </div>
+    </div>
+
+
+    <!-- MODAL RFID -->
+    <div
+      *ngIf="modalRFIDAberto"
+      class="modal fade show d-block"
+      tabindex="-1"
+      style="background:rgba(0,0,0,.45);">
+
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+
+        <div class="modal-content">
+
+          <div class="modal-header">
+
+            <div>
+              <h5 class="modal-title">
+                Cadastro das Etiquetas RFID
+              </h5>
+
+              <small class="text-muted">
+                {{ artigoRFIDSelecionado?.codigo }}
+                -
+                {{ artigoRFIDSelecionado?.nome }}
+              </small>
+            </div>
+
+            <button
+              class="btn-close"
+              type="button"
+              (click)="fecharModalRFID()">
+            </button>
+
+          </div>
+
+          <div class="modal-body">
+
+            <div
+              *ngIf="rfidCarregando"
+              class="text-center py-4">
+              Carregando...
+            </div>
+
+            <ng-container *ngIf="!rfidCarregando">
+
+              <div class="row g-3 mb-4">
+
+                <div class="col-md-4">
+                  <div class="card h-100">
+                    <div class="card-body text-center">
+                      <div class="text-muted">
+                        Etiquetas cadastradas
+                      </div>
+
+                      <div class="fs-3 fw-bold">
+                        {{ rfidEtiquetasCadastradas }}
+                        /
+                        {{ rfidQuantidade }}
                       </div>
                     </div>
-                  </td>
-                  <td class="text-center">
-                    <div class="artigo-actions d-inline-flex gap-2">
-                      <button 
-                        *ngIf="artigo.status === 'pendente' || artigo.status === 'pausado'" 
-                        type="button" 
-                        class="btn btn-outline-success btn-acao" 
-                        (click)="iniciarProducaoArtigo(artigo)" 
-                        title="Colocar em produção">
-                        <i class="bi bi-play-circle"></i>
-                        <span>Iniciar</span>
-                      </button>
-                      <button 
-                        *ngIf="artigo.status === 'em_producao'" 
-                        type="button" 
-                        class="btn btn-outline-warning btn-acao" 
-                        (click)="pausarProducaoArtigo(artigo)" 
-                        title="Pausar produção">
-                        <i class="bi bi-pause-circle"></i>
-                        <span>Pausar</span>
-                      </button>
-                      <button 
-                        *ngIf="artigo.status === 'finalizado'" 
-                        type="button" 
-                        class="btn btn-outline-info btn-acao" 
-                        (click)="reabrirProducaoArtigo(artigo)" 
-                        title="Reabrir como novo artigo">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                        <span>Reabrir</span>
-                      </button>
-                      <button type="button" class="btn btn-outline-primary btn-acao" (click)="editarArtigo(artigo)" title="Editar artigo">
-                        <i class="bi bi-pencil"></i>
-                        <span>Editar</span>
-                      </button>
-                      <button type="button" class="btn btn-outline-danger btn-acao" (click)="excluirArtigo(artigo)" title="Excluir artigo">
-                        <i class="bi bi-trash"></i>
-                        <span>Excluir</span>
-                      </button>
-                      <button type="button" class="btn btn-outline-secondary btn-acao" (click)="gerarPdfArtigo(artigo)" title="Exportar PDF">
-                        <i class="bi bi-filetype-pdf"></i>
-                        <span>PDF</span>
-                      </button>
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="card h-100">
+                    <div class="card-body text-center">
+                      <div class="text-muted">
+                        Cadastro
+                      </div>
+
+                      <div class="fs-3 fw-bold">
+                        {{ percentualRFID }}%
+                      </div>
                     </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            </div>
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="card h-100">
+                    <div class="card-body text-center">
+                      <div class="text-muted">
+                        Status
+                      </div>
+
+                      <div class="fw-semibold mt-2">
+                        {{ formatarStatusRFID(rfidScanStatus) }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+
+              <div class="mb-2">
+                <div class="d-flex justify-content-between">
+                  <span>Cadastro das etiquetas</span>
+                  <span>{{ percentualRFID }}%</span>
+                </div>
+
+                <div class="progress" style="height:22px">
+                  <div
+                    class="progress-bar"
+                    [style.width.%]="percentualRFID">
+                  </div>
+                </div>
+              </div>
+
+
+              <div class="mb-4">
+                <div class="d-flex justify-content-between">
+                  <span>Peças já revisadas</span>
+
+                  <span>
+                    {{ rfidEtiquetasRevisadas }}
+                    /
+                    {{ rfidQuantidade }}
+                  </span>
+                </div>
+
+                <div class="progress" style="height:16px">
+                  <div
+                    class="progress-bar bg-success"
+                    [style.width.%]="percentualRevisaoRFID">
+                  </div>
+                </div>
+              </div>
+
+
+              <div class="d-flex flex-wrap gap-2 mb-4">
+
+                <button
+                  class="btn btn-primary"
+                  type="button"
+                  (click)="iniciarEscaneamentoRFID()">
+
+                  <i class="bi bi-upc-scan"></i>
+                  Escanear etiquetas
+
+                </button>
+
+                <button
+                  class="btn btn-success"
+                  type="button"
+                  [disabled]="rfidScanStatus !== 'em_leitura'"
+                  (click)="finalizarEscaneamentoRFID()">
+
+                  Concluir cadastro
+
+                </button>
+
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  (click)="carregarStatusRFID()">
+
+                  Atualizar
+
+                </button>
+
+              </div>
+
+
+              <div
+                *ngIf="rfidScanStatus === 'aguardando'"
+                class="alert alert-warning">
+
+                Este artigo ainda não possui todas as etiquetas RFID.
+                Clique em <strong>Escanear etiquetas</strong> para
+                iniciar ou continuar o cadastro.
+
+              </div>
+
+
+              <div
+                *ngIf="rfidScanStatus === 'em_leitura'"
+                class="alert alert-info">
+
+                <strong>Aguardando o dispositivo de cadastro RFID.</strong>
+
+                <div class="mt-2">
+                  Cada etiqueta lida será enviada para a API.
+                  O contador desta tela é atualizado automaticamente.
+                </div>
+
+              </div>
+
+
+              <div
+                *ngIf="rfidScanStatus === 'concluido'"
+                class="alert alert-success">
+
+                <strong>Cadastro RFID concluído.</strong>
+
+                <div class="mt-2">
+                  Existem exatamente
+                  {{ rfidQuantidade }}
+                  etiquetas para
+                  {{ rfidQuantidade }}
+                  peças. O artigo está pronto para aparecer
+                  no dispositivo de revisão RFID quando estiver
+                  em produção.
+                </div>
+
+              </div>
+
+            </ng-container>
+
           </div>
+
+          <div class="modal-footer">
+
+            <button
+              class="btn btn-secondary"
+              type="button"
+              (click)="fecharModalRFID()">
+              Fechar
+            </button>
+
+          </div>
+
         </div>
       </div>
     </div>
 
 
-    <!-- Modal Cadastro Artigo -->
-    <div *ngIf="modalArtigoAberto" class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.3);">
+    <!-- MODAL OPERAÇÃO -->
+    <div
+      *ngIf="modalOperacaoAberto"
+      class="modal fade show d-block"
+      tabindex="-1"
+      style="background:rgba(0,0,0,.3);">
+
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
+
           <div class="modal-header">
-            <h5 class="modal-title">{{ artigoEditando ? 'Editar Artigo' : 'Cadastrar Artigo' }}</h5>
-            <button type="button" class="btn-close" (click)="fecharModalArtigo()"></button>
+            <h5 class="modal-title">
+              Cadastrar Operação
+            </h5>
+
+            <button
+              type="button"
+              class="btn-close"
+              (click)="fecharModalOperacao()">
+            </button>
           </div>
-          <form (ngSubmit)="cadastrarArtigo()" #formArtigo="ngForm" autocomplete="off">
-            <div class="mb-3 d-flex justify-content-end">
-              <label for="xmlNotaInput" class="btn btn-outline-secondary mb-2 me-2">
-                <i class="bi bi-file-earmark-arrow-up"></i> Carregar XML Nota Fiscal
-                <input type="file" id="xmlNotaInput" accept=".xml" (change)="carregarXmlNota($event)" hidden />
-              </label>
-            </div>
+
+          <form
+            (ngSubmit)="cadastrarOperacao()"
+            #formOperacao="ngForm">
+
             <div class="modal-body">
+
               <div class="mb-3">
-                <label class="form-label">Código:</label>
-                <input type="text" name="codigo" [(ngModel)]="novoArtigo.codigo" required class="form-control" autocomplete="off" />
+                <label class="form-label">
+                  Nome da Operação
+                </label>
+
+                <input
+                  class="form-control"
+                  name="nome"
+                  [(ngModel)]="novaOperacao.nome"
+                  required />
               </div>
+
               <div class="mb-3">
-                <label class="form-label">Nome do Artigo:</label>
-                <input type="text" name="nome" [(ngModel)]="novoArtigo.nome" required class="form-control" autocomplete="off" />
+                <label class="form-label">
+                  Peças por Hora
+                </label>
+
+                <input
+                  type="number"
+                  min="1"
+                  class="form-control"
+                  name="pecasPorHora"
+                  [(ngModel)]="novaOperacao.pecasPorHora"
+                  required />
               </div>
+
               <div class="mb-3">
-                <label class="form-label">Operação:</label>
-                <div class="input-group">
-                  <input type="text" name="operacao" list="listaOperacoes" [(ngModel)]="novoArtigo.operacao" required class="form-control" autocomplete="off" />
-                  <button type="button" class="btn btn-outline-primary px-3" (click)="abrirModalOperacao()" title="Cadastrar nova operação">+</button>
-                </div>
-                <datalist id="listaOperacoes">
-                  <option *ngFor="let op of operacoes" [value]="op.nome"></option>
-                </datalist>
+                <label class="form-label">
+                  Cortes por Peça
+                </label>
+
+                <input
+                  type="number"
+                  min="0"
+                  class="form-control"
+                  name="cortesPorPeca"
+                  [(ngModel)]="novaOperacao.cortesPorPeca"
+                  required />
               </div>
+
               <div class="mb-3">
-                <label class="form-label">Cliente:</label>
-                <div class="input-group">
-                  <input type="text" name="cliente" list="listaClientes" [(ngModel)]="novoArtigo.cliente" required class="form-control" autocomplete="off" />
-                  <button type="button" class="btn btn-outline-primary px-3" (click)="abrirModalCliente()" title="Cadastrar novo cliente">+</button>
-                </div>
-                <datalist id="listaClientes">
-                  <option *ngFor="let cliente of clientes" [value]="cliente.nome"></option>
-                </datalist>
+                <label class="form-label">
+                  Descrição
+                </label>
+
+                <textarea
+                  class="form-control"
+                  name="descricao"
+                  rows="3"
+                  [(ngModel)]="novaOperacao.descricao">
+                </textarea>
               </div>
-              <div class="mb-3">
-                <label class="form-label">Data de Inclusão:</label>
-                <input type="date" name="dataInclusao" [(ngModel)]="novoArtigo.dataInclusao" required class="form-control" />
-              </div>
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Valor (R$):</label>
-                  <input type="number" step="0.01" min="0" name="valor" [(ngModel)]="novoArtigo.valor" placeholder="Digite o valor" required class="form-control" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Quantidade:</label>
-                  <input type="number" min="0" name="quantidade" [(ngModel)]="novoArtigo.quantidade" placeholder="Digite a quantidade" required class="form-control" />
-                </div>
-              </div>
+
             </div>
+
             <div class="modal-footer">
-              <button type="submit" class="btn btn-primary" [disabled]="formArtigo.invalid">Salvar</button>
-              <button type="button" (click)="fecharModalArtigo()" class="btn btn-secondary">Cancelar</button>
+
+              <button
+                class="btn btn-secondary"
+                type="button"
+                (click)="fecharModalOperacao()">
+                Cancelar
+              </button>
+
+              <button
+                class="btn btn-primary"
+                type="submit"
+                [disabled]="formOperacao.invalid">
+                Salvar
+              </button>
+
             </div>
+
           </form>
+
         </div>
       </div>
     </div>
 
-    <!-- Modal Cadastro Operação -->
-    <div *ngIf="modalOperacaoAberto" class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.3);">
+
+    <!-- MODAL CLIENTE -->
+    <div
+      *ngIf="modalClienteAberto"
+      class="modal fade show d-block"
+      tabindex="-1"
+      style="background:rgba(0,0,0,.3);">
+
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
+
           <div class="modal-header">
-            <h5 class="modal-title">Cadastrar Operação</h5>
-            <button type="button" class="btn-close" (click)="fecharModalOperacao()"></button>
+            <h5 class="modal-title">
+              Cadastrar Cliente
+            </h5>
+
+            <button
+              type="button"
+              class="btn-close"
+              (click)="fecharModalCliente()">
+            </button>
           </div>
-          <form (ngSubmit)="cadastrarOperacao()" #formOperacao="ngForm" autocomplete="off">
+
+          <form
+            (ngSubmit)="cadastrarCliente()"
+            #formCliente="ngForm">
+
             <div class="modal-body">
+
               <div class="mb-3">
-                <label class="form-label">Nome da Operação:</label>
-                <input type="text" name="nome" [(ngModel)]="novaOperacao.nome" required class="form-control" autocomplete="off" />
+                <label class="form-label">
+                  Nome do Cliente
+                </label>
+
+                <input
+                  class="form-control"
+                  name="nome"
+                  [(ngModel)]="novoCliente.nome"
+                  required />
               </div>
+
               <div class="mb-3">
-                <label class="form-label">Peças por Hora:</label>
-                <input type="number" name="pecasPorHora" [(ngModel)]="novaOperacao.pecasPorHora" required min="1" class="form-control" />
+                <label class="form-label">
+                  Contato
+                </label>
+
+                <input
+                  class="form-control"
+                  name="contato"
+                  [(ngModel)]="novoCliente.contato" />
               </div>
-              <div class="mb-3">
-                <label class="form-label">Cortes por Peça:</label>
-                <input type="number" name="cortesPorPeca" [(ngModel)]="novaOperacao.cortesPorPeca" required min="0" class="form-control" />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Descrição:</label>
-                <textarea name="descricao" [(ngModel)]="novaOperacao.descricao" class="form-control" rows="3"></textarea>
-              </div>
+
             </div>
+
             <div class="modal-footer">
-              <button type="submit" class="btn btn-primary" [disabled]="formOperacao.invalid">Salvar</button>
-              <button type="button" class="btn btn-secondary" (click)="fecharModalOperacao()">Cancelar</button>
+
+              <button
+                class="btn btn-secondary"
+                type="button"
+                (click)="fecharModalCliente()">
+                Cancelar
+              </button>
+
+              <button
+                class="btn btn-primary"
+                type="submit"
+                [disabled]="formCliente.invalid">
+                Salvar
+              </button>
+
             </div>
+
           </form>
+
         </div>
       </div>
     </div>
 
-    <!-- Modal Cadastro Cliente -->
-    <div *ngIf="modalClienteAberto" class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.3);">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Cadastrar Cliente</h5>
-            <button type="button" class="btn-close" (click)="fecharModalCliente()"></button>
-          </div>
-          <form (ngSubmit)="cadastrarCliente()" #formCliente="ngForm" autocomplete="off">
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Nome do Cliente:</label>
-                <input type="text" name="nome" [(ngModel)]="novoCliente.nome" required class="form-control" autocomplete="off" />
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Contato (opcional):</label>
-                <input type="text" name="contato" [(ngModel)]="novoCliente.contato" class="form-control" autocomplete="off" />
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="submit" class="btn btn-primary" [disabled]="formCliente.invalid">Salvar</button>
-              <button type="button" class="btn btn-secondary" (click)="fecharModalCliente()">Cancelar</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    
+  </div>
+</div>

@@ -1,13 +1,18 @@
 const express = require('express');
 const router = express.Router();
+
 const Artigo = require('../models/Artigo');
 const RFIDTag = require('../models/RFIDTag');
 const { autenticar } = require('./authRoutes');
 
 function normalizarEpc(v) {
-  return String(v || '').replace(/\s+/g, '').trim().toUpperCase();
+  return String(v || '')
+    .replace(/\s+/g, '')
+    .trim()
+    .toUpperCase();
 }
 
+// Status RFID do artigo
 router.get('/:id/rfid', autenticar, async (req, res) => {
   try {
     const artigo = await Artigo.findOne({
@@ -15,10 +20,33 @@ router.get('/:id/rfid', autenticar, async (req, res) => {
       criadoPor: req.usuario.id
     });
 
-    if (!artigo) return res.status(404).json({ message: 'Artigo não encontrado.' });
+    if (!artigo) {
+      return res.status(404).json({ message: 'Artigo não encontrado.' });
+    }
 
     const total = await RFIDTag.countDocuments({ artigo: artigo._id });
-    const revisadas = await RFIDTag.countDocuments({ artigo: artigo._id, revisada: true });
+    const revisadas = await RFIDTag.countDocuments({
+      artigo: artigo._id,
+      revisada: true
+    });
+
+    if (artigo.rfidTagsCount !== total) {
+      artigo.rfidTagsCount = total;
+
+      if (
+        artigo.rfidEnabled &&
+        total === artigo.quantidade
+      ) {
+        artigo.rfidScanStatus = 'concluido';
+      } else if (artigo.rfidEnabled) {
+        artigo.rfidScanStatus =
+          artigo.rfidScanStatus === 'em_leitura'
+            ? 'em_leitura'
+            : 'aguardando';
+      }
+
+      await artigo.save();
+    }
 
     res.json({
       artigoId: artigo._id,
@@ -36,6 +64,7 @@ router.get('/:id/rfid', autenticar, async (req, res) => {
   }
 });
 
+// Iniciar/continuar escaneamento
 router.post('/:id/rfid/start', autenticar, async (req, res) => {
   try {
     const artigo = await Artigo.findOne({
@@ -43,8 +72,15 @@ router.post('/:id/rfid/start', autenticar, async (req, res) => {
       criadoPor: req.usuario.id
     });
 
-    if (!artigo) return res.status(404).json({ message: 'Artigo não encontrado.' });
-    if (!artigo.rfidEnabled) return res.status(400).json({ message: 'Artigo cadastrado como Sem RFID.' });
+    if (!artigo) {
+      return res.status(404).json({ message: 'Artigo não encontrado.' });
+    }
+
+    if (!artigo.rfidEnabled) {
+      return res.status(400).json({
+        message: 'Artigo cadastrado como Sem RFID.'
+      });
+    }
 
     if (req.body.preservar !== true) {
       await RFIDTag.deleteMany({ artigo: artigo._id });
@@ -54,6 +90,7 @@ router.post('/:id/rfid/start', autenticar, async (req, res) => {
     artigo.rfidScanStatus = 'em_leitura';
     artigo.rfidScanStartedAt = new Date();
     artigo.rfidScanFinishedAt = null;
+
     await artigo.save();
 
     res.json({
@@ -67,21 +104,43 @@ router.post('/:id/rfid/start', autenticar, async (req, res) => {
   }
 });
 
-// Futuro dispositivo exclusivo de cadastro RFID usará esta rota.
-// Antes de produção definitiva, autentique esse dispositivo com token próprio.
+// Receber EPC do futuro dispositivo de cadastro RFID
 router.post('/:id/rfid/tag', async (req, res) => {
   try {
     const artigo = await Artigo.findById(req.params.id);
-    if (!artigo) return res.status(404).json({ success: false, message: 'Artigo não encontrado.' });
-    if (!artigo.rfidEnabled) return res.status(400).json({ success: false, message: 'Artigo sem RFID.' });
+
+    if (!artigo) {
+      return res.status(404).json({
+        success: false,
+        message: 'Artigo não encontrado.'
+      });
+    }
+
+    if (!artigo.rfidEnabled) {
+      return res.status(400).json({
+        success: false,
+        message: 'Artigo sem RFID.'
+      });
+    }
+
     if (artigo.rfidScanStatus !== 'em_leitura') {
-      return res.status(409).json({ success: false, message: 'Sessão RFID não está em leitura.' });
+      return res.status(409).json({
+        success: false,
+        message: 'Sessão RFID não está em leitura.'
+      });
     }
 
     const epc = normalizarEpc(req.body.epc);
-    if (!epc) return res.status(400).json({ success: false, message: 'EPC não informado.' });
+
+    if (!epc) {
+      return res.status(400).json({
+        success: false,
+        message: 'EPC não informado.'
+      });
+    }
 
     const existente = await RFIDTag.findOne({ epc });
+
     if (existente) {
       if (String(existente.artigo) === String(artigo._id)) {
         return res.json({
@@ -102,17 +161,28 @@ router.post('/:id/rfid/tag', async (req, res) => {
       });
     }
 
-    if (artigo.rfidTagsCount >= artigo.quantidade) {
+    const totalAtual = await RFIDTag.countDocuments({
+      artigo: artigo._id
+    });
+
+    if (totalAtual >= artigo.quantidade) {
       return res.status(409).json({
         success: false,
-        message: 'Quantidade de EPCs já atingiu a quantidade de peças do artigo.'
+        message:
+          'Quantidade de etiquetas já atingiu a quantidade de peças do artigo.'
       });
     }
 
-    await RFIDTag.create({ epc, artigo: artigo._id });
-    artigo.rfidTagsCount += 1;
+    await RFIDTag.create({
+      epc,
+      artigo: artigo._id
+    });
 
-    if (artigo.rfidTagsCount === artigo.quantidade) {
+    const total = totalAtual + 1;
+
+    artigo.rfidTagsCount = total;
+
+    if (total === artigo.quantidade) {
       artigo.rfidScanStatus = 'concluido';
       artigo.rfidScanFinishedAt = new Date();
     }
@@ -123,40 +193,27 @@ router.post('/:id/rfid/tag', async (req, res) => {
       success: true,
       duplicate: false,
       epc,
-      etiquetasCadastradas: artigo.rfidTagsCount,
+      etiquetasCadastradas: total,
       quantidade: artigo.quantidade,
-      concluido: artigo.rfidTagsCount === artigo.quantidade
+      concluido: total === artigo.quantidade
     });
   } catch (err) {
     if (err && err.code === 11000) {
-      return res.status(409).json({ success: false, duplicate: true, message: 'EPC duplicado.' });
+      return res.status(409).json({
+        success: false,
+        duplicate: true,
+        message: 'EPC duplicado.'
+      });
     }
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
 
-router.delete('/:id/rfid/tag/:epc', autenticar, async (req, res) => {
-  try {
-    const artigo = await Artigo.findOne({
-      _id: req.params.id,
-      criadoPor: req.usuario.id
+    res.status(500).json({
+      success: false,
+      message: err.message
     });
-
-    if (!artigo) return res.status(404).json({ message: 'Artigo não encontrado.' });
-
-    const epc = normalizarEpc(req.params.epc);
-    const removido = await RFIDTag.findOneAndDelete({ epc, artigo: artigo._id });
-
-    artigo.rfidTagsCount = await RFIDTag.countDocuments({ artigo: artigo._id });
-    artigo.rfidScanStatus = artigo.rfidTagsCount === artigo.quantidade ? 'concluido' : 'aguardando';
-    await artigo.save();
-
-    res.json({ success: true, removido: !!removido, etiquetasCadastradas: artigo.rfidTagsCount });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
   }
 });
 
+// Finalizar cadastro RFID
 router.post('/:id/rfid/finish', autenticar, async (req, res) => {
   try {
     const artigo = await Artigo.findOne({
@@ -164,18 +221,29 @@ router.post('/:id/rfid/finish', autenticar, async (req, res) => {
       criadoPor: req.usuario.id
     });
 
-    if (!artigo) return res.status(404).json({ message: 'Artigo não encontrado.' });
-    if (!artigo.rfidEnabled) return res.status(400).json({ message: 'Artigo sem RFID.' });
+    if (!artigo) {
+      return res.status(404).json({ message: 'Artigo não encontrado.' });
+    }
 
-    const total = await RFIDTag.countDocuments({ artigo: artigo._id });
+    if (!artigo.rfidEnabled) {
+      return res.status(400).json({ message: 'Artigo sem RFID.' });
+    }
+
+    const total = await RFIDTag.countDocuments({
+      artigo: artigo._id
+    });
+
     artigo.rfidTagsCount = total;
 
     if (total !== artigo.quantidade) {
       artigo.rfidScanStatus = 'aguardando';
       await artigo.save();
+
       return res.status(409).json({
         success: false,
-        message: `É necessário cadastrar exatamente ${artigo.quantidade} EPCs. Atualmente: ${total}.`,
+        message:
+          `É necessário cadastrar exatamente ${artigo.quantidade} etiquetas. ` +
+          `Atualmente existem ${total}.`,
         etiquetasCadastradas: total,
         quantidade: artigo.quantidade
       });
@@ -183,6 +251,7 @@ router.post('/:id/rfid/finish', autenticar, async (req, res) => {
 
     artigo.rfidScanStatus = 'concluido';
     artigo.rfidScanFinishedAt = new Date();
+
     await artigo.save();
 
     res.json({

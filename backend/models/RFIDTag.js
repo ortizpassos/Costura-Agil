@@ -9,26 +9,32 @@ const rfidTagSchema = new mongoose.Schema({
     trim: true,
     uppercase: true
   },
+
   artigo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Artigo',
     required: true,
     index: true
   },
+
   revisada: {
     type: Boolean,
     default: false,
     index: true
   },
+
   revisadaEm: {
     type: Date,
     default: null
   },
+
   dispositivoRevisao: {
     type: String,
     default: null
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 
 rfidTagSchema.index({ artigo: 1, revisada: 1 });
 

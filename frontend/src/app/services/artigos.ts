@@ -43,9 +43,10 @@ export interface RFIDStatusResponse {
 
 @Injectable({ providedIn: 'root' })
 export class ArtigosService {
-  private apiUrl = window.location.hostname === 'localhost'
-    ? '/api/artigos'
-    : 'https://monitor-ellas-backend.onrender.com/api/artigos';
+  private apiUrl =
+    window.location.hostname === 'localhost'
+      ? '/api/artigos'
+      : 'https://monitor-ellas-backend.onrender.com/api/artigos';
 
   constructor(private http: HttpClient) {}
 
@@ -57,27 +58,46 @@ export class ArtigosService {
     return this.http.post<Artigo>(this.apiUrl, artigo);
   }
 
-  atualizarArtigo(id: string, artigo: Partial<Artigo>): Observable<Artigo> {
-    return this.http.put<Artigo>(`${this.apiUrl}/${id}`, artigo);
+  atualizarArtigo(
+    id: string,
+    artigo: Partial<Artigo>
+  ): Observable<Artigo> {
+    return this.http.put<Artigo>(
+      `${this.apiUrl}/${id}`,
+      artigo
+    );
   }
 
-  excluirArtigo(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  excluirArtigo(id: string): Observable<any> {
+    return this.http.delete(
+      `${this.apiUrl}/${id}`
+    );
   }
 
-  obterStatusRFID(artigoId: string): Observable<RFIDStatusResponse> {
-    return this.http.get<RFIDStatusResponse>(`${this.apiUrl}/${artigoId}/rfid`);
+  obterStatusRFID(
+    artigoId: string
+  ): Observable<RFIDStatusResponse> {
+    return this.http.get<RFIDStatusResponse>(
+      `${this.apiUrl}/${artigoId}/rfid`
+    );
   }
 
-  iniciarLeituraRFID(artigoId: string, preservar = false): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${artigoId}/rfid/start`, { preservar });
+  iniciarLeituraRFID(
+    artigoId: string,
+    preservar = false
+  ): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/${artigoId}/rfid/start`,
+      { preservar }
+    );
   }
 
-  finalizarLeituraRFID(artigoId: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${artigoId}/rfid/finish`, {});
-  }
-
-  removerTagRFID(artigoId: string, epc: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${artigoId}/rfid/tag/${encodeURIComponent(epc)}`);
+  finalizarLeituraRFID(
+    artigoId: string
+  ): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/${artigoId}/rfid/finish`,
+      {}
+    );
   }
 }

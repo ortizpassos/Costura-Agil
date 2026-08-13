@@ -1,28 +1,33 @@
 const express = require('express');
 const router = express.Router();
+
 const Artigo = require('../models/Artigo');
 const RFIDTag = require('../models/RFIDTag');
 const Dispositivo = require('../models/Dispositivo');
 const { autenticar } = require('./authRoutes');
 
 let io = null;
-function setSocketIO(socketIO) { io = socketIO; }
+
+function setSocketIO(socketIO) {
+  io = socketIO;
+}
 
 async function notificarArtigosNormais(usuarioId) {
   if (!io) return;
 
   const dispositivos = await Dispositivo.find({ usuario: usuarioId });
+
   const artigos = await Artigo.find({
     criadoPor: usuarioId,
     status: 'em_producao'
   }).sort({ nome: 1 });
 
-  // IMPORTANTE: sem filtro RFID. Mantém o Esp32-Dispositivo antigo.
-  dispositivos.forEach(dispositivo => {
+  // NÃO filtra RFID. Mantém o Esp32-Dispositivo antigo.
+  dispositivos.forEach((dispositivo) => {
     io.emit('artigosAtualizados', {
       data: {
         deviceToken: dispositivo.deviceToken,
-        artigos: artigos.map(art => ({
+        artigos: artigos.map((art) => ({
           _id: art._id,
           nome: art.nome,
           codigo: art.codigo,
@@ -35,16 +40,20 @@ async function notificarArtigosNormais(usuarioId) {
   });
 }
 
+// Listar artigos
 router.get('/', autenticar, async (req, res) => {
   try {
-    const artigos = await Artigo.find({ criadoPor: req.usuario.id })
-      .sort({ dataInclusao: -1 });
+    const artigos = await Artigo.find({
+      criadoPor: req.usuario.id
+    }).sort({ dataInclusao: -1 });
+
     res.json(artigos);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
+// Criar artigo
 router.post('/', autenticar, async (req, res) => {
   try {
     const rfidEnabled = req.body.rfidEnabled === true;
@@ -55,12 +64,15 @@ router.post('/', autenticar, async (req, res) => {
       operacao: req.body.operacao,
       cliente: req.body.cliente,
       dataInclusao: req.body.dataInclusao || new Date(),
-      valor: req.body.valor,
-      quantidade: req.body.quantidade,
+      valor: Number(req.body.valor || 0),
+      quantidade: Number(req.body.quantidade || 0),
+      quantidadeAtual: 0,
       status: req.body.status || 'pendente',
+
       rfidEnabled,
       rfidScanStatus: rfidEnabled ? 'aguardando' : 'nao_aplicavel',
       rfidTagsCount: 0,
+
       criadoPor: req.usuario.id
     });
 
@@ -76,6 +88,7 @@ router.post('/', autenticar, async (req, res) => {
   }
 });
 
+// Atualizar artigo
 router.put('/:id', autenticar, async (req, res) => {
   try {
     const artigo = await Artigo.findOne({
@@ -83,25 +96,37 @@ router.put('/:id', autenticar, async (req, res) => {
       criadoPor: req.usuario.id
     });
 
-    if (!artigo) return res.status(404).json({ message: 'Artigo não encontrado' });
+    if (!artigo) {
+      return res.status(404).json({ message: 'Artigo não encontrado.' });
+    }
 
     const statusAnterior = artigo.status;
     const rfidAnterior = artigo.rfidEnabled === true;
 
     const campos = [
-      'codigo', 'nome', 'operacao', 'cliente', 'dataInclusao',
-      'valor', 'quantidade', 'quantidadeAtual', 'status'
+      'codigo',
+      'nome',
+      'operacao',
+      'cliente',
+      'dataInclusao',
+      'valor',
+      'quantidade',
+      'quantidadeAtual',
+      'status'
     ];
 
-    for (const campo of campos) {
-      if (req.body[campo] !== undefined) artigo[campo] = req.body[campo];
-    }
+    campos.forEach((campo) => {
+      if (req.body[campo] !== undefined) {
+        artigo[campo] = req.body[campo];
+      }
+    });
 
     if (req.body.rfidEnabled !== undefined) {
       artigo.rfidEnabled = req.body.rfidEnabled === true;
 
       if (!artigo.rfidEnabled) {
         await RFIDTag.deleteMany({ artigo: artigo._id });
+
         artigo.rfidTagsCount = 0;
         artigo.rfidScanStatus = 'nao_aplicavel';
         artigo.rfidScanStartedAt = null;
@@ -111,14 +136,20 @@ router.put('/:id', autenticar, async (req, res) => {
       }
     }
 
-    if (artigo.rfidEnabled && artigo.rfidTagsCount !== artigo.quantidade) {
+    if (
+      artigo.rfidEnabled &&
+      artigo.rfidTagsCount !== artigo.quantidade
+    ) {
       artigo.rfidScanStatus = 'aguardando';
     }
 
     await artigo.save();
 
-    if (statusAnterior !== artigo.status || rfidAnterior !== artigo.rfidEnabled) {
-      await notificarArtigosNormais(artigo.criadoPor);
+    if (
+      statusAnterior !== artigo.status ||
+      rfidAnterior !== artigo.rfidEnabled
+    ) {
+      await notificarArtigosNormais(req.usuario.id);
     }
 
     res.json(artigo);
@@ -127,20 +158,30 @@ router.put('/:id', autenticar, async (req, res) => {
   }
 });
 
+// Excluir artigo
 router.delete('/:id', autenticar, async (req, res) => {
   try {
-    const artigo = await Artigo.findOneAndDelete({
+    const artigo = await Artigo.findOne({
       _id: req.params.id,
       criadoPor: req.usuario.id
     });
 
-    if (!artigo) return res.status(404).json({ message: 'Artigo não encontrado' });
+    if (!artigo) {
+      return res.status(404).json({ message: 'Artigo não encontrado.' });
+    }
 
     await RFIDTag.deleteMany({ artigo: artigo._id });
-    res.json({ message: 'Artigo removido com sucesso' });
+    await artigo.deleteOne();
+
+    await notificarArtigosNormais(req.usuario.id);
+
+    res.json({ message: 'Artigo removido com sucesso.' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-module.exports = { router, setSocketIO };
+module.exports = {
+  router,
+  setSocketIO
+};
