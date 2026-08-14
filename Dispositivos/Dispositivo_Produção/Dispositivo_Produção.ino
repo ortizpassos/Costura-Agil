@@ -43,13 +43,13 @@ const unsigned long updateCheckInterval = 10000; // 10 segundos
 String currentScreen = ""; // Rastreia tela atual
 
 // ---- Config servidor ----
-const char* host = "192.168.1.174";   // Host do backend (produção)
-const uint16_t port = 3001;             // HTTPS/WSS
-const bool useSSL = false;              // TLS habilitado para servidor online
+const char* host = "monitor-ellas-backend.onrender.com"; // mesmo backend do dispositivo funcional
+uint16_t port = 443;                                  // HTTPS/WSS em producao
+bool useSSL = true;                                   // TLS habilitado
 const char* socketPath = "/socket.io/?EIO=4";
 
 // ---- Dispositivo ----
-const char* deviceToken = "461545616614165";
+const char* deviceToken = "461545616614168";
 
 SocketIOclient socketIO;
 bool wsConnected = false;

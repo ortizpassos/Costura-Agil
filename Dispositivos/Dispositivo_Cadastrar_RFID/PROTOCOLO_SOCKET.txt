@@ -1,0 +1,125 @@
+PROTOCOLO SOCKET.IO - CADASTRO RFID
+=================================
+
+1. REGISTRO DE HARDWARE
+-----------------------
+ESP32 -> Backend
+
+evento:
+registerHardware
+
+{
+  "deviceId": "RFID-AABBCCDDEEFF",
+  "deviceType": "cadastro_rfid",
+  "firmwareVersion": "1.0.0",
+  "deviceToken": "opcional"
+}
+
+
+2. ATIVAÇÃO / VÍNCULO
+---------------------
+Backend -> ESP32
+
+evento:
+hardwareLinked
+
+{
+  "success": true,
+  "deviceId": "RFID-AABBCCDDEEFF",
+  "deviceToken": "123456789012345",
+  "deviceType": "cadastro_rfid"
+}
+
+
+3. INICIAR CADASTRO
+-------------------
+Backend -> ESP32
+
+evento:
+iniciarCadastroRFID
+
+{
+  "artigoId": "MongoObjectId",
+  "codigo": "ART001",
+  "quantidade": 100,
+  "jaCadastradas": 0,
+  "sessionId": "opcional"
+}
+
+
+4. EPC LIDO
+-----------
+ESP32 -> Backend
+
+evento:
+epcCadastroRFID
+
+{
+  "deviceId": "RFID-AABBCCDDEEFF",
+  "deviceToken": "123456789012345",
+  "artigoId": "MongoObjectId",
+  "sessionId": "opcional",
+  "epc": "E28068940000400312345678",
+  "rssi": -52
+}
+
+
+5. RESULTADO DO EPC - OPCIONAL
+------------------------------
+Backend -> ESP32
+
+evento:
+epcCadastroRFIDResultado
+
+{
+  "accepted": true,
+  "duplicate": false,
+  "epc": "E280...",
+  "etiquetasCadastradas": 37,
+  "quantidade": 100
+}
+
+
+6. PROGRESSO PARA O FRONTEND
+----------------------------
+Backend -> Frontend
+
+evento:
+rfidCadastroProgresso
+
+{
+  "artigoId": "...",
+  "epc": "E280...",
+  "novo": true,
+  "etiquetasCadastradas": 37,
+  "quantidade": 100,
+  "percentual": 37,
+  "concluido": false
+}
+
+
+7. CONCLUIR AUTOMATICAMENTE
+---------------------------
+Backend -> ESP32 + Frontend
+
+evento:
+cadastroRFIDConcluido
+
+{
+  "artigoId": "...",
+  "etiquetasCadastradas": 100,
+  "quantidade": 100
+}
+
+
+8. PARAR MANUALMENTE
+--------------------
+Backend -> ESP32
+
+evento:
+pararCadastroRFID
+
+{
+  "artigoId": "...",
+  "motivo": "usuario"
+}
