@@ -1,5 +1,8 @@
-const HardwareDevice = require('../models/HardwareDevice');
-const Dispositivo = require('../models/Dispositivo');
+const HardwareDevice =
+  require('../models/HardwareDevice');
+
+const Dispositivo =
+  require('../models/Dispositivo');
 
 const {
   setIO,
@@ -21,23 +24,60 @@ function validDeviceType(value) {
   ].includes(value);
 }
 
+/**
+ * Atualiza o status da licença/dispositivo principal
+ * e avisa o frontend.
+ */
+async function syncLicenseStatus(
+  io,
+  deviceToken,
+  status
+) {
+  if (!deviceToken) {
+    return null;
+  }
+
+  const license =
+    await Dispositivo.findOneAndUpdate(
+      {
+        deviceToken
+      },
+      {
+        $set: {
+          status,
+          ultimaAtualizacao:
+            new Date()
+        }
+      },
+      {
+        new: true
+      }
+    )
+      .populate('operacao')
+      .populate('artigo')
+      .populate('funcionarioLogado');
+
+  if (!license) {
+    return null;
+  }
+
+  io.emit(
+    'deviceStatusUpdate',
+    license.toObject()
+  );
+
+  return license;
+}
+
 function configurarSocketProvisioning(io) {
   setIO(io);
 
   io.on('connection', (socket) => {
 
-    /**
-     * Usado por hardware ainda sem token e também pelo novo
-     * hardware após substituição.
-     *
-     * Payload:
-     * {
-     *   deviceId: "RFID-A4C138",
-     *   deviceType: "cadastro_rfid",
-     *   firmwareVersion: "1.0.0",
-     *   deviceToken: "" // opcional
-     * }
-     */
+    // ========================================================
+    // REGISTRO DO HARDWARE
+    // ========================================================
+
     socket.on(
       'registerHardware',
       async (data = {}) => {
@@ -64,7 +104,9 @@ function configurarSocketProvisioning(io) {
           }
 
           if (
-            !validDeviceType(deviceType)
+            !validDeviceType(
+              deviceType
+            )
           ) {
             return socket.emit(
               'hardwareRegistered',
@@ -80,59 +122,79 @@ function configurarSocketProvisioning(io) {
             deviceId;
 
           socket.join(
-            roomForHardware(deviceId)
+            roomForHardware(
+              deviceId
+            )
           );
 
           let hardware =
-            await HardwareDevice.findOneAndUpdate(
-              { deviceId },
-              {
-                $set: {
-                  deviceType,
-                  status: 'online',
-                  firmwareVersion:
-                    String(
-                      data.firmwareVersion ||
-                      ''
-                    ),
-                  ipAddress:
-                    String(
-                      socket.handshake
-                        ?.address || ''
-                    ),
-                  lastSeenAt:
-                    new Date()
-                },
-                $setOnInsert: {
+            await HardwareDevice
+              .findOneAndUpdate(
+                {
                   deviceId
+                },
+                {
+                  $set: {
+                    deviceType,
+                    status:
+                      'online',
+                    firmwareVersion:
+                      String(
+                        data
+                          .firmwareVersion ||
+                        ''
+                      ),
+                    ipAddress:
+                      String(
+                        socket
+                          .handshake
+                          ?.address ||
+                        ''
+                      ),
+                    lastSeenAt:
+                      new Date()
+                  },
+                  $setOnInsert: {
+                    deviceId
+                  }
+                },
+                {
+                  new: true,
+                  upsert: true,
+                  setDefaultsOnInsert:
+                    true
                 }
-              },
-              {
-                new: true,
-                upsert: true,
-                setDefaultsOnInsert: true
-              }
-            );
+              );
 
           const informedToken =
             String(
-              data.deviceToken || ''
+              data.deviceToken ||
+              ''
             ).trim();
 
-          let linked = false;
-          let deviceToken = '';
+          let linked =
+            false;
+
+          let deviceToken =
+            '';
+
+          // --------------------------------------------------
+          // 1. ESP32 informou token salvo na NVS
+          // --------------------------------------------------
 
           if (informedToken) {
             const license =
               await Dispositivo.findOne({
                 deviceToken:
                   informedToken,
+
                 hardwareDeviceId:
                   deviceId
               });
 
             if (license) {
               linked = true;
+
               deviceToken =
                 license.deviceToken;
 
@@ -140,22 +202,49 @@ function configurarSocketProvisioning(io) {
                 license.deviceToken;
 
               await hardware.save();
+
+              // CORREÇÃO:
+              // mantém também Dispositivo online.
+              await syncLicenseStatus(
+                io,
+                license.deviceToken,
+                'online'
+              );
             }
-          } else if (
-            hardware.linkedDeviceToken
+          }
+
+          // --------------------------------------------------
+          // 2. Hardware já possui token vinculado no backend
+          // --------------------------------------------------
+
+          else if (
+            hardware
+              .linkedDeviceToken
           ) {
             const license =
               await Dispositivo.findOne({
                 deviceToken:
-                  hardware.linkedDeviceToken,
+                  hardware
+                    .linkedDeviceToken,
+
                 hardwareDeviceId:
                   deviceId
               });
 
             if (license) {
               linked = true;
+
               deviceToken =
                 license.deviceToken;
+
+              // CORREÇÃO:
+              // atualiza status da licença.
+              await syncLicenseStatus(
+                io,
+                license.deviceToken,
+                'online'
+              );
+
             } else {
               hardware.linkedDeviceToken =
                 '';
@@ -164,6 +253,12 @@ function configurarSocketProvisioning(io) {
             }
           }
 
+          // Guarda token no socket para heartbeat/disconnect.
+          socket.linkedDeviceToken =
+            linked
+              ? deviceToken
+              : '';
+
           socket.emit(
             'hardwareRegistered',
             {
@@ -171,12 +266,21 @@ function configurarSocketProvisioning(io) {
               deviceId,
               deviceType,
               linked,
+
               deviceToken:
                 linked
                   ? deviceToken
                   : undefined
             }
           );
+
+          console.log(
+            `[PROVISIONING] Hardware ${deviceId} registrado. ` +
+            `Tipo=${deviceType} ` +
+            `linked=${linked} ` +
+            `token=${linked ? deviceToken : '<sem token>'}`
+          );
+
         } catch (err) {
           console.error(
             '[PROVISIONING] registerHardware:',
@@ -195,9 +299,13 @@ function configurarSocketProvisioning(io) {
       }
     );
 
+    // ========================================================
+    // HEARTBEAT
+    // ========================================================
+
     socket.on(
       'hardwareHeartbeat',
-      async () => {
+      async (data = {}) => {
         try {
           if (
             !socket.hardwareDeviceId
@@ -205,30 +313,73 @@ function configurarSocketProvisioning(io) {
             return;
           }
 
-          await HardwareDevice.updateOne(
-            {
-              deviceId:
-                socket.hardwareDeviceId
-            },
-            {
-              $set: {
-                status: 'online',
-                lastSeenAt: new Date()
-              }
-            }
-          );
+          const now =
+            new Date();
+
+          const hardware =
+            await HardwareDevice
+              .findOneAndUpdate(
+                {
+                  deviceId:
+                    socket
+                      .hardwareDeviceId
+                },
+                {
+                  $set: {
+                    status:
+                      'online',
+
+                    lastSeenAt:
+                      now
+                  }
+                },
+                {
+                  new: true
+                }
+              );
+
+          if (!hardware) {
+            return;
+          }
+
+          // Descobre token pelo socket ou pelo próprio hardware.
+          const token =
+            socket
+              .linkedDeviceToken ||
+            hardware
+              .linkedDeviceToken ||
+            '';
+
+          if (token) {
+            socket
+              .linkedDeviceToken =
+              token;
+
+            // CORREÇÃO:
+            // heartbeat mantém a licença principal online.
+            await syncLicenseStatus(
+              io,
+              token,
+              'online'
+            );
+          }
+
         } catch (err) {
           console.error(
             '[PROVISIONING] heartbeat:',
-            err.message
+            err
           );
         }
       }
     );
 
+    // ========================================================
+    // DESCONEXÃO
+    // ========================================================
+
     socket.on(
       'disconnect',
-      async () => {
+      async (reason) => {
         try {
           if (
             !socket.hardwareDeviceId
@@ -236,26 +387,62 @@ function configurarSocketProvisioning(io) {
             return;
           }
 
-          await HardwareDevice.updateOne(
-            {
-              deviceId:
-                socket.hardwareDeviceId
-            },
-            {
-              $set: {
-                status: 'offline',
-                lastSeenAt: new Date()
-              }
-            }
+          const now =
+            new Date();
+
+          const hardware =
+            await HardwareDevice
+              .findOneAndUpdate(
+                {
+                  deviceId:
+                    socket
+                      .hardwareDeviceId
+                },
+                {
+                  $set: {
+                    status:
+                      'offline',
+
+                    lastSeenAt:
+                      now
+                  }
+                },
+                {
+                  new: true
+                }
+              );
+
+          const token =
+            socket
+              .linkedDeviceToken ||
+            hardware
+              ?.linkedDeviceToken ||
+            '';
+
+          if (token) {
+            // CORREÇÃO:
+            // a licença também fica offline.
+            await syncLicenseStatus(
+              io,
+              token,
+              'offline'
+            );
+          }
+
+          console.log(
+            `[PROVISIONING] Hardware ${socket.hardwareDeviceId} desconectado. ` +
+            `Motivo=${reason || 'desconhecido'}`
           );
+
         } catch (err) {
           console.error(
             '[PROVISIONING] disconnect:',
-            err.message
+            err
           );
         }
       }
     );
+
   });
 }
 
